@@ -1,9 +1,24 @@
 {{define "data"}}
 <div class="heading"><h1>数据</h1><span class="mode"><span class="dot"></span>本地 SQLite</span></div>
 {{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}{{if .Notice}}<p class="saved" role="status">{{.Notice}}</p>{{end}}
-<section id="search-index" class="index-panel" aria-labelledby="index-title">
-  <div class="index-heading"><div><h2 id="index-title">搜索索引</h2><div class="index-state"><span class="badge" id="index-state" data-state="{{.Index.State}}" role="status">{{.Index.State}}</span><span id="index-problem" class="text-danger small" {{if not .Index.Problem}}hidden{{end}}>部分索引暂不可用，系统将重试。</span></div></div><form method="post" action="/reindex" data-busy="正在提交…"><button class="btn btn-outline-primary" id="index-rebuild"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>重建索引</button></form></div>
-  <dl class="index-grid"><div><dt>语义覆盖</dt><dd id="index-coverage">{{if .Index.Model}}{{.Index.Indexed}} / {{.Index.Total}}{{else}}未启用{{end}}</dd><progress id="index-progress" max="{{if .Index.Total}}{{.Index.Total}}{{else}}1{{end}}" value="{{.Index.Indexed}}" aria-label="语义索引覆盖率" {{if not .Index.Model}}hidden{{end}}></progress><small id="index-skipped" {{if not .Index.Skipped}}hidden{{end}}>跳过 {{.Index.Skipped}} 条</small></div><div><dt>关键词索引</dt><dd id="index-keyword" data-keyword="{{.Index.Keyword}}">{{.Index.Keyword}}</dd><small>FTS5</small></div><div><dt>最近检查</dt><dd id="index-checked">{{if .Index.CheckedAt}}{{.Index.CheckedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}—{{end}}</dd><small>自动检查与修复</small></div><div><dt>最近修复 / 重建</dt><dd id="index-repaired">{{if .Index.RepairedAt}}{{.Index.RepairedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}—{{end}}</dd><small id="index-model">{{if .Index.Model}}{{.Index.Model}}{{else}}关键词模式{{end}}</small></div></dl>
+<section id="search-index" aria-labelledby="index-title" class="index-workspace">
+  <header class="index-section-heading"><h2 id="index-title">检索索引</h2><form method="post" action="/reindex" data-busy="正在提交…"><input type="hidden" name="kind" value="all"><button class="btn btn-outline-primary" data-index-rebuild="all"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>全部重建</button></form></header>
+  <div class="index-lanes">
+    <section class="index-lane" data-index-lane="keyword" aria-labelledby="keyword-index-title">
+      <header><div><h3 id="keyword-index-title"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>关键词索引</h3><span class="index-engine">SQLite FTS5</span></div><span class="badge" data-index-state data-state="{{.Index.Keyword.State}}" role="status"></span></header>
+      <dl><div><dt>最近检查</dt><dd data-index-checked>{{if .Index.Keyword.CheckedAt}}{{.Index.Keyword.CheckedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}未检查{{end}}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{{if .Index.Keyword.RepairedAt}}{{.Index.Keyword.RepairedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}无{{end}}</dd></div></dl>
+      <p data-index-problem class="text-danger small" {{if not .Index.Keyword.Problem}}hidden{{end}}>关键词索引异常，等待重试。</p>
+      <form method="post" action="/reindex" data-busy="正在提交…"><input type="hidden" name="kind" value="keyword"><button class="btn btn-outline-primary" data-index-rebuild="keyword"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>重建关键词</button></form>
+    </section>
+    <section class="index-lane" data-index-lane="semantic" aria-labelledby="semantic-index-title">
+      <header><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量索引</h3><span class="index-engine" id="index-engine">{{if .Index.Model}}SQLite · {{.Index.Dimensions}} 维向量{{else}}未内置模型{{end}}</span></div><span class="badge" data-index-state data-state="{{.Index.Semantic.State}}" role="status"></span></header>
+      <div class="index-coverage" {{if not .Index.Model}}hidden{{end}}><span>向量覆盖 <strong id="index-coverage">{{.Index.Indexed}} / {{.Index.Total}}</strong></span><progress id="index-progress" max="{{if .Index.Total}}{{.Index.Total}}{{else}}1{{end}}" value="{{.Index.Indexed}}" aria-label="语义索引覆盖率"></progress><small id="index-skipped" {{if not .Index.Skipped}}hidden{{end}}>跳过 {{.Index.Skipped}} 条</small></div>
+      <dl><div><dt>最近检查</dt><dd data-index-checked>{{if .Index.Semantic.CheckedAt}}{{.Index.Semantic.CheckedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}未检查{{end}}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{{if .Index.Semantic.RepairedAt}}{{.Index.Semantic.RepairedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}无{{end}}</dd></div></dl>
+      <details class="index-model-info" {{if not .Index.Model}}hidden{{end}}><summary>模型标识</summary><code id="index-model">{{.Index.Model}}</code></details>
+      <p data-index-problem class="text-danger small" {{if not .Index.Semantic.Problem}}hidden{{end}}>语义索引异常，等待重试。</p>
+      <form method="post" action="/reindex" data-busy="正在提交…"><input type="hidden" name="kind" value="semantic"><button class="btn btn-outline-primary" data-index-rebuild="semantic" {{if not .Index.Model}}disabled{{end}}><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>重建语义向量</button></form>
+    </section>
+  </div>
 </section>
 <div class="data-list">
 <section class="data-row"><div><h2>备份</h2><p class="muted">下载当前库的完整快照。运行中的 WAL 数据也会包含在内。</p></div><form method="post" action="/backup"><button class="primary"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载快照</button></form></section>

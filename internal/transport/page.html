@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/style.css">
 <script src="/vendor/flatpickr.min.js" defer></script>
 <script src="/controls.js" defer></script>
+{{if or (eq .View "graph") (and (eq .View "detail") .Entry.ID)}}<script src="/vendor/cytoscape.min.js" defer></script><script src="/graph.js" defer></script>{{end}}
 </head>
 <body>
 <!-- Lucide icon license
@@ -57,6 +58,9 @@ SOFTWARE.
 
 -->
 <svg class="sprite" aria-hidden="true">
+  <symbol id="network" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></symbol>
+  <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+  <symbol id="scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /></symbol>
   <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol>
   <symbol id="upload" viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol>
   <symbol id="refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
@@ -78,18 +82,20 @@ SOFTWARE.
   <nav class="tabs nav flex-md-column" aria-label="主导航">
     <a href="/" {{if or (eq .View "timeline") (eq .View "detail")}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>时间线</a>
     <a href="/overview" {{if eq .View "overview"}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
+    <a href="/graph" {{if eq .View "graph"}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a>
     <a href="/clients" {{if eq .View "clients"}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入</a>
     <a href="/data" {{if eq .View "data"}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#database"/></svg>数据</a>
   </nav>
 </div></header>
 <main class="container-fluid shell">
-{{if eq .View "timeline"}}{{template "timeline" .}}{{else if eq .View "detail"}}{{template "editor" .}}{{else if eq .View "overview"}}{{template "overview" .}}{{else if eq .View "clients"}}{{template "mcp-guide" .}}{{else}}{{template "data" .}}{{end}}
+{{if eq .View "timeline"}}{{template "timeline" .}}{{else if eq .View "detail"}}{{template "editor" .}}{{else if eq .View "overview"}}{{template "overview" .}}{{else if eq .View "graph"}}{{template "graph-page" .}}{{else if eq .View "clients"}}{{template "mcp-guide" .}}{{else}}{{template "data" .}}{{end}}
 </main>
 </body>
 </html>
 {{define "timeline"}}
   <div class="heading"><div class="titleline"><h1>时间线</h1><span class="mode"><span class="dot"></span>{{if .Semantic}}本地混合召回{{else}}本地关键词{{end}}</span></div><a class="button primary" href="/memory/new?back={{.Back}}"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>新建记忆</a></div>
   <form method="get" action="/" class="filters search-workbench">
+    {{if .Chronological}}<input type="hidden" name="order" value="date">{{end}}
     {{if .Period}}<input type="hidden" name="period" value="{{.Period}}">{{end}}{{if .Undated}}<input type="hidden" name="undated" value="1">{{end}}
     <div class="searchbar"><label class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input class="form-control" type="search" aria-label="回忆" name="q" value="{{.Query.Text}}" placeholder="搜索记忆" maxlength="600"></label><button class="btn btn-primary primary">查找</button></div>
     <div class="search-options"><fieldset class="btn-group modes" aria-label="检索模式">
@@ -104,8 +110,8 @@ SOFTWARE.
   </form>
   {{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{else}}
   {{if .Degraded}}<p class="alert alert-warning py-2" role="status">部分搜索索引暂不可用。正在使用可用的检索方式。</p>{{end}}
-  {{if .Query.Text}}<h2 class="period results-label">回忆结果 <span>{{len .Rows}}{{if .More}}+{{end}}</span></h2>{{end}}
-  <section class="memory-stream" aria-label="记忆列表">
+  {{if .Query.Text}}<div class="search-result-bar"><h2>回忆结果 <span>{{len .Rows}}{{if .More}}+{{end}}</span></h2><div class="result-tools"><nav class="result-order" aria-label="结果排序"><a href="{{.ByRank}}" {{if not .Chronological}}aria-current="page"{{end}}>相关性</a><a href="{{.ByDate}}" {{if .Chronological}}aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>时间线</a></nav><a class="button" href="{{.GraphURL}}"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a></div></div>{{end}}
+  <section class="memory-stream {{if .Chronological}}topic-stream{{end}}" aria-label="记忆列表">
   {{range .Rows}}
     {{if .Period}}<h2 class="period timeline-period">{{.Period}}</h2>{{end}}
     <article class="entry">

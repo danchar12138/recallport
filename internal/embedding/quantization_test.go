@@ -113,6 +113,8 @@ func TestQuantizationComparison(t *testing.T) {
 	}
 	ctx := t.Context()
 	var totals [2][2]int
+	var hybridTop5 [2]int
+	var unrelatedHits [2]int
 	rankings := make([][][]int, 2)
 	for version, model := range []memory.Embedder{full, m} {
 		s, err := sqlite.Open(filepath.Join(t.TempDir(), "comparison.db"), model)
@@ -145,6 +147,33 @@ func TestQuantizationComparison(t *testing.T) {
 				}
 			}
 			rankings[version] = append(rankings[version], list)
+			hybrid, err := s.Recall(ctx, memory.Query{Text: x.query, Strategy: "hybrid", Limit: 5})
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, hit := range hybrid.Memories {
+				if ids[hit.ID] == k {
+					hybridTop5[version]++
+					found = true
+					break
+				}
+			}
+			if !found && version == 1 {
+				t.Logf("hybrid miss: %s, %d returned", x.query, len(hybrid.Memories))
+			}
+		}
+		for _, query := range []string{"珊瑚礁的热带鱼", "烤面包用多少酵母", "周末的古典音乐会", "月球的引力是多少", "where to grow basil", "水彩颜料怎么调色"} {
+			r, err := s.Recall(ctx, memory.Query{Text: query, Strategy: "hybrid", Limit: 5})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(r.Memories) > 0 {
+				unrelatedHits[version]++
+				if version == 1 {
+					t.Logf("unrelated match: %s -> %s", query, r.Memories[0].Text)
+				}
+			}
 		}
 	}
 	var shared, comparable, topChanged int
@@ -184,4 +213,5 @@ func TestQuantizationComparison(t *testing.T) {
 		}
 	}
 	t.Logf("%d synthetic queries: float32 hit@1=%d hit@5=%d; int8 hit@1=%d hit@5=%d; top-1 changed=%d; top-5 overlap=%d/%d; embedding cosine mean=%.6f, min=%.6f", len(corpus), totals[0][0], totals[0][1], totals[1][0], totals[1][1], topChanged, shared, comparable, mean/float64(count), 1-worst)
+	t.Logf("hybrid hit@5: float32=%d int8=%d; unrelated queries with any result (out of 6): float32=%d int8=%d", hybridTop5[0], hybridTop5[1], unrelatedHits[0], unrelatedHits[1])
 }

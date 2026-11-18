@@ -29,6 +29,7 @@ type Browse interface {
 	Timeline(context.Context, Query, int) (Results, error)
 	Periods(context.Context) ([]Period, error)
 	Related(context.Context, string) ([]Hit, error)
+	Graph(context.Context, []string, string, bool) (Graph, error)
 	UsesVectors() bool
 }
 
@@ -36,20 +37,33 @@ type Data interface {
 	Snapshot(context.Context, string) error
 	Replace(context.Context, io.Reader) error
 	OpenRecovery() (io.ReadSeekCloser, string, error)
-	RequestRebuild() bool
+	RequestRebuild(IndexKind) bool
 	IndexStatus(context.Context) IndexStatus
 }
 
-type IndexStatus struct {
+type IndexKind string
+
+const (
+	KeywordIndex  IndexKind = "keyword"
+	SemanticIndex IndexKind = "semantic"
+	AllIndexes    IndexKind = "all"
+)
+
+type IndexHealth struct {
 	State      string     `json:"state"`
-	Keyword    string     `json:"keyword"`
-	Model      string     `json:"model"`
-	Indexed    int        `json:"indexed"`
-	Total      int        `json:"total"`
-	Skipped    int        `json:"skipped"`
 	CheckedAt  *time.Time `json:"checked_at,omitempty"`
 	RepairedAt *time.Time `json:"repaired_at,omitempty"`
 	Problem    string     `json:"problem,omitempty"`
+}
+
+type IndexStatus struct {
+	Keyword    IndexHealth `json:"keyword"`
+	Semantic   IndexHealth `json:"semantic"`
+	Model      string      `json:"model"`
+	Indexed    int         `json:"indexed"`
+	Total      int         `json:"total"`
+	Skipped    int         `json:"skipped"`
+	Dimensions int         `json:"dimensions"`
 }
 
 type Repository interface {

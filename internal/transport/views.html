@@ -42,6 +42,7 @@
 {{define "relations"}}
 <section class="relation-section" id="relations">
 <div class="section-heading"><h2>这段记忆的关联</h2><a href="#add-link">添加引用</a></div>
+{{template "graph-canvas" .}}
 <div class="relation-map">
 <div class="relation-column"><h3><span class="edge-dot incoming"></span>被引用 <span class="muted">{{len .Incoming}}</span></h3>
 {{range .Incoming}}<article class="relation-node"><a href="/memory/{{.ID}}?back={{$.Back}}">{{.Text}}</a>{{if .Date}}<small>{{.Date}}</small>{{end}}{{if .Reason}}<p>{{.Reason}}</p>{{end}}</article>{{else}}<p class="muted">暂无引用来源</p>{{end}}</div>
@@ -54,6 +55,5 @@
 <form method="get" action="/memory/{{.Entry.ID}}#add-link" class="inline-controls"><input type="hidden" name="back" value="{{.Back}}"><input type="search" name="find" value="{{.LinkQuery}}" placeholder="搜索目标记忆" aria-label="搜索目标记忆" maxlength="600"><button>搜索</button></form>
 {{if .Choices}}<form method="post" action="/memory/{{.Entry.ID}}/links" class="pick-form"><input type="hidden" name="back" value="{{.Back}}"><label>目标<select name="target" required><option value="">选择记忆</option>{{range .Choices}}<option value="{{.ID}}">{{if .Occurred}}{{.Occurred}} · {{end}}{{.Text}}</option>{{end}}</select></label><label>关联说明<input name="reason" maxlength="260"></label><button><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>保存引用</button></form>{{else}}<p class="muted">没有其他记忆可引用。</p>{{end}}
 </details>
-{{if .Similar}}<div class="similar"><h3><span class="edge-dot suggested"></span>可能相关 <span class="muted">检索线索</span></h3>{{range .Similar}}<a class="similar-row" href="/memory/{{.ID}}?back={{$.Back}}"><span>{{.Text}}</span>{{if .Occurred}}<time>{{.Occurred}}</time>{{end}}<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>{{end}}</div>{{end}}
 </section>
 {{end}}

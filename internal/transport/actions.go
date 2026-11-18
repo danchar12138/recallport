@@ -224,6 +224,14 @@ func (h *web) rollback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) rebuild(w http.ResponseWriter, r *http.Request) {
-	h.store.RequestRebuild()
+	kind := memory.IndexKind(r.PostForm.Get("kind"))
+	if kind == "" {
+		kind = memory.AllIndexes
+	}
+	if kind != memory.AllIndexes && kind != memory.KeywordIndex && kind != memory.SemanticIndex {
+		http.Error(w, "Invalid index", http.StatusBadRequest)
+		return
+	}
+	h.store.RequestRebuild(kind)
 	http.Redirect(w, r, "/data?done=index", http.StatusSeeOther)
 }

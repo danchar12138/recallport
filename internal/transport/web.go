@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ import (
 	"recallport/internal/memory"
 )
 
-//go:embed *.html style.css controls.js vendor/*.css vendor/*.js
+//go:embed *.html style.css controls.js graph.js vendor/*.css vendor/*.js
 var assets embed.FS
 
 type web struct {
@@ -31,22 +32,24 @@ type row struct {
 	Period string
 }
 type page struct {
-	View, Base, Error, Back string
-	Entry                   memory.Entry
-	Rows                    []row
-	Query                   memory.Query
-	Prev, Next              string
-	Semantic, Saved, More   bool
-	Notice, Period          string
-	Undated                 bool
-	Recovery                string
-	Years                   []yearView
-	Total, Unknown          int
-	Incoming, Outgoing      []linkView
-	Similar, Choices        []memory.Hit
-	LinkQuery               string
-	Index                   memory.IndexStatus
-	Degraded                bool
+	View, Base, Error, Back  string
+	Entry                    memory.Entry
+	Rows                     []row
+	Query                    memory.Query
+	Prev, Next               string
+	Semantic, Saved, More    bool
+	Notice, Period           string
+	Undated                  bool
+	Recovery                 string
+	Years                    []yearView
+	Total, Unknown           int
+	Incoming, Outgoing       []linkView
+	Choices                  []memory.Hit
+	LinkQuery                string
+	Index                    memory.IndexStatus
+	Degraded                 bool
+	Chronological            bool
+	ByDate, ByRank, GraphURL string
 }
 
 func New(store memory.Repository, host string) (http.Handler, error) {
@@ -62,11 +65,13 @@ func New(store memory.Repository, host string) (http.Handler, error) {
 	m := http.NewServeMux()
 	m.Handle("/mcp", newMCP(store))
 	m.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok\n")) })
-	for _, name := range []string{"style.css", "controls.js", "vendor/bootstrap.min.css", "vendor/flatpickr.min.css", "vendor/flatpickr.min.js"} {
+	for _, name := range []string{"style.css", "controls.js", "graph.js", "vendor/cytoscape.min.js", "vendor/bootstrap.min.css", "vendor/flatpickr.min.css", "vendor/flatpickr.min.js"} {
 		m.HandleFunc("GET /"+name, func(w http.ResponseWriter, r *http.Request) { http.ServeFileFS(w, r, assets, name) })
 	}
 	m.HandleFunc("GET /{$}", h.timeline)
 	m.HandleFunc("GET /overview", h.overview)
+	m.HandleFunc("GET /graph", h.graphPage)
+	m.HandleFunc("GET /graph-data", h.graphData)
 	m.HandleFunc("GET /memory/new", func(w http.ResponseWriter, r *http.Request) {
 		h.render(w, page{View: "detail", Back: localBack(r.URL.Query().Get("back"))})
 	})
@@ -134,6 +139,25 @@ func (h *web) timeline(w http.ResponseWriter, r *http.Request) {
 		result, err = h.store.Recall(r.Context(), q)
 		p.More = result.More
 		p.Degraded = result.Degraded
+		p.Chronological = v.Get("order") == "date"
+		p.ByRank = withOrder(r.URL.Query(), "")
+		p.ByDate = withOrder(r.URL.Query(), "date")
+		gf := r.URL.Query()
+		gf.Del("order")
+		gf.Del("page")
+		p.GraphURL = "/graph?" + gf.Encode()
+		if p.Chronological {
+			sort.SliceStable(result.Memories, func(i, j int) bool {
+				a, b := result.Memories[i].Occurred, result.Memories[j].Occurred
+				if a == "" {
+					return false
+				}
+				if b == "" {
+					return true
+				}
+				return a < b
+			})
+		}
 	} else {
 		result, err = h.store.Timeline(r.Context(), q, (n-1)*q.Limit)
 		link := func(n int) string {
@@ -156,7 +180,7 @@ func (h *web) timeline(w http.ResponseWriter, r *http.Request) {
 	previous := ""
 	for _, hit := range result.Memories {
 		r := row{Hit: hit}
-		if q.Text == "" {
+		if q.Text == "" || p.Chronological {
 			period := "日期未记"
 			if len(hit.Occurred) >= 7 {
 				period = hit.Occurred[:7]
@@ -173,9 +197,19 @@ func (h *web) timeline(w http.ResponseWriter, r *http.Request) {
 	h.render(w, p)
 }
 
+func withOrder(v url.Values, order string) string {
+	v.Del("page")
+	if order == "" {
+		v.Del("order")
+	} else {
+		v.Set("order", order)
+	}
+	return "/?" + v.Encode()
+}
+
 func localBack(raw string) string {
 	u, err := url.ParseRequestURI(raw)
-	if err != nil || u.Host != "" || u.Path != "/" || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") {
+	if err != nil || u.Host != "" || (u.Path != "/" && u.Path != "/graph") || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") {
 		return "/"
 	}
 	return u.RequestURI()
@@ -214,9 +248,6 @@ func (h *web) detail(w http.ResponseWriter, r *http.Request, msg string, keepDra
 		}
 	} else if res, err := h.store.Timeline(r.Context(), memory.Query{Limit: 12}, 0); err == nil {
 		p.Choices = without(res.Memories, e.ID)
-	}
-	if r.Method == http.MethodGet {
-		p.Similar, _ = h.store.Related(r.Context(), e.ID)
 	}
 	h.render(w, p)
 }

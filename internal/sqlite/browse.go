@@ -34,9 +34,15 @@ func (s *Store) Related(ctx context.Context, id string) ([]memory.Hit, error) {
 		return nil, nil
 	}
 	q := trimRunes(e.Text, 300) + " " + trimRunes(e.Context, 150)
-	res, err := s.Recall(ctx, memory.Query{Text: q, Limit: 20})
+	if strings.TrimSpace(q) == "" {
+		return nil, nil
+	}
+	res, err := s.Recall(ctx, memory.Query{Text: q, Limit: 20, Strategy: "semantic"})
 	if err != nil {
 		return nil, err
+	}
+	if res.Mode != "semantic" {
+		return nil, nil
 	}
 	seen := map[string]bool{id: true}
 	for _, rs := range [][]memory.Reference{e.References, e.CitedBy} {

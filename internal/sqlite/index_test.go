@@ -17,6 +17,33 @@ func (testEmbedding) Embed(text string) []float32 {
 	return []float32{1, 0, 0}
 }
 
+func TestManualIndexScopes(t *testing.T) {
+	ctx := t.Context()
+	s, err := Open(filepath.Join(t.TempDir(), "memory.db"), testEmbedding{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	s.checkIndex(ctx)
+	baseline := s.IndexStatus(ctx)
+	if !s.RequestRebuild(memory.KeywordIndex) {
+		t.Fatal("keyword request not queued")
+	}
+	s.checkIndex(ctx)
+	keyword := s.IndexStatus(ctx)
+	if keyword.Keyword.RepairedAt == nil || keyword.Semantic.RepairedAt != baseline.Semantic.RepairedAt {
+		t.Fatalf("keyword scope: %+v", keyword)
+	}
+	if !s.RequestRebuild(memory.SemanticIndex) {
+		t.Fatal("semantic request not queued")
+	}
+	s.checkIndex(ctx)
+	semantic := s.IndexStatus(ctx)
+	if semantic.Semantic.RepairedAt == nil || semantic.Keyword.RepairedAt != keyword.Keyword.RepairedAt {
+		t.Fatalf("semantic scope: %+v", semantic)
+	}
+}
+
 func TestIndexAutoRepairAndLiteralFallback(t *testing.T) {
 	ctx := t.Context()
 	s, err := Open(filepath.Join(t.TempDir(), "memory.db"), testEmbedding{})
@@ -43,7 +70,7 @@ func TestIndexAutoRepairAndLiteralFallback(t *testing.T) {
 	check := func() {
 		t.Helper()
 		status := s.IndexStatus(ctx)
-		if status.State != "ready" || status.Keyword != "ready" || status.Indexed != 1 || status.Skipped != 1 || status.Total != 2 || status.RepairedAt == nil {
+		if status.Semantic.State != "ready" || status.Keyword.State != "ready" || status.Indexed != 1 || status.Skipped != 1 || status.Total != 2 || status.Semantic.RepairedAt == nil || status.Keyword.RepairedAt == nil {
 			t.Fatalf("index status: %+v", status)
 		}
 	}
@@ -51,7 +78,7 @@ func TestIndexAutoRepairAndLiteralFallback(t *testing.T) {
 	if _, err = s.db.ExecContext(ctx, `UPDATE vectors SET vector=X'00' WHERE memory_id=?`, e.ID); err != nil {
 		t.Fatal(err)
 	}
-	if status := s.IndexStatus(ctx); status.State != "degraded" {
+	if status := s.IndexStatus(ctx); status.Semantic.State != "degraded" {
 		t.Fatalf("invalid vector not detected: %+v", status)
 	}
 	if _, err = s.db.ExecContext(ctx, `INSERT INTO memory_fts(memory_fts) VALUES('delete-all')`); err != nil {

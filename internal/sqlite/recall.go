@@ -232,8 +232,16 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 	}
 	semanticOnly := q.Strategy == "semantic" && !pathQuery
 	var queryVec []float32
+	var queryFacets [][]float32
 	if s.embed != nil && !pathQuery && q.Strategy != "lexical" {
 		queryVec = s.embed.Embed(q.Text)
+		if !semanticOnly {
+			for _, text := range questionFacets(q.Text) {
+				if v := s.embed.Embed(text); len(v) > 0 && len(v) == len(queryVec) {
+					queryFacets = append(queryFacets, v)
+				}
+			}
+		}
 	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -310,9 +318,12 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 				}
 				var dot float32
 				for offset := 0; offset < len(b); offset += stride {
-					var score float32
-					for i, x := range queryVec {
-						score += x * math.Float32frombits(binary.LittleEndian.Uint32(b[offset+4*i:]))
+					passage := b[offset : offset+stride]
+					score := vectorDot(queryVec, passage)
+					for _, facet := range queryFacets {
+						if alternative := vectorDot(facet, passage); alternative >= 0.35 {
+							score = max(score, alternative-0.03)
+						}
 					}
 					if score > dot {
 						dot = score
@@ -403,6 +414,36 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 		result.Memories = append(result.Memories, hit)
 	}
 	return result, nil
+}
+
+func vectorDot(query []float32, packed []byte) float32 {
+	var score float32
+	for i, x := range query {
+		score += x * math.Float32frombits(binary.LittleEndian.Uint32(packed[i*4:]))
+	}
+	return score
+}
+
+var questionBreak = strings.NewReplacer("为什么", "|", "怎么", "|", "如何", "|", "多少", "|", "什么", "|", "是否", "|", "能不能", "|", "能否", "|", "有没有", "|", "要不要", "|")
+
+// Keep the original query; these short facets only add stronger topic matches.
+func questionFacets(text string) []string {
+	parts := strings.Split(questionBreak.Replace(text), "|")
+	if len(parts) == 1 {
+		return nil
+	}
+	var out []string
+	for _, p := range parts {
+		p = strings.TrimFunc(p, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsPunct(r) })
+		n := len([]rune(p))
+		if n >= 4 && n <= 36 {
+			out = append(out, p)
+			if len(out) == 2 {
+				break
+			}
+		}
+	}
+	return out
 }
 
 func lexicalCandidates(ctx context.Context, tx *sql.Tx, query string, args ...any) ([]candidate, error) {
