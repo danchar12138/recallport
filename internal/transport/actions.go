@@ -142,7 +142,8 @@ func (h *web) showData(w http.ResponseWriter, r *http.Request, msg, notice strin
 	} else {
 		name = ""
 	}
-	h.render(w, page{View: "data", Error: msg, Notice: notice, Recovery: name, Index: h.store.IndexStatus(r.Context())})
+	index := h.store.IndexStatus(r.Context())
+	h.render(w, page{View: "data", Error: msg, Notice: notice, Recovery: name, Index: index, SearchConfig: searchConfig(index)})
 }
 
 func (h *web) dataPage(w http.ResponseWriter, r *http.Request) {
@@ -232,6 +233,14 @@ func (h *web) rebuild(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid index", http.StatusBadRequest)
 		return
 	}
-	h.store.RequestRebuild(kind)
+	queued := h.store.RequestRebuild(kind)
+	if r.Header.Get("Accept") == "application/json" {
+		if !queued {
+			http.Error(w, "Index is busy or disabled", http.StatusConflict)
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
 	http.Redirect(w, r, "/data?done=index", http.StatusSeeOther)
 }

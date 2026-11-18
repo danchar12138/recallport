@@ -1,5 +1,7 @@
 {{define "data"}}
 <div class="heading"><h1>数据</h1><span class="mode"><span class="dot"></span>本地 SQLite</span></div>
+<nav class="data-tabs" aria-label="数据页面导航"><a href="#search-index">检索状态</a><a href="#search-config">运行参数</a><a href="#backups">备份与恢复</a></nav>
+<div id="data-feedback" class="data-feedback" role="status" hidden></div>
 {{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}{{if .Notice}}<p class="saved" role="status">{{.Notice}}</p>{{end}}
 <section id="search-index" aria-labelledby="index-title" class="index-workspace">
   <header class="index-section-heading"><h2 id="index-title">检索索引</h2><form method="post" action="/reindex" data-busy="正在提交…"><input type="hidden" name="kind" value="all"><button class="btn btn-outline-primary" data-index-rebuild="all"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>全部重建</button></form></header>
@@ -11,7 +13,7 @@
       <form method="post" action="/reindex" data-busy="正在提交…"><input type="hidden" name="kind" value="keyword"><button class="btn btn-outline-primary" data-index-rebuild="keyword"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>重建关键词</button></form>
     </section>
     <section class="index-lane" data-index-lane="semantic" aria-labelledby="semantic-index-title">
-      <header><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量索引</h3><span class="index-engine" id="index-engine">{{if .Index.Model}}SQLite · {{.Index.Dimensions}} 维向量{{else}}未内置模型{{end}}</span></div><span class="badge" data-index-state data-state="{{.Index.Semantic.State}}" role="status"></span></header>
+      <header><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量</h3><span class="index-engine" id="index-engine">{{if .Index.Model}}SQLite · {{.Index.Dimensions}} 维 · 精确扫描{{else}}语义模型未启用{{end}}</span></div><span class="badge" data-index-state data-state="{{.Index.Semantic.State}}" role="status"></span></header>
       <div class="index-coverage" {{if not .Index.Model}}hidden{{end}}><span>向量覆盖 <strong id="index-coverage">{{.Index.Indexed}} / {{.Index.Total}}</strong></span><progress id="index-progress" max="{{if .Index.Total}}{{.Index.Total}}{{else}}1{{end}}" value="{{.Index.Indexed}}" aria-label="语义索引覆盖率"></progress><small id="index-skipped" {{if not .Index.Skipped}}hidden{{end}}>跳过 {{.Index.Skipped}} 条</small></div>
       <dl><div><dt>最近检查</dt><dd data-index-checked>{{if .Index.Semantic.CheckedAt}}{{.Index.Semantic.CheckedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}未检查{{end}}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{{if .Index.Semantic.RepairedAt}}{{.Index.Semantic.RepairedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}无{{end}}</dd></div></dl>
       <details class="index-model-info" {{if not .Index.Model}}hidden{{end}}><summary>模型标识</summary><code id="index-model">{{.Index.Model}}</code></details>
@@ -20,14 +22,19 @@
     </section>
   </div>
 </section>
-<div class="data-list">
+<section id="search-config" class="search-config" aria-labelledby="search-config-title">
+  <header class="index-section-heading"><h2 id="search-config-title">运行参数</h2><span class="mode">只读</span></header>
+  {{range .SearchConfig}}<details class="config-group"><summary>{{.Title}}<svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></summary><dl>{{range .Rows}}<div><dt>{{.Label}}</dt><dd><code>{{.Value}}</code><span>{{.Meaning}}</span></dd></div>{{end}}</dl></details>{{end}}
+</section>
+<div class="data-list" id="backups">
 <section class="data-row"><div><h2>备份</h2><p class="muted">下载当前库的完整快照。运行中的 WAL 数据也会包含在内。</p></div><form method="post" action="/backup"><button class="primary"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载快照</button></form></section>
 <section class="data-row data-restore"><div><h2>从快照恢复</h2><p class="muted">恢复会替换当前记忆，不合并。替换前自动保留当前库的回退快照。</p></div>
-<form method="post" action="/restore" enctype="multipart/form-data" class="restore-form" data-busy="正在恢复…">
-  <label class="check-line"><input type="checkbox" name="confirm" value="yes" required>确认替换当前库</label>
-  <label><span class="sr-only">选择数据库快照</span><input type="file" name="backup" accept=".db,.sqlite,.sqlite3" required></label>
-  <button><svg class="icon" aria-hidden="true"><use href="#upload"/></svg>恢复快照</button>
+<form method="post" action="/restore" enctype="multipart/form-data" class="restore-form" id="restore-form" data-busy="正在恢复…">
+  <label class="check-line" data-fallback-confirm><input type="checkbox" name="confirm" value="yes" required>确认替换当前库</label>
+  <label class="snapshot-picker"><svg class="icon" aria-hidden="true"><use href="#upload"/></svg><span data-snapshot-name>选择备份快照</span><input type="file" name="backup" accept=".db,.sqlite,.sqlite3" aria-label="选择备份快照" required></label>
+  <button class="btn btn-outline-primary"><svg class="icon" aria-hidden="true"><use href="#upload"/></svg>恢复快照</button>
 </form></section>
+<dialog class="operation-dialog" id="restore-confirm" aria-labelledby="restore-title"><form method="dialog"><h2 id="restore-title">恢复此快照？</h2><p data-selected-snapshot></p><p>当前记忆将被替换，并自动保留回退快照。</p><div class="dialog-actions"><button class="btn btn-outline-secondary" value="cancel" autofocus>取消</button><button class="btn btn-danger" value="confirm">确认恢复</button></div></form></dialog>
 {{if .Recovery}}<section class="data-row"><div><h2>最近回退快照</h2><p class="muted">上一次恢复前保留的原库。</p></div><div class="recovery-controls"><a class="button" href="/recovery"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载回退快照</a><details><summary>恢复上一份</summary><form method="post" action="/recovery" class="restore-form" data-busy="正在恢复…"><input type="hidden" name="snapshot" value="{{.Recovery}}"><label class="check-line"><input type="checkbox" name="confirm" value="yes" required>确认替换当前库</label><button>确认回退</button></form></details></div></section>{{end}}
 </div>
 {{end}}

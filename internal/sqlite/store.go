@@ -151,7 +151,10 @@ func (s *Store) Remember(ctx context.Context, actor memory.Actor, d memory.Draft
 	lo, hi, _ := memory.DateRange(d.Occurred)
 	body, _ := json.Marshal(d)
 	h := sha256.Sum256(body)
-	v := s.makeVector(d.Text, d.Context)
+	v, err := s.makeVector(d.Text, d.Context)
+	if err != nil {
+		return memory.Entry{}, err
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return memory.Entry{}, err
@@ -209,7 +212,10 @@ func (s *Store) Edit(ctx context.Context, id string, rev int, d memory.Draft) er
 		return err
 	}
 	lo, hi, _ := memory.DateRange(d.Occurred)
-	v := s.makeVector(d.Text, d.Context)
+	v, err := s.makeVector(d.Text, d.Context)
+	if err != nil {
+		return err
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

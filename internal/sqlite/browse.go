@@ -37,7 +37,7 @@ func (s *Store) Related(ctx context.Context, id string) ([]memory.Hit, error) {
 	if strings.TrimSpace(q) == "" {
 		return nil, nil
 	}
-	res, err := s.Recall(ctx, memory.Query{Text: q, Limit: 20, Strategy: "semantic"})
+	res, err := s.Recall(ctx, memory.Query{Text: q, Limit: 20, Strategy: "semantic", ForRelated: true})
 	if err != nil {
 		return nil, err
 	}

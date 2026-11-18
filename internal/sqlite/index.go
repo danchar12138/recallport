@@ -45,7 +45,7 @@ func (s *Store) scheduleCheck() {
 }
 
 func (s *Store) MaintainIndex(ctx context.Context) {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(memory.MaintenanceSeconds * time.Second)
 	defer ticker.Stop()
 	s.checkIndex(ctx)
 	for {
@@ -163,6 +163,7 @@ func (s *Store) IndexStatus(ctx context.Context) memory.IndexStatus {
 	if s.embed != nil {
 		out.Model = s.embed.ID()
 		out.Dimensions = s.vectorBytes / 4
+		out.Policy = memory.Policy(s.embed)
 	} else {
 		out.Semantic.State = "disabled"
 	}
@@ -176,7 +177,7 @@ func (s *Store) IndexStatus(ctx context.Context) memory.IndexStatus {
 	if s.embed == nil {
 		return out
 	}
-	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FILTER (WHERE length(v.vector)>0), count(*) FILTER (WHERE length(v.vector)=0) FROM vectors v JOIN memories m ON m.id=v.memory_id WHERE v.model=? AND `+validVector, s.indexID(), max(1, s.vectorBytes)).Scan(&out.Indexed, &out.Skipped); err != nil {
+	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FILTER (WHERE length(v.vector)>0), count(*) FILTER (WHERE length(v.vector)=0) FROM vectors v JOIN memories m ON m.id=v.memory_id WHERE v.model=? AND `+validVector, s.indexID(), max(1, s.vectorBytes), s.vectorBytes*memory.MaxPassages).Scan(&out.Indexed, &out.Skipped); err != nil {
 		s.scheduleCheck()
 		indexStatusError(&out.Semantic)
 		return out
@@ -188,7 +189,7 @@ func (s *Store) IndexStatus(ctx context.Context) memory.IndexStatus {
 	return out
 }
 
-const validVector = `typeof(v.vector)='blob' AND length(v.vector) % ?=0 AND length(v.vector)<=9216`
+const validVector = `typeof(v.vector)='blob' AND length(v.vector) % ?=0 AND length(v.vector)<=?`
 
 func indexStatusError(out *memory.IndexHealth) {
 	if out.State == "ready" {

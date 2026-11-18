@@ -7,7 +7,7 @@ RecallPort 是一款即插即用的本地 AI 记忆服务。记忆随日常使�
 
 ## 使用
 
-1. 启动 recallport.exe，在本机 3765 端口打开管理页。无需登录。
+1. 在发布目录启动 `recallport.exe`，在本机 3765 端口打开管理页。不要拆开 exe 和 `model` 目录。无需登录。
 2. 在「接入」复制 MCP 地址，在 AI 客户端中选择 Streamable HTTP，不需要令牌。
 3. 在时间线新建、查阅、筛选、纠错或删除记忆；搜索结果可切换相关性排序和话题时间线。「概览」可按年、月跳转，详情页可维护引用。
 4. 「关系图」按话题和日期筛选，逐页浏览或展开单条记忆的邻居。图里的实线是已保存引用，虚线是按需计算的语义候选，不会写入记忆。
@@ -20,7 +20,9 @@ RecallPort 是一款即插即用的本地 AI 记忆服务。记忆随日常使�
 
 ## 搜索索引
 
-默认混合检索，可切换关键词或语义模式。关键词用 SQLite FTS5，语义向量保存在同一 SQLite 库的 `vectors` 表，由程序在筛选后比较相似度，没有独立向量数据库。「数据」页分别显示状态和维护时间，并提供单独重建或全部重建。启动后自动检查，运行中每分钟复查；关键词索引查询失败时可回退到字面扫描，向量索引不可读时仍可使用字面搜索。修复不修改记忆正文或引用。整个数据库不可读时，应从快照恢复。
+关键词使用 SQLite FTS5，语义使用 IBM Granite 97M Multilingual R2 官方 FP32 ONNX。`vectors` 表保存 384 维向量，查询逐条比较余弦相似度，不使用 HNSW、IVF 或独立向量数据库。切换模型后后台重算旧向量，正文和引用不动。「数据」页显示实际运行参数、覆盖率和维护状态，并支持分别重建。整个数据库不可读时，应从快照恢复。
+
+当前语义相似度门槛为 `0.82`，语义图谱建议用 `0.86`。在 26 条有答案的合成查询和 14 条无答案查询上，`0.82` 保留了 20 条前五命中，挡住了 12 条无答案查询的语义候选。分数不是置信度；混合检索仍会返回独立的关键词结果。
 
 Web 使用 Bootstrap、Flatpickr 和 Cytoscape.js，静态资源随 exe 打包，无 CDN 或 Node.js 运行依赖。依赖许可证在 internal/transport/vendor。
 
@@ -34,14 +36,17 @@ Web 使用 Bootstrap、Flatpickr 和 Cytoscape.js，静态资源随 exe 打包�
 
 ## 结构
 
-记忆核心与端口位于 internal/memory。Web 和 MCP 位于 internal/transport；SQLite 存储和检索在 internal/sqlite；离线向量模型在 internal/embedding。cmd/recallport 负责组装和启动，仍是一个进程、一个 exe、一个主库。
+记忆核心与端口在 `internal/memory`。Web 和 MCP 在 `internal/transport`，SQLite 存储和检索在 `internal/sqlite`，Granite 分词和本机推理在 `internal/granite`。只需运行一个服务进程，使用一份主库。
 
 ## 构建
 
-Windows 上用 Go 1.26 或更新版本运行：
+Windows x64 上用 Go 1.26 或更新版本和 Zig 0.15.2 构建：
 
     ./scripts/build.ps1
 
-构建时校验固定版本的模型，量化后打进 dist/recallport.exe。运行时不需要 Go、联网下载模型或另起推理进程。传入 -LexicalOnly 可构建无模型版。
+产物在 `dist/RecallPort-Granite`。运行不需要 Go、Zig、Python 或联网。ONNX Runtime 需要 Microsoft VC++ x64 运行库：目标机没有时，可在构建时通过 `-VCRedistDir` 指向有再分发权限的 Microsoft CRT 目录，将 DLL 随应用发布。也可用 `recallport.exe serve -lexical-only` 临时只用关键词。
 
-首次从源码构建完整版本时，请从 Hugging Face 的 minishlab/potion-multilingual-128M（MIT）下载 tokenizer.json 和 model.safetensors。固定修订为 73908c3438cf03b6a01bcb9611d62b23d0726f08。将两个文件放入临时目录下的 recallport-model，或通过 -ModelCache 指定目录。构建会校验 SHA-256。使用已构建的 exe 不需要这两个文件。
+构建前准备下列上游原件。脚本校验 SHA-256，不转换、不量化。资产缓存默认 `%TEMP%/recallport-native-compare`，可用 `-AssetCache` 指定：
+
+- Hugging Face `ibm-granite/granite-embedding-97m-multilingual-r2` 修订 `835ad14087e140460703cf0fae09f97d469d65c2`：`onnx/model.onnx` 放到 `granite97/onnx_model.onnx`，`tokenizer.json` 放到 `granite97/tokenizer.json`。
+- PyPI 的 `onnxruntime-1.32.0-cp311-cp311-win_amd64.whl` 放到 `onnxruntime-win-amd64.whl`。只提取官方 Windows DLL 和声明，不发布 Python 包。

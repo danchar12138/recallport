@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"recallport/internal/embedding"
+	"recallport/internal/granite"
 	"recallport/internal/memory"
 	"recallport/internal/sqlite"
 	"recallport/internal/transport"
@@ -57,6 +57,7 @@ func run(args []string, out io.Writer) error {
 		return nil
 	}
 	data := f.String("data-dir", filepath.Join(filepath.Dir(exe), "data"), "private data directory")
+	lexicalOnly := f.Bool("lexical-only", false, "start without semantic recall")
 	port := f.Int("port", 3765, "loopback HTTP port")
 	if err = f.Parse(args); err != nil {
 		return err
@@ -73,11 +74,12 @@ func run(args []string, out io.Writer) error {
 	}
 	defer listener.Close()
 	var embed memory.Embedder
-	model, err := embedding.Open()
-	if err != nil {
-		return err
-	}
-	if model != nil {
+	if !*lexicalOnly {
+		model, err := granite.Open(filepath.Join(filepath.Dir(exe), "model"))
+		if err != nil {
+			return err
+		}
+		defer model.Close()
 		embed = model
 	}
 	store, err := sqlite.Open(filepath.Join(*data, "memory.db"), embed)

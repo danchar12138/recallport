@@ -47,6 +47,7 @@ type page struct {
 	Choices                  []memory.Hit
 	LinkQuery                string
 	Index                    memory.IndexStatus
+	SearchConfig             []configGroup
 	Degraded                 bool
 	Chronological            bool
 	ByDate, ByRank, GraphURL string

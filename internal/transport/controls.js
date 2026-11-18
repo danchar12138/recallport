@@ -79,6 +79,9 @@ if (testMCP) {
 
 const indexPanel = document.getElementById('search-index');
 if (indexPanel) {
+  let timer;
+  const pendingRebuilds = new Set();
+  const feedback = document.getElementById('data-feedback');
   const labels = {ready:'正常', queued:'排队中', working:'处理中', degraded:'部分可用', error:'待修复', unknown:'待检查',disabled:'未启用'};
   const byId = name => document.getElementById('index-'+name);
   const label = (item,state) => {item.dataset.state=state;item.textContent=labels[state] ?? labels.unknown;};
@@ -90,6 +93,7 @@ if (indexPanel) {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
   const poll = async () => {
+    window.clearTimeout(timer);
     let next = 5000;
     try {
       const response = await fetch('/index-status');
@@ -103,18 +107,56 @@ if (indexPanel) {
         lane.querySelector('[data-index-repaired]').textContent=stamp(h.repaired_at,'无');
         lane.querySelector('[data-index-problem]').hidden=!h.problem;
         const pending=h.state==='working'||h.state==='queued';
-        lane.querySelector('[data-index-rebuild]').disabled=pending||h.state==='disabled';
+        lane.querySelector('[data-index-rebuild]').disabled=pending||h.state==='disabled'||pendingRebuilds.has(kind)||pendingRebuilds.has('all');
         busy ||= pending;
       }
-      indexPanel.querySelector('[data-index-rebuild="all"]').disabled=busy;
+      indexPanel.querySelector('[data-index-rebuild="all"]').disabled=busy||pendingRebuilds.size>0;
       byId('coverage').textContent = `${s.indexed} / ${s.total}`;
       byId('progress').max = Math.max(s.total,1); byId('progress').value = s.indexed;
       byId('skipped').hidden = !s.skipped; byId('skipped').textContent = `跳过 ${s.skipped} 条`;
       if (busy) next=750;
     } catch { for (const lane of lanes) lane.querySelector('[data-index-problem]').hidden=false; }
-    window.setTimeout(poll,next);
+    timer=window.setTimeout(poll,next);
   };
+  for (const button of indexPanel.querySelectorAll('[data-index-rebuild]')) {
+    const form=button.form;
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const kind=button.dataset.indexRebuild;
+      if (pendingRebuilds.has(kind)) return;
+      pendingRebuilds.add(kind);button.disabled=true;
+      try {
+        const res=await fetch(form.action,{method:'POST',headers:{Accept:'application/json'},body:new URLSearchParams({kind})});
+        feedback.textContent=res.ok ? '重建任务已提交' : res.status===409 ? '索引正在维护或未启用' : '无法提交重建任务';
+        feedback.dataset.error=String(!res.ok);
+      } catch {feedback.textContent='无法连接本地服务';feedback.dataset.error='true';}
+      finally {feedback.hidden=false;pendingRebuilds.delete(kind);poll();}
+    });
+  }
   poll();
+}
+
+const restoreForm = document.getElementById('restore-form');
+const restoreDialog = document.getElementById('restore-confirm');
+if (restoreForm && restoreDialog?.showModal) {
+  const file=restoreForm.elements.backup, confirm=restoreForm.elements.confirm;
+  confirm.required=false;
+  restoreForm.querySelector('[data-fallback-confirm]').hidden=true;
+  file.addEventListener('change',()=>{
+    confirm.checked=false;
+    restoreForm.querySelector('[data-snapshot-name]').textContent=file.files[0]?.name || '选择备份快照';
+  });
+  restoreForm.addEventListener('submit',event=>{
+    if (confirm.checked) return;
+    event.preventDefault();
+    restoreDialog.returnValue='cancel';
+    restoreDialog.querySelector('[data-selected-snapshot]').textContent=file.files[0].name;
+    restoreDialog.showModal();
+  });
+  restoreDialog.addEventListener('close',()=>{
+    if (restoreDialog.returnValue==='confirm') {confirm.checked=true;restoreForm.requestSubmit();}
+  });
+  window.addEventListener('pageshow',()=>{confirm.checked=false;});
 }
 
 for (const field of document.querySelectorAll('[data-date-control]')) {
@@ -143,7 +185,8 @@ if (linkPicker) {
 for (const form of document.querySelectorAll('form[data-busy]')) {
   const button = form.querySelector('button');
   const initial = button.innerHTML;
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', event => {
+    if (event.defaultPrevented) return;
     button.disabled = true;
     button.textContent = form.dataset.busy;
   });

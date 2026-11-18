@@ -9,6 +9,54 @@ import (
 
 type testEmbedding struct{}
 
+type graniteTestEmbedding struct{}
+
+func (graniteTestEmbedding) ID() string { return "granite-test-384" }
+func (graniteTestEmbedding) Embed(s string) []float32 {
+	v := make([]float32, 384)
+	v[0] = 1
+	return v
+}
+
+func TestMigrationRebuildsWideVectors(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "memory.db")
+	old, err := Open(path, testEmbedding{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	actor := memory.Actor{ID: "test", Label: "test"}
+	first, err := old.Remember(ctx, actor, memory.Draft{Text: "Original linked memory"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry, err := old.Remember(ctx, actor, memory.Draft{Text: "number one passage; number two passage; number three passage; number four passage; number five passage; number six passage; number seven passage; number eight passage", References: []memory.Reference{{ID: first.ID}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = old.Close(); err != nil {
+		t.Fatal(err)
+	}
+	next, err := Open(path, graniteTestEmbedding{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer next.Close()
+	next.checkIndex(ctx)
+	status := next.IndexStatus(ctx)
+	if status.Semantic.State != "ready" || status.Indexed != 2 || status.Dimensions != 384 {
+		t.Fatalf("index repair: %+v", status)
+	}
+	var size int
+	if err = next.db.QueryRowContext(ctx, "SELECT length(vector) FROM vectors WHERE memory_id=?", entry.ID).Scan(&size); err != nil || size != 384*4*memory.MaxPassages {
+		t.Fatalf("vector size=%d, error=%v", size, err)
+	}
+	got, err := next.Read(ctx, entry.ID)
+	if err != nil || got.Text != entry.Text || len(got.References) != 1 || got.References[0].ID != first.ID {
+		t.Fatalf("memory after migration: %+v (%v)", got, err)
+	}
+}
+
 func (testEmbedding) ID() string { return "test-index" }
 func (testEmbedding) Embed(text string) []float32 {
 	if text == "!\n" {

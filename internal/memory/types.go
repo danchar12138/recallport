@@ -45,13 +45,14 @@ type Draft struct {
 }
 
 type Query struct {
-	Text     string `json:"query,omitempty" jsonschema:"A topic, phrase, or current situation to recall"`
-	From     string `json:"from,omitempty" jsonschema:"Earliest occurrence (YYYY, YYYY-MM, or YYYY-MM-DD)"`
-	Through  string `json:"through,omitempty" jsonschema:"Latest occurrence (YYYY, YYYY-MM, or YYYY-MM-DD)"`
-	Limit    int    `json:"limit,omitempty" jsonschema:"Maximum number of distinct experiences, between 1 and 30"`
-	Strategy string `json:"strategy,omitempty" jsonschema:"Search strategy: hybrid (default), lexical, or semantic"`
-	Undated  bool   `json:"-"`
-	Period   string `json:"-"`
+	Text       string `json:"query,omitempty" jsonschema:"A topic, phrase, or current situation to recall"`
+	From       string `json:"from,omitempty" jsonschema:"Earliest occurrence (YYYY, YYYY-MM, or YYYY-MM-DD)"`
+	Through    string `json:"through,omitempty" jsonschema:"Latest occurrence (YYYY, YYYY-MM, or YYYY-MM-DD)"`
+	Limit      int    `json:"limit,omitempty" jsonschema:"Maximum number of distinct experiences, between 1 and 30"`
+	Strategy   string `json:"strategy,omitempty" jsonschema:"Search strategy: hybrid (default), lexical, or semantic"`
+	Undated    bool   `json:"-"`
+	Period     string `json:"-"`
+	ForRelated bool   `json:"-"`
 }
 
 type Hit struct {

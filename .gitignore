@@ -9,4 +9,7 @@
 *.sqlite
 *.sqlite3
 *.safetensors
+*.onnx
+*.dll
+*.whl
 owner.key

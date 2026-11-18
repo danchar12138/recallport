@@ -13,25 +13,29 @@ import (
 	"recallport/internal/memory"
 )
 
-func (s *Store) makeVector(text, circumstances string) []byte {
+func (s *Store) makeVector(text, circumstances string) ([]byte, error) {
 	if s.embed == nil {
-		return nil
+		return nil, nil
 	}
 	text += "\n" + circumstances
 	parts := []string{text}
 	for _, fragment := range strings.FieldsFunc(text, func(r rune) bool { return strings.ContainsRune("\n。！？；，.!?;,", r) }) {
 		fragment = strings.TrimSpace(fragment)
-		if len([]rune(fragment)) >= 7 && len(parts) < 9 {
+		if len([]rune(fragment)) >= memory.MinPassageRunes && len(parts) < memory.MaxPassages {
 			parts = append(parts, fragment)
 		}
 	}
 	var b []byte
 	for _, part := range parts {
-		for _, x := range s.embed.Embed(part) {
+		vec, err := memory.Encode(s.embed, part)
+		if err != nil {
+			return nil, err
+		}
+		for _, x := range vec {
 			b = binary.LittleEndian.AppendUint32(b, math.Float32bits(x))
 		}
 	}
-	return b
+	return b, nil
 }
 
 func (s *Store) indexID() string { return s.embed.ID() + "/passages-v1" }
@@ -53,7 +57,7 @@ func (s *Store) reindex(ctx context.Context, force bool) (int, error) {
 	var rebuilt int
 	var after int64
 	for {
-		rows, err := s.db.QueryContext(ctx, `SELECT m.rowid,m.id,m.body,m.circumstances,m.revision FROM memories m LEFT JOIN vectors v ON v.memory_id=m.id WHERE m.rowid>? AND (? OR v.model IS NULL OR v.model<>? OR NOT (`+validVector+`)) ORDER BY m.rowid LIMIT 64`, after, force, s.indexID(), max(1, s.vectorBytes))
+		rows, err := s.db.QueryContext(ctx, `SELECT m.rowid,m.id,m.body,m.circumstances,m.revision FROM memories m LEFT JOIN vectors v ON v.memory_id=m.id WHERE m.rowid>? AND (? OR v.model IS NULL OR v.model<>? OR NOT (`+validVector+`)) ORDER BY m.rowid LIMIT ?`, after, force, s.indexID(), max(1, s.vectorBytes), s.vectorBytes*memory.MaxPassages, memory.RebuildBatchSize)
 		if err != nil {
 			return rebuilt, err
 		}
@@ -75,7 +79,10 @@ func (s *Store) reindex(ctx context.Context, force bool) (int, error) {
 			return rebuilt, nil
 		}
 		for _, e := range group {
-			v := s.makeVector(e.Text, e.Context)
+			v, err := s.makeVector(e.Text, e.Context)
+			if err != nil {
+				return rebuilt, err
+			}
 			_, err = s.db.ExecContext(ctx, `INSERT INTO vectors SELECT id,?,coalesce(?,X'') FROM memories WHERE id=? AND revision=? ON CONFLICT(memory_id) DO UPDATE SET model=excluded.model,vector=excluded.vector`, s.indexID(), v, e.ID, e.Revision)
 			if err != nil {
 				return rebuilt, err
@@ -174,7 +181,7 @@ func lexicalTerms(q string) string {
 	terms := []string{}
 	seen := map[string]bool{}
 	add := func(s string) {
-		if len([]rune(s)) >= 3 && !seen[s] && len(terms) < 36 {
+		if len([]rune(s)) >= 3 && !seen[s] && len(terms) < memory.LexicalTermLimit {
 			seen[s] = true
 			terms = append(terms, `"`+strings.ReplaceAll(s, `"`, `""`)+`"`)
 		}
@@ -200,24 +207,24 @@ type candidate struct {
 
 func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, error) {
 	q.Text = strings.TrimSpace(q.Text)
-	if q.Limit < 0 || q.Limit > 30 {
+	if q.Limit < 0 || q.Limit > memory.MaxRecallLimit {
 		return memory.Results{}, fmt.Errorf("%w: limit must be 1-30", memory.ErrInvalid)
 	}
 	if q.Text == "" {
 		if q.Limit <= 0 {
-			q.Limit = 8
+			q.Limit = memory.DefaultRecallLimit
 		}
 		return s.Timeline(ctx, q, 0)
 	}
 	result := memory.Results{Memories: []memory.Hit{}, Mode: "lexical"}
-	if len([]rune(q.Text)) > 600 {
+	if len([]rune(q.Text)) > memory.MaxQueryRunes {
 		return result, fmt.Errorf("%w: query exceeds 600 characters", memory.ErrInvalid)
 	}
 	limit := q.Limit
 	if limit == 0 {
-		limit = 8
+		limit = memory.DefaultRecallLimit
 	}
-	if limit < 1 || limit > 30 {
+	if limit < 1 || limit > memory.MaxRecallLimit {
 		return result, fmt.Errorf("%w: limit must be 1-30", memory.ErrInvalid)
 	}
 	cond, dates, err := timeFilter(q)
@@ -231,11 +238,20 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 		return result, fmt.Errorf("%w: unknown search strategy", memory.ErrInvalid)
 	}
 	semanticOnly := q.Strategy == "semantic" && !pathQuery
+	policy := memory.Policy(s.embed)
+	threshold := policy.SemanticThreshold
+	if q.ForRelated {
+		threshold = policy.GraphThreshold
+	}
 	var queryVec []float32
 	var queryFacets [][]float32
 	if s.embed != nil && !pathQuery && q.Strategy != "lexical" {
-		queryVec = s.embed.Embed(q.Text)
-		if !semanticOnly {
+		queryVec, err = memory.Encode(s.embed, q.Text)
+		if err != nil {
+			result.Degraded = true
+		}
+		// The old static model used a separately tuned short-phrase expansion.
+		if !semanticOnly && policy.MaxTokens == 0 && err == nil {
 			for _, text := range questionFacets(q.Text) {
 				if v := s.embed.Embed(text); len(v) > 0 && len(v) == len(queryVec) {
 					queryFacets = append(queryFacets, v)
@@ -266,20 +282,21 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 		var hits []candidate
 		var err error
 		if phrase != "" {
-			hits, err = lexicalCandidates(ctx, tx, `SELECT m.id,(instr(lower(m.body),lower(?))>0 OR instr(lower(m.circumstances),lower(?))>0) exact FROM memory_fts JOIN memories m ON m.rowid=memory_fts.rowid WHERE memory_fts MATCH ?`+cond+` ORDER BY exact DESC,bm25(memory_fts,1.0,0.6),m.id LIMIT 120`, append([]any{q.Text, q.Text, phrase}, dates...)...)
+			args := append([]any{q.Text, q.Text, phrase}, dates...)
+			hits, err = lexicalCandidates(ctx, tx, `SELECT m.id,(instr(lower(m.body),lower(?))>0 OR instr(lower(m.circumstances),lower(?))>0) exact FROM memory_fts JOIN memories m ON m.rowid=memory_fts.rowid WHERE memory_fts MATCH ?`+cond+` ORDER BY exact DESC,bm25(memory_fts,?,?),m.id LIMIT ?`, append(args, memory.BodyWeight, memory.ContextWeight, memory.CandidateLimit)...)
 		}
 		if err != nil {
 			s.scheduleCheck()
 			result.Degraded = true
 		}
 		if phrase == "" || err != nil {
-			hits, err = lexicalCandidates(ctx, tx, `SELECT m.id,1 FROM memories m WHERE (instr(lower(m.body),lower(?))>0 OR instr(lower(m.circumstances),lower(?))>0)`+cond+chrono+` LIMIT 120`, append([]any{q.Text, q.Text}, dates...)...)
+			hits, err = lexicalCandidates(ctx, tx, `SELECT m.id,1 FROM memories m WHERE (instr(lower(m.body),lower(?))>0 OR instr(lower(m.circumstances),lower(?))>0)`+cond+chrono+` LIMIT ?`, append(append([]any{q.Text, q.Text}, dates...), memory.CandidateLimit)...)
 		}
 		if err != nil {
 			return err
 		}
 		for i, h := range hits {
-			add(h.id, 1/float64(45+i), h.exact)
+			add(h.id, memory.LexicalWeight/float64(memory.FusionOffset+i), h.exact)
 		}
 		return nil
 	}
@@ -307,7 +324,7 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 				if len(b) == 0 {
 					continue
 				}
-				if len(b)%stride != 0 || len(b) > stride*9 {
+				if len(b)%stride != 0 || len(b) > stride*memory.MaxPassages {
 					s.scheduleCheck()
 					result.Degraded = true
 					continue
@@ -329,20 +346,20 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 						dot = score
 					}
 				}
-				if dot < 0.32 {
+				if dot < threshold {
 					continue
 				}
 				at := sort.Search(len(best), func(i int) bool {
 					return best[i].rank < float64(dot) || (best[i].rank == float64(dot) && best[i].id > id)
 				})
-				if at >= 120 {
+				if at >= memory.CandidateLimit {
 					continue
 				}
 				best = append(best, candidate{})
 				copy(best[at+1:], best[at:])
 				best[at] = candidate{id: id, rank: float64(dot)}
-				if len(best) > 120 {
-					best = best[:120]
+				if len(best) > memory.CandidateLimit {
+					best = best[:memory.CandidateLimit]
 				}
 			}
 			err = rows.Err()
@@ -352,7 +369,7 @@ func (s *Store) Recall(ctx context.Context, q memory.Query) (memory.Results, err
 				result.Degraded = true
 			}
 			for i, c := range best {
-				add(c.id, 0.9/float64(45+i), false)
+				add(c.id, memory.SemanticWeight/float64(memory.FusionOffset+i), false)
 			}
 		}
 	}

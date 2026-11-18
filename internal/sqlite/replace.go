@@ -97,7 +97,12 @@ func (s *Store) Replace(ctx context.Context, input io.Reader) error {
 			rows.Close()
 			return err
 		}
-		if err = s.setVector(ctx, tx, m.ID, s.makeVector(m.Text, m.Context)); err != nil {
+		vectors, err := s.makeVector(m.Text, m.Context)
+		if err != nil {
+			rows.Close()
+			return err
+		}
+		if err = s.setVector(ctx, tx, m.ID, vectors); err != nil {
 			rows.Close()
 			return err
 		}

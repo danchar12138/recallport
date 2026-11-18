@@ -57,13 +57,14 @@ type IndexHealth struct {
 }
 
 type IndexStatus struct {
-	Keyword    IndexHealth `json:"keyword"`
-	Semantic   IndexHealth `json:"semantic"`
-	Model      string      `json:"model"`
-	Indexed    int         `json:"indexed"`
-	Total      int         `json:"total"`
-	Skipped    int         `json:"skipped"`
-	Dimensions int         `json:"dimensions"`
+	Keyword    IndexHealth  `json:"keyword"`
+	Semantic   IndexHealth  `json:"semantic"`
+	Model      string       `json:"model"`
+	Indexed    int          `json:"indexed"`
+	Total      int          `json:"total"`
+	Skipped    int          `json:"skipped"`
+	Dimensions int          `json:"dimensions"`
+	Policy     SearchPolicy `json:"policy"`
 }
 
 type Repository interface {
