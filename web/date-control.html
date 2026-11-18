@@ -1,0 +1,8 @@
+{% macro date_control(arg) %}
+<fieldset class="date-control" data-date-control><legend>发生日期</legend><div class="date-type">
+  <label><span class="sr-only">日期精度</span><select name="precision"><option value="unknown" {% if ((arg|length)) == 0 %}selected{% endif %}>未记日期</option><option value="day" {% if ((arg|length)) == 10 %}selected{% endif %}>具体日期</option><option value="month" {% if ((arg|length)) == 7 %}selected{% endif %}>仅年月</option><option value="year" {% if ((arg|length)) == 4 %}selected{% endif %}>仅年份</option></select></label>
+  <label data-unit="day"><span class="sr-only">具体日期</span><input class="form-control" data-calendar type="text" name="occurred_day" value="{% if ((arg|length)) == 10 %}{{ arg }}{% endif %}" placeholder="YYYY-MM-DD" maxlength="10"></label>
+  <label data-unit="month"><span class="sr-only">年月</span><input class="form-control" type="text" inputmode="decimal" name="occurred_month" value="{% if ((arg|length)) == 7 %}{{ arg }}{% endif %}" placeholder="YYYY-MM" maxlength="7"></label>
+  <label data-unit="year"><span class="sr-only">年份</span><input type="number" name="occurred_year" min="1" max="9999" placeholder="YYYY" value="{% if ((arg|length)) == 4 %}{{ arg }}{% endif %}"></label>
+</div></fieldset>
+{% endmacro %}

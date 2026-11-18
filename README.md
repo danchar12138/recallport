@@ -20,31 +20,29 @@ RecallPort 是一款即插即用的本地 AI 记忆服务。记忆随日常使�
 
 ## 搜索索引
 
-关键词使用 SQLite FTS5，语义使用 IBM Granite 97M Multilingual R2 官方 FP32 ONNX。`vectors` 表保存 384 维向量，查询逐条比较余弦相似度，不使用 HNSW、IVF 或独立向量数据库。切换模型后后台重算旧向量，正文和引用不动。「数据」页显示实际运行参数、覆盖率和维护状态，并支持分别重建。整个数据库不可读时，应从快照恢复。
+LanceDB 负责两路候选检索：关键词使用 BM25、Jieba 和中文双字切片；语义使用 IBM Granite 97M Multilingual R2 官方 FP32 ONNX。整条记忆及其片段各自编码为 384 维向量，以最匹配片段的余弦相似度入选。库小则精确搜索，至少 256 条已编码记忆时自动建立 IVF-HNSW-Flat 近似索引，不量化向量。
 
-当前语义相似度门槛为 `0.82`，语义图谱建议用 `0.86`。在 26 条有答案的合成查询和 14 条无答案查询上，`0.82` 保留了 20 条前五命中，挡住了 12 条无答案查询的语义候选。分数不是置信度；混合检索仍会返回独立的关键词结果。
+语义候选门槛为 `0.80`，图谱建议为 `0.86`；它们不是置信度或两路占比。关键词及语义独立入选、按排名融合，字面精确命中优先。「数据」页显示当前运行参数、覆盖率和实际启用的索引，并支持分别重建。
 
-Web 使用 Bootstrap、Flatpickr 和 Cytoscape.js，静态资源随 exe 打包，无 CDN 或 Node.js 运行依赖。依赖许可证在 internal/transport/vendor。
-
-从源码对照原始与量化权重时，可将 `RECALLPORT_FLOAT_WEIGHTS` 指向固定版本的 `model.safetensors`，然后运行 `go test -tags model -run TestQuantizationComparison -v ./internal/embedding`。该对照使用合成数据和相同的分词、检索逻辑，不读取个人记忆库。
+Web 使用 Bootstrap、Flatpickr 和 Cytoscape.js，静态资源随 exe 打包，无 CDN 或 Node.js 运行依赖。Web 依赖许可证在 `web/vendor`。
 
 ## 备份与恢复
 
-在 Web 的「数据」页点击「下载快照」。恢复时，在同页选择快照并确认。恢复会替换当前库，不会合并；程序先保留替换前的快照，再恢复记忆和引用并重建索引，无需重启。最近的回退快照可在同页下载或直接恢复。
+在 Web 的「数据」页点击「下载备份」。`.recallport.json` 包含正文、时间、来源、引用和写入去重记录，不依赖某个 LanceDB 版本或模型文件。恢复时，在同页选择备份并确认。恢复会替换当前库，不会合并；程序保留替换前的备份，并重建派生索引，无需重启。最近的回退备份可在同页下载或恢复。
 
-请使用可信的 RecallPort 快照，不要在服务运行时单独复制数据库文件代替快照。旧快照可能包含之后已删除的记忆。
+搬迁优先使用 Web 备份；也可停止服务后搬动整个便携目录。不要在写入时单独复制库内文件。备份是明文，可能包含之后已删除的记忆，不应上传到公开位置。
 
 ## 结构
 
-记忆核心与端口在 `internal/memory`。Web 和 MCP 在 `internal/transport`，SQLite 存储和检索在 `internal/sqlite`，Granite 分词和本机推理在 `internal/granite`。只需运行一个服务进程，使用一份主库。
+`src/memory.rs` 定义记忆模型，`src/store.rs` 管理 LanceDB 存储、检索和备份，`src/embedding.rs` 封装本机模型，`src/web.rs` 和 `src/mcp.rs` 分别提供 Web 和 MCP 接口。只运行一个服务进程，主库在便携目录的 `data/recallport.lance`。正文、出向引用和写入去重键在同一行提交。
 
 ## 构建
 
-Windows x64 上用 Go 1.26 或更新版本和 Zig 0.15.2 构建：
+Windows x64 构建环境需要 Rust 1.94 或更新版本、MSVC x64 构建工具、Windows SDK 和 `protoc`。安装 `x86_64-pc-windows-msvc` Rust target，再运行：
 
     ./scripts/build.ps1
 
-产物在 `dist/RecallPort-Granite`。运行不需要 Go、Zig、Python 或联网。ONNX Runtime 需要 Microsoft VC++ x64 运行库：目标机没有时，可在构建时通过 `-VCRedistDir` 指向有再分发权限的 Microsoft CRT 目录，将 DLL 随应用发布。也可用 `recallport.exe serve -lexical-only` 临时只用关键词。
+产物在 `dist/RecallPort`。脚本从构建环境定位可随应用分发的 Microsoft x64 CRT，或通过 `-VCRedistDir` 指定目录。打包后无需安装开发工具或联网。`recallport.exe --lexical-only` 可临时关闭本地语义模型。模型文件、记忆和备份不提交到 Git。
 
 构建前准备下列上游原件。脚本校验 SHA-256，不转换、不量化。资产缓存默认 `%TEMP%/recallport-native-compare`，可用 `-AssetCache` 指定：
 

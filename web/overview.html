@@ -1,0 +1,12 @@
+<div class="heading"><h1>记忆概览</h1><a class="button" href="/">查看时间线<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a></div>
+{% if Error %}<p class="error" role="alert">{{ Error }}</p>{% endif %}
+<div class="overview-stats"><div><span>全部记忆</span><strong>{{ Total }}</strong></div><div><span>记录年份</span><strong>{{ (Years|length) }}</strong></div><a href="/?undated=1"><span>日期未记</span><strong>{{ Unknown }} <svg class="icon" aria-hidden="true"><use href="#right"/></svg></strong></a></div>
+<section class="years" aria-label="按年、月浏览记忆">
+{% for r0 in Years %}
+<section class="year"><h2><a href="{{ r0.URL }}"><span>{{ r0.Year }}</span><span class="muted">{{ r0.Count }} 条 <svg class="icon" aria-hidden="true"><use href="#right"/></svg></span></a></h2>
+<div class="months">{% for r1 in r0.Months %}
+{% if r1.Count %}<a class="month active" href="{{ r1.URL }}" aria-label="{{ r1.Label }}：{{ r1.Count }} 条" title="{{ r1.Label }}：{{ r1.Count }} 条"><span>{{ r1.Label }}</span><meter min="0" max="{{ r1.Max }}" value="{{ r1.Count }}" aria-label="{{ r1.Label }}数量"></meter><strong>{{ r1.Count }}</strong></a>
+{% else %}<div class="month"><span>{{ r1.Label }}</span><span class="month-track"></span><span>0</span></div>{% endif %}
+{% endfor %}</div></section>
+{% else %}<div class="empty"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg><p>暂无已知日期的记忆</p></div>{% endfor %}
+</section>

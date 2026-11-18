@@ -1,0 +1,16 @@
+<section class="relation-section" id="relations">
+<div class="section-heading"><h2>这段记忆的关联</h2><a href="#add-link">添加引用</a></div>
+{% include "graph-canvas.html" %}
+<div class="relation-map">
+<div class="relation-column"><h3><span class="edge-dot incoming"></span>被引用 <span class="muted">{{ (Incoming|length) }}</span></h3>
+{% for r0 in Incoming %}<article class="relation-node"><a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a>{% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p>{{ r0.Reason }}</p>{% endif %}</article>{% else %}<p class="muted">暂无引用来源</p>{% endfor %}</div>
+<div class="focus-node"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><strong>当前记忆</strong>{% if Entry.Occurred %}<time>{{ Entry.Occurred }}</time>{% endif %}</div>
+<div class="relation-column"><h3><span class="edge-dot outgoing"></span>引用了 <span class="muted">{{ (Outgoing|length) }}</span></h3>
+{% for r0 in Outgoing %}<article class="relation-node"><div class="node-line"><a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a><form method="post" action="/memory/{{ Entry.ID }}/links"><input type="hidden" name="target" value="{{ r0.ID }}"><input type="hidden" name="back" value="{{ Back }}"><button class="quiet icon-button" name="action" value="remove" title="移除引用" aria-label="移除引用"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg></button></form></div>{% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p>{{ r0.Reason }}</p>{% endif %}</article>{% else %}<p class="muted">暂无引用</p>{% endfor %}</div>
+</div>
+<details id="add-link" class="link-picker" {% if LinkQuery %}open{% endif %}>
+<summary>添加或更新引用</summary>
+<form method="get" action="/memory/{{ Entry.ID }}#add-link" class="inline-controls"><input type="hidden" name="back" value="{{ Back }}"><input type="search" name="find" value="{{ LinkQuery }}" placeholder="搜索目标记忆" aria-label="搜索目标记忆" maxlength="600"><button>搜索</button></form>
+{% if Choices %}<form method="post" action="/memory/{{ Entry.ID }}/links" class="pick-form"><input type="hidden" name="back" value="{{ Back }}"><label>目标<select name="target" required><option value="">选择记忆</option>{% for r1 in Choices %}<option value="{{ r1.ID }}">{% if r1.Occurred %}{{ r1.Occurred }} · {% endif %}{{ r1.Text }}</option>{% endfor %}</select></label><label>关联说明<input name="reason" maxlength="260"></label><button><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>保存引用</button></form>{% else %}<p class="muted">没有其他记忆可引用。</p>{% endif %}
+</details>
+</section>

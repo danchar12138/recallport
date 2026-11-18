@@ -1,0 +1,14 @@
+<section class="graph-workspace" data-graph {% if View == "detail" %}data-focus="{{ Entry.ID }}" data-back="{{ Back }}"{% endif %} aria-label="记忆关联图">
+  <div class="graph-toolbar">
+    <div class="graph-legend"><span><i></i>明确引用</span>{% if Semantic %}<label><input type="checkbox" data-graph-suggestions><i class="dashed"></i>语义相似</label>{% endif %}</div>
+    <div class="graph-actions" aria-label="视图工具"><button type="button" data-graph-action="out" title="缩小" aria-label="缩小"><svg class="icon" aria-hidden="true"><use href="#minus"/></svg></button><button type="button" data-graph-action="in" title="放大" aria-label="放大"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg></button><button type="button" data-graph-action="fit" title="适合窗口" aria-label="适合窗口"><svg class="icon" aria-hidden="true"><use href="#scan"/></svg></button><button type="button" data-graph-action="reset" title="重置图" aria-label="重置图"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg></button></div>
+  </div>
+  <div class="graph-body">
+    <div class="graph-stage"><div class="graph-canvas" data-graph-canvas aria-hidden="true"></div><div class="graph-message" data-graph-message role="status">正在加载关系图…</div><noscript>关系图需要 JavaScript。</noscript></div>
+    <aside class="graph-inspector" aria-label="当前节点">
+      <label>记忆节点<select data-graph-select><option value="">选择记忆</option></select></label>
+      <div class="graph-selection" data-graph-selection hidden><p class="graph-meta" data-graph-meta></p><p class="graph-text" data-graph-text></p><p class="graph-edge-reason" data-graph-edge-reason hidden></p><div class="graph-inspector-actions"><a class="button" data-graph-open>查看原文</a><button type="button" data-graph-expand>展开邻居</button></div></div>
+    </aside>
+  </div>
+  <div class="graph-footer"><span data-graph-status aria-live="polite"></span>{% if View == "graph" %}<nav aria-label="图谱分页"><button type="button" data-graph-prev>上一页</button><button type="button" data-graph-next>下一页</button></nav>{% endif %}</div>
+</section>

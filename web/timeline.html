@@ -1,0 +1,32 @@
+<div class="heading"><div class="titleline"><h1>时间线</h1><span class="mode"><span class="dot"></span>{% if Semantic %}本地混合召回{% else %}本地关键词{% endif %}</span></div><a class="button primary" href="/memory/new?back={{ Back | urlencode }}"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>新建记忆</a></div>
+  <form method="get" action="/" class="filters search-workbench">
+    {% if Chronological %}<input type="hidden" name="order" value="date">{% endif %}
+    {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
+    <div class="searchbar"><label class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input class="form-control" type="search" aria-label="回忆" name="q" value="{{ Query.Text }}" placeholder="搜索记忆" maxlength="600"></label><button class="btn btn-primary primary">查找</button></div>
+    <div class="search-options"><fieldset class="btn-group modes" aria-label="检索模式">
+      <input class="btn-check" type="radio" name="strategy" id="hybrid" value="hybrid" {% if (Query.Strategy == "") or (Query.Strategy == "hybrid") %}checked{% endif %}><label class="btn btn-outline-primary" for="hybrid">混合</label>
+      <input class="btn-check" type="radio" name="strategy" id="lexical" value="lexical" {% if Query.Strategy == "lexical" %}checked{% endif %}><label class="btn btn-outline-primary" for="lexical">关键词</label>
+      <input class="btn-check" type="radio" name="strategy" id="semantic" value="semantic" {% if Query.Strategy == "semantic" %}checked{% endif %} {% if not Semantic %}disabled{% endif %}><label class="btn btn-outline-primary" for="semantic">语义</label>
+    </fieldset></div>
+    <div class="filterline"><details class="date-filter" {% if Query.From or Query.Through %}open{% endif %}>
+      <summary><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>发生时间<svg class="icon chevron" aria-hidden="true"><use href="#chevron"/></svg></summary>
+      <div class="date-fields"><label>从<input class="form-control" data-calendar type="text" placeholder="YYYY-MM-DD" name="from" value="{{ Query.From }}" maxlength="10"></label><label>至<input class="form-control" data-calendar type="text" placeholder="YYYY-MM-DD" name="through" value="{{ Query.Through }}" maxlength="10"></label><button class="btn btn-outline-secondary">应用日期</button></div>
+    </details>{% if Period %}<span class="clear">{{ Period }}</span>{% endif %}{% if Undated %}<span class="clear">日期未记</span>{% endif %}{% if Query.Text or Query.From or Query.Through or Period or Undated %}<a class="clear" href="/">清除筛选</a>{% endif %}</div>
+  </form>
+  {% if Error %}<p class="error" role="alert">{{ Error }}</p>{% else %}
+  {% if Degraded %}<p class="alert alert-warning py-2" role="status">部分搜索索引暂不可用。正在使用可用的检索方式。</p>{% endif %}
+  {% if Query.Text %}<div class="search-result-bar"><h2>回忆结果 <span>{{ (Rows|length) }}{% if More %}+{% endif %}</span></h2><div class="result-tools"><nav class="result-order" aria-label="结果排序"><a href="{{ ByRank }}" {% if not Chronological %}aria-current="page"{% endif %}>相关性</a><a href="{{ ByDate }}" {% if Chronological %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>时间线</a></nav><a class="button" href="{{ GraphURL }}"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a></div></div>{% endif %}
+  <section class="memory-stream {% if Chronological %}topic-stream{% endif %}" aria-label="记忆列表">
+  {% for r1 in Rows %}
+    {% if r1.Period %}<h2 class="period timeline-period">{{ r1.Period }}</h2>{% endif %}
+    <article class="entry">
+      <div class="date">{% if r1.Occurred %}<time>{{ r1.Occurred }}</time>{% else %}日期未记{% endif %}</div>
+      <div class="excerpt"><a class="entry-link" href="/memory/{{ r1.ID }}?back={{ Back | urlencode }}"><span>{{ r1.Text }}</span><svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>
+        {% if r1.Context %}<p class="context">{{ r1.Context }}</p>{% endif %}<p class="meta">{{ r1.Source }}</p>
+        {% if r1.Accounts %}<details class="accounts"><summary>同一经历的其他记录 <span>{{ (r1.Accounts|length) }}</span></summary><ul>{% for r3 in r1.Accounts %}<li><a href="/memory/{{ r3.ID }}?back={{ Back | urlencode }}">{{ r3.Text }}</a><span class="meta"> · {{ r3.Source }}</span></li>{% endfor %}</ul></details>{% endif %}
+      </div>
+    </article>
+  {% else %}<div class="empty"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><p>{% if Query.Text or Query.From or Query.Through or Period or Undated %}没有匹配的记忆{% else %}暂无记忆{% endif %}</p></div>{% endfor %}
+  </section>
+  {% if Prev or Next %}<nav class="pagination" aria-label="分页">{% if Prev %}<a class="button" href="{{ Prev }}">上一页</a>{% endif %}{% if Next %}<a class="button" href="{{ Next }}">下一页<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>{% endif %}</nav>{% endif %}
+  {% endif %}

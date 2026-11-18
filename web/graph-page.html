@@ -1,0 +1,11 @@
+<div class="heading"><h1>记忆关系图</h1><a class="button" href="/overview"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>时间概览</a></div>
+<form class="graph-filters" method="get" action="/graph">
+  <label class="graph-query">话题<input type="search" class="form-control" name="q" value="{{ Query.Text }}" maxlength="600" placeholder="搜索记忆"></label>
+  <label>从<input type="text" class="form-control" data-calendar name="from" value="{{ Query.From }}" placeholder="YYYY-MM-DD" maxlength="10"></label>
+  <label>至<input type="text" class="form-control" data-calendar name="through" value="{{ Query.Through }}" placeholder="YYYY-MM-DD" maxlength="10"></label>
+  <button class="btn btn-primary primary"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>筛选</button>
+  {% if Query.Strategy %}<input type="hidden" name="strategy" value="{{ Query.Strategy }}">{% endif %}
+  {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
+</form>
+{% if Query.Text or Query.From or Query.Through or Period or Undated %}<div class="graph-filter-note">{% if Period %}<span>{{ Period }}</span>{% endif %}{% if Undated %}<span>日期未记</span>{% endif %}<a href="/graph">清除筛选</a></div>{% endif %}
+{% include "graph-canvas.html" %}

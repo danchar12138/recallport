@@ -1,0 +1,15 @@
+{% from "date-control.html" import date_control %}
+<a class="back" href="{{ Back }}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>返回列表</a>
+<h1>{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}</h1>
+{% if Entry.ID %}<div class="detail-meta"><span>来源 {{ Entry.Source }}</span><span>写入 {{ local_time(Entry.Recorded) }}</span></div>{% endif %}
+{% if Error %}<p class="error" role="alert">{{ Error }}</p>{% elif Saved %}<p class="saved" role="status">已保存</p>{% endif %}
+<form method="post" action="/memory/{% if Entry.ID %}{{ Entry.ID }}{% else %}new{% endif %}" class="editor">
+  <input type="hidden" name="revision" value="{{ Entry.Revision }}"><input type="hidden" name="back" value="{{ Back }}">
+  <label>正文<textarea class="form-control" name="text" rows="7" required maxlength="12000">{{ Entry.Text }}</textarea></label>
+  <label>情境<textarea class="form-control" name="context" rows="3" maxlength="6000">{{ Entry.Context }}</textarea></label>
+  {{ date_control(Entry.Occurred) }}
+  <div><button class="primary"><svg class="icon" aria-hidden="true"><use href="#save"/></svg>保存</button></div>
+</form>
+{% if Entry.ID %}{% include "relations.html" %}
+<details class="remove"><summary><svg class="icon" aria-hidden="true"><use href="#trash"/></svg>删除记忆</summary><form method="post" action="/memory/{{ Entry.ID }}/delete"><input type="hidden" name="revision" value="{{ Entry.Revision }}"><input type="hidden" name="back" value="{{ Back }}"><button class="danger">确认删除</button></form></details>
+{% endif %}

@@ -1,7 +1,8 @@
 /dist/
 /data/
-/internal/embedding/potion.rpm
-/internal/embedding/.pack-*
+/target/
+*.lance/
+*.recallport.json
 /*.exe
 *.db
 *.db-wal
