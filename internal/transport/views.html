@@ -1,0 +1,59 @@
+{{define "overview"}}
+<div class="heading"><h1>记忆概览</h1><a class="button" href="/">查看时间线<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a></div>
+{{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}
+<div class="overview-stats"><div><span>全部记忆</span><strong>{{.Total}}</strong></div><div><span>记录年份</span><strong>{{len .Years}}</strong></div><a href="/?undated=1"><span>日期未记</span><strong>{{.Unknown}} <svg class="icon" aria-hidden="true"><use href="#right"/></svg></strong></a></div>
+<section class="years" aria-label="按年、月浏览记忆">
+{{range .Years}}
+<section class="year"><h2><a href="{{.URL}}"><span>{{.Year}}</span><span class="muted">{{.Count}} 条 <svg class="icon" aria-hidden="true"><use href="#right"/></svg></span></a></h2>
+<div class="months">{{range .Months}}
+{{if .Count}}<a class="month active" href="{{.URL}}" aria-label="{{.Label}}：{{.Count}} 条" title="{{.Label}}：{{.Count}} 条"><span>{{.Label}}</span><meter min="0" max="{{.Max}}" value="{{.Count}}" aria-label="{{.Label}}数量"></meter><strong>{{.Count}}</strong></a>
+{{else}}<div class="month"><span>{{.Label}}</span><span class="month-track"></span><span>0</span></div>{{end}}
+{{end}}</div></section>
+{{else}}<div class="empty"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg><p>暂无已知日期的记忆</p></div>{{end}}
+</section>
+{{end}}
+
+{{define "editor"}}
+<a class="back" href="{{.Back}}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>返回列表</a>
+<h1>{{if .Entry.ID}}记忆详情{{else}}新建记忆{{end}}</h1>
+{{if .Entry.ID}}<div class="detail-meta"><span>来源 {{.Entry.Source}}</span><span>写入 {{localTime .Entry.Recorded}}</span></div>{{end}}
+{{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{else if .Saved}}<p class="saved" role="status">已保存</p>{{end}}
+<form method="post" action="/memory/{{if .Entry.ID}}{{.Entry.ID}}{{else}}new{{end}}" class="editor">
+  <input type="hidden" name="revision" value="{{.Entry.Revision}}"><input type="hidden" name="back" value="{{.Back}}">
+  <label>正文<textarea class="form-control" name="text" rows="7" required maxlength="12000">{{.Entry.Text}}</textarea></label>
+  <label>情境<textarea class="form-control" name="context" rows="3" maxlength="6000">{{.Entry.Context}}</textarea></label>
+  {{template "date-control" .Entry.Occurred}}
+  <div><button class="primary"><svg class="icon" aria-hidden="true"><use href="#save"/></svg>保存</button></div>
+</form>
+{{if .Entry.ID}}{{template "relations" .}}
+<details class="remove"><summary><svg class="icon" aria-hidden="true"><use href="#trash"/></svg>删除记忆</summary><form method="post" action="/memory/{{.Entry.ID}}/delete"><input type="hidden" name="revision" value="{{.Entry.Revision}}"><input type="hidden" name="back" value="{{.Back}}"><button class="danger">确认删除</button></form></details>
+{{end}}
+{{end}}
+
+{{define "date-control"}}
+<fieldset class="date-control" data-date-control><legend>发生日期</legend><div class="date-type">
+  <label><span class="sr-only">日期精度</span><select name="precision"><option value="unknown" {{if eq (len .) 0}}selected{{end}}>未记日期</option><option value="day" {{if eq (len .) 10}}selected{{end}}>具体日期</option><option value="month" {{if eq (len .) 7}}selected{{end}}>仅年月</option><option value="year" {{if eq (len .) 4}}selected{{end}}>仅年份</option></select></label>
+  <label data-unit="day"><span class="sr-only">具体日期</span><input class="form-control" data-calendar type="text" name="occurred_day" value="{{if eq (len .) 10}}{{.}}{{end}}" placeholder="YYYY-MM-DD" maxlength="10"></label>
+  <label data-unit="month"><span class="sr-only">年月</span><input class="form-control" type="text" inputmode="decimal" name="occurred_month" value="{{if eq (len .) 7}}{{.}}{{end}}" placeholder="YYYY-MM" maxlength="7"></label>
+  <label data-unit="year"><span class="sr-only">年份</span><input type="number" name="occurred_year" min="1" max="9999" placeholder="YYYY" value="{{if eq (len .) 4}}{{.}}{{end}}"></label>
+</div></fieldset>
+{{end}}
+
+{{define "relations"}}
+<section class="relation-section" id="relations">
+<div class="section-heading"><h2>这段记忆的关联</h2><a href="#add-link">添加引用</a></div>
+<div class="relation-map">
+<div class="relation-column"><h3><span class="edge-dot incoming"></span>被引用 <span class="muted">{{len .Incoming}}</span></h3>
+{{range .Incoming}}<article class="relation-node"><a href="/memory/{{.ID}}?back={{$.Back}}">{{.Text}}</a>{{if .Date}}<small>{{.Date}}</small>{{end}}{{if .Reason}}<p>{{.Reason}}</p>{{end}}</article>{{else}}<p class="muted">暂无引用来源</p>{{end}}</div>
+<div class="focus-node"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><strong>当前记忆</strong>{{if .Entry.Occurred}}<time>{{.Entry.Occurred}}</time>{{end}}</div>
+<div class="relation-column"><h3><span class="edge-dot outgoing"></span>引用了 <span class="muted">{{len .Outgoing}}</span></h3>
+{{range .Outgoing}}<article class="relation-node"><div class="node-line"><a href="/memory/{{.ID}}?back={{$.Back}}">{{.Text}}</a><form method="post" action="/memory/{{$.Entry.ID}}/links"><input type="hidden" name="target" value="{{.ID}}"><input type="hidden" name="back" value="{{$.Back}}"><button class="quiet icon-button" name="action" value="remove" title="移除引用" aria-label="移除引用"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg></button></form></div>{{if .Date}}<small>{{.Date}}</small>{{end}}{{if .Reason}}<p>{{.Reason}}</p>{{end}}</article>{{else}}<p class="muted">暂无引用</p>{{end}}</div>
+</div>
+<details id="add-link" class="link-picker" {{if .LinkQuery}}open{{end}}>
+<summary>添加或更新引用</summary>
+<form method="get" action="/memory/{{.Entry.ID}}#add-link" class="inline-controls"><input type="hidden" name="back" value="{{.Back}}"><input type="search" name="find" value="{{.LinkQuery}}" placeholder="搜索目标记忆" aria-label="搜索目标记忆" maxlength="600"><button>搜索</button></form>
+{{if .Choices}}<form method="post" action="/memory/{{.Entry.ID}}/links" class="pick-form"><input type="hidden" name="back" value="{{.Back}}"><label>目标<select name="target" required><option value="">选择记忆</option>{{range .Choices}}<option value="{{.ID}}">{{if .Occurred}}{{.Occurred}} · {{end}}{{.Text}}</option>{{end}}</select></label><label>关联说明<input name="reason" maxlength="260"></label><button><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>保存引用</button></form>{{else}}<p class="muted">没有其他记忆可引用。</p>{{end}}
+</details>
+{{if .Similar}}<div class="similar"><h3><span class="edge-dot suggested"></span>可能相关 <span class="muted">检索线索</span></h3>{{range .Similar}}<a class="similar-row" href="/memory/{{.ID}}?back={{$.Back}}"><span>{{.Text}}</span>{{if .Occurred}}<time>{{.Occurred}}</time>{{end}}<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>{{end}}</div>{{end}}
+</section>
+{{end}}

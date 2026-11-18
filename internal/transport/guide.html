@@ -1,0 +1,50 @@
+{{define "mcp-guide"}}
+<div class="heading"><h1>MCP 接入</h1><span class="mode"><span class="dot"></span>本机 · 无需认证</span></div>
+<dl class="settings">
+  <div><dt><label for="endpoint">服务地址</label></dt><dd class="endpoint"><input id="endpoint" readonly value="{{.Base}}/mcp"><button type="button" class="icon-button" data-copy="endpoint" aria-label="复制 MCP 地址" title="复制 MCP 地址" hidden><svg class="icon" aria-hidden="true"><use href="#copy"/></svg></button><span class="copy-status" role="status"></span></dd></div>
+  <div><dt>传输</dt><dd><code>Streamable HTTP</code>，配置类型为 <code>http</code></dd></div>
+  <div><dt>填写规则</dt><dd>填写完整 URL（协议、地址、端口、<code>/mcp</code>）；只填 IP 不行。不要填启动命令、SSE 路径或令牌。</dd></div>
+</dl>
+<section class="guide-section">
+<h2>客户端配置</h2>
+<p class="muted">支持 URL 表单的客户端，添加名为 <code>recallport</code> 的 Streamable HTTP 服务并粘贴地址。使用配置文件的客户端，选择对应示例并合并到现有配置。</p>
+<details class="guide-item" open><summary>Codex <code>~/.codex/config.toml</code></summary><div class="snippet"><pre id="codex-config">[mcp_servers.recallport]
+url = "{{.Base}}/mcp"</pre><button type="button" class="icon-button" data-copy="codex-config" title="复制 Codex 配置" aria-label="复制 Codex 配置" hidden><svg class="icon" aria-hidden="true"><use href="#copy"/></svg></button><span class="copy-status" role="status"></span></div></details>
+<details class="guide-item"><summary>Claude Code <code>.mcp.json</code></summary><div class="snippet"><pre id="claude-config">{
+  "mcpServers": {
+    "recallport": {
+      "type": "http",
+      "url": "{{.Base}}/mcp"
+    }
+  }
+}</pre><button type="button" class="icon-button" data-copy="claude-config" title="复制 Claude Code 配置" aria-label="复制 Claude Code 配置" hidden><svg class="icon" aria-hidden="true"><use href="#copy"/></svg></button><span class="copy-status" role="status"></span></div></details>
+<p class="muted">客户端须能访问本机端点。云端、容器、WSL 或另一台设备的 <code>127.0.0.1</code> 不一定指向运行 RecallPort 的 Windows。</p>
+</section>
+<section class="guide-section">
+<h2>工具参考 <span class="muted">3 个</span></h2>
+<details class="guide-item" open><summary><code>remember</code> <span>追加一段经历</span></summary><dl class="tool-fields">
+<dt>必填</dt><dd><code>text</code>：正文。</dd><dt>可选</dt><dd><code>context</code>：情境；<code>occurred</code>：发生日期；<code>source</code>：自报来源；<code>origin</code>：同一次经历的共同标识；<code>request_id</code>：同一次写入重试用；<code>references</code>：<code>[{id, reason?}]</code>。</dd><dt>返回</dt><dd>已写入的记录、稳定 ID、来源和写入时间。不会改写旧记忆。</dd></dl><pre class="example">{"text":"登录后在后台启动","occurred":"2024-09","source":"Codex"}</pre></details>
+<details class="guide-item"><summary><code>recall</code> <span>按场景、关键词或日期回忆</span></summary><dl class="tool-fields"><dt>可选</dt><dd><code>query</code>：检索文字；<code>strategy</code>：<code>hybrid</code>（默认）、<code>lexical</code> 或 <code>semantic</code>；<code>from</code> / <code>through</code>：发生时间范围；<code>limit</code>：1–30，默认 8。不传 <code>query</code> 则浏览时间线。</dd><dt>返回</dt><dd><code>memories</code> 含摘要、ID、日期和来源；<code>mode</code> 是实际使用的检索模式；<code>more</code> 表示结果已截断；<code>degraded</code> 表示搜索已降级。</dd></dl><pre class="example">{"query":"开机自启","strategy":"semantic","from":"2024","limit":5}</pre></details>
+<details class="guide-item"><summary><code>read</code> <span>展开一条记忆</span></summary><dl class="tool-fields"><dt>必填</dt><dd><code>id</code>：由 <code>recall</code> 或 <code>remember</code> 返回的记录 ID。</dd><dt>返回</dt><dd>正文、情境、时间、来源、引用和反向引用。</dd></dl></details>
+<p class="muted">日期支持 <code>YYYY</code>、<code>YYYY-MM</code>、<code>YYYY-MM-DD</code>；不确定时可留空。不要让旧记忆代替当前事实或授权。</p>
+</section>
+{{end}}
+
+{{define "data"}}
+<div class="heading"><h1>数据</h1><span class="mode"><span class="dot"></span>本地 SQLite</span></div>
+{{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}{{if .Notice}}<p class="saved" role="status">{{.Notice}}</p>{{end}}
+<section id="search-index" class="index-panel" aria-labelledby="index-title">
+  <div class="index-heading"><div><h2 id="index-title">搜索索引</h2><div class="index-state"><span class="badge" id="index-state" data-state="{{.Index.State}}" role="status">{{.Index.State}}</span><span id="index-problem" class="text-danger small" {{if not .Index.Problem}}hidden{{end}}>部分索引暂不可用，系统将重试。</span></div></div><form method="post" action="/reindex" data-busy="正在提交…"><button class="btn btn-outline-primary" id="index-rebuild"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>重建索引</button></form></div>
+  <dl class="index-grid"><div><dt>语义覆盖</dt><dd id="index-coverage">{{if .Index.Model}}{{.Index.Indexed}} / {{.Index.Total}}{{else}}未启用{{end}}</dd><progress id="index-progress" max="{{if .Index.Total}}{{.Index.Total}}{{else}}1{{end}}" value="{{.Index.Indexed}}" aria-label="语义索引覆盖率" {{if not .Index.Model}}hidden{{end}}></progress><small id="index-skipped" {{if not .Index.Skipped}}hidden{{end}}>跳过 {{.Index.Skipped}} 条</small></div><div><dt>关键词索引</dt><dd id="index-keyword" data-keyword="{{.Index.Keyword}}">{{.Index.Keyword}}</dd><small>FTS5</small></div><div><dt>最近检查</dt><dd id="index-checked">{{if .Index.CheckedAt}}{{.Index.CheckedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}—{{end}}</dd><small>自动检查与修复</small></div><div><dt>最近修复 / 重建</dt><dd id="index-repaired">{{if .Index.RepairedAt}}{{.Index.RepairedAt.Local.Format "2006-01-02 15:04:05"}}{{else}}—{{end}}</dd><small id="index-model">{{if .Index.Model}}{{.Index.Model}}{{else}}关键词模式{{end}}</small></div></dl>
+</section>
+<div class="data-list">
+<section class="data-row"><div><h2>备份</h2><p class="muted">下载当前库的完整快照。运行中的 WAL 数据也会包含在内。</p></div><form method="post" action="/backup"><button class="primary"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载快照</button></form></section>
+<section class="data-row data-restore"><div><h2>从快照恢复</h2><p class="muted">恢复会替换当前记忆，不合并。替换前自动保留当前库的回退快照。</p></div>
+<form method="post" action="/restore" enctype="multipart/form-data" class="restore-form" data-busy="正在恢复…">
+  <label class="check-line"><input type="checkbox" name="confirm" value="yes" required>确认替换当前库</label>
+  <label><span class="sr-only">选择数据库快照</span><input type="file" name="backup" accept=".db,.sqlite,.sqlite3" required></label>
+  <button><svg class="icon" aria-hidden="true"><use href="#upload"/></svg>恢复快照</button>
+</form></section>
+{{if .Recovery}}<section class="data-row"><div><h2>最近回退快照</h2><p class="muted">上一次恢复前保留的原库。</p></div><div class="recovery-controls"><a class="button" href="/recovery"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载回退快照</a><details><summary>恢复上一份</summary><form method="post" action="/recovery" class="restore-form" data-busy="正在恢复…"><input type="hidden" name="snapshot" value="{{.Recovery}}"><label class="check-line"><input type="checkbox" name="confirm" value="yes" required>确认替换当前库</label><button>确认回退</button></form></details></div></section>{{end}}
+</div>
+{{end}}

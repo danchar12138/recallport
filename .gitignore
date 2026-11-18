@@ -1,0 +1,12 @@
+/dist/
+/data/
+/internal/embedding/potion.rpm
+/internal/embedding/.pack-*
+/*.exe
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.safetensors
+owner.key
