@@ -98,6 +98,10 @@ func normalize(raw string) string {
 }
 
 func (m *Model) Embed(text string) []float32 {
+	return m.embedWith(text, m.addQuantized)
+}
+
+func (m *Model) embedWith(text string, add func([]float32, int)) []float32 {
 	s := normalize(text)
 	if s == "" {
 		return nil
@@ -137,11 +141,7 @@ func (m *Model) Embed(text string) []float32 {
 		if p.id < 2 {
 			continue
 		}
-		o := p.id * (4 + m.dimensions)
-		scale := math.Float32frombits(binary.LittleEndian.Uint32([]byte(m.weights[o : o+4])))
-		for j := range v {
-			v[j] += scale * float32(int8(m.weights[o+4+j]))
-		}
+		add(v, p.id)
 	}
 	var ss float64
 	for _, x := range v {
@@ -155,4 +155,12 @@ func (m *Model) Embed(text string) []float32 {
 		v[i] /= norm
 	}
 	return v
+}
+
+func (m *Model) addQuantized(v []float32, id int) {
+	o := id * (4 + m.dimensions)
+	scale := math.Float32frombits(binary.LittleEndian.Uint32([]byte(m.weights[o : o+4])))
+	for j := range v {
+		v[j] += scale * float32(int8(m.weights[o+4+j]))
+	}
 }

@@ -89,7 +89,7 @@ SOFTWARE.
 </html>
 {{define "timeline"}}
   <div class="heading"><div class="titleline"><h1>时间线</h1><span class="mode"><span class="dot"></span>{{if .Semantic}}本地混合召回{{else}}本地关键词{{end}}</span></div><a class="button primary" href="/memory/new?back={{.Back}}"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>新建记忆</a></div>
-  <form method="get" action="/" class="filters">
+  <form method="get" action="/" class="filters search-workbench">
     {{if .Period}}<input type="hidden" name="period" value="{{.Period}}">{{end}}{{if .Undated}}<input type="hidden" name="undated" value="1">{{end}}
     <div class="searchbar"><label class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input class="form-control" type="search" aria-label="回忆" name="q" value="{{.Query.Text}}" placeholder="搜索记忆" maxlength="600"></label><button class="btn btn-primary primary">查找</button></div>
     <div class="search-options"><fieldset class="btn-group modes" aria-label="检索模式">
@@ -105,7 +105,7 @@ SOFTWARE.
   {{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{else}}
   {{if .Degraded}}<p class="alert alert-warning py-2" role="status">部分搜索索引暂不可用。正在使用可用的检索方式。</p>{{end}}
   {{if .Query.Text}}<h2 class="period results-label">回忆结果 <span>{{len .Rows}}{{if .More}}+{{end}}</span></h2>{{end}}
-  <section aria-label="记忆列表">
+  <section class="memory-stream" aria-label="记忆列表">
   {{range .Rows}}
     {{if .Period}}<h2 class="period timeline-period">{{.Period}}</h2>{{end}}
     <article class="entry">

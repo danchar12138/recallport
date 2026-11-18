@@ -1,0 +1,78 @@
+{{define "mcp-guide"}}
+<header class="heading mcp-heading"><h1>MCP 接入</h1><span class="mode"><span class="dot"></span>仅本机 · 无需认证</span></header>
+<nav class="guide-nav" aria-label="接入页导航"><a href="#connection">连接</a><a href="#configuration">客户端配置</a><a href="#tools">工具手册</a></nav>
+<section id="connection" class="guide-band">
+  <div class="guide-label"><h2>连接</h2><span>Streamable HTTP</span></div>
+  <div class="guide-body">
+    <label class="field-label" for="endpoint">MCP 地址</label>
+    <div class="endpoint-line"><input class="form-control" id="endpoint" readonly value="{{.Base}}/mcp">{{template "copy-button" "endpoint"}}</div>
+    <p class="guide-note">粘贴完整 URL，包含协议、端口和 <code>/mcp</code>。不用填令牌或启动命令。</p>
+    <div class="connection-test"><button class="btn btn-outline-primary" type="button" id="test-mcp" hidden><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>测试本机连接</button><span id="mcp-status" class="small" role="status"></span></div>
+  </div>
+</section>
+<section id="configuration" class="guide-band">
+  <div class="guide-label"><h2>客户端配置</h2></div>
+  <div class="guide-body">
+    <div class="client-config"><div class="config-title"><h3>Codex</h3><code>~/.codex/config.toml</code></div><div class="code-block"><pre id="codex-config">[mcp_servers.recallport]
+url = "{{.Base}}/mcp"</pre>{{template "copy-button" "codex-config"}}</div></div>
+    <details class="client-config"><summary class="config-title"><span>Claude Code</span><code>.mcp.json</code></summary><div class="code-block"><pre id="claude-config">{
+  "mcpServers": {
+    "recallport": {
+      "type": "http",
+      "url": "{{.Base}}/mcp"
+    }
+  }
+}</pre>{{template "copy-button" "claude-config"}}</div></details>
+    <p class="guide-note">已有配置时，只合并 <code>recallport</code> 这一项。配置后重载或重启客户端。测试按钮只检查本页到本机端点是否通，不能代替客户端连接测试。</p>
+  </div>
+</section>
+<section id="tools" class="guide-band">
+  <div class="guide-label"><h2>工具手册</h2><span>3 个工具</span></div>
+  <div class="guide-body tool-reference">
+    <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a></div>
+    <details class="tool-doc" id="recall" open>
+      <summary><code>recall</code><span>找以前的相关经历</span></summary>
+      <p>用关键词、换一种说法，或按日期找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实。</p>
+      <dl class="parameter-list">
+        <div><dt><code>query</code><small>字符串 · 可选</small></dt><dd>要找的话题、原话或当前情境，最多 600 字符。例如 <code>开机自启</code>。</dd></div>
+        <div><dt><code>strategy</code><small>枚举 · 默认 hybrid</small></dt><dd><code>hybrid</code> 混合，默认推荐；<code>lexical</code> 关键词，适合路径或精确名称；<code>semantic</code> 语义，适合改写与同义词。索引异常时可能降级。</dd></div>
+        <div><dt><code>from</code> / <code>through</code><small>日期字符串 · 可选</small></dt><dd>按发生时间筛选，含起止边界，可只填一端。支持 <code>YYYY</code>、<code>YYYY-MM</code> 或 <code>YYYY-MM-DD</code>。</dd></div>
+        <div><dt><code>limit</code><small>整数 · 默认 8</small></dt><dd>最多返回多少条，取值 <code>1–30</code>。</dd></div>
+      </dl>
+      <div class="code-block example-block"><pre id="recall-example">{"query": "开机自启", "strategy": "hybrid", "limit": 5}</pre>{{template "copy-button" "recall-example"}}</div>
+      <p class="tool-output"><strong>返回</strong> <code>memories</code> 是带 ID、时间及来源的片段；<code>mode</code> 是实际检索模式；<code>more</code> 表示这次结果已截断；<code>degraded</code> 表示已降级。</p>
+    </details>
+    <details class="tool-doc" id="read">
+      <summary><code>read</code><span>展开某条记忆的原文</span></summary>
+      <p>搜到线索后，用记录 ID 查看完整上下文和引用。传 ID，不传标题或搜索词。</p>
+      <dl class="parameter-list"><div><dt><code>id</code><small>字符串 · 必填</small></dt><dd>从 <code>recall</code> 或 <code>remember</code> 的返回值取出的记忆 ID。</dd></div></dl>
+      <div class="code-block example-block"><pre id="read-example">{"id": "替换成 recall 返回的 id"}</pre>{{template "copy-button" "read-example"}}</div>
+      <p class="tool-output"><strong>返回</strong> 正文、情境、发生时间、写入时间、来源，以及引用和反向引用。</p>
+    </details>
+    <details class="tool-doc" id="remember">
+      <summary><code>remember</code><span>追加一段值得留存的经历</span></summary>
+      <p>保存尝试、决定、纠正或经验。只追加新记录，不改写旧记忆，不用于记录秘密或整段对话。</p>
+      <dl class="parameter-list">
+        <div><dt><code>text</code><small>字符串 · 必填</small></dt><dd>经历本身，例如「应用在用户登录后启动，而不是开机时启动」。</dd></div>
+        <div><dt><code>context</code><small>字符串 · 可选</small></dt><dd>让旧事易于理解的背景，例如当时的设备、项目或限制。</dd></div>
+        <div><dt><code>occurred</code><small>日期字符串 · 可选</small></dt><dd>经历发生的时间，不等于写入时间。只知道月份就填 <code>2024-09</code>，不知道就省略。</dd></div>
+        <div><dt><code>source</code><small>字符串 · 默认 MCP</small></dt><dd>自报的记入来源，例如 <code>Codex</code>；不是已验证身份。</dd></div>
+        <div><dt><code>origin</code><small>字符串 · 可选</small></dt><dd>同一次经历的稳定标识，用来在检索时折叠不同转述。不要用整个项目或会话的 ID 代替。</dd></div>
+        <div><dt><code>request_id</code><small>字符串 · 可选</small></dt><dd>写入超时后，重试完全相同的请求时复用原 ID，避免重复写入。新经历用新 ID。</dd></div>
+        <div><dt><code>references</code><small>数组 · 可选</small></dt><dd>明确引用的旧记忆。每项传 <code>id</code>，可附 <code>reason</code> 解释为什么相关。</dd></div>
+      </dl>
+      <div class="code-block example-block"><pre id="remember-example">{
+  "text": "应用在用户登录后启动，而不是开机时启动。",
+  "context": "Windows 后台工具，使用任务计划程序",
+  "occurred": "2024-09",
+  "source": "Codex"
+}</pre>{{template "copy-button" "remember-example"}}</div>
+      <p class="tool-output"><strong>返回</strong> 新记录和稳定的 <code>id</code>。后续可用此 ID 读取或建立引用。</p>
+    </details>
+  </div>
+</section>
+{{end}}
+
+{{define "copy-button"}}
+<div class="copy-control"><button type="button" class="btn btn-outline-secondary icon-button" data-copy="{{.}}" aria-label="{{if eq . "endpoint"}}复制 MCP 地址{{else if or (eq . "codex-config") (eq . "claude-config")}}复制 {{if eq . "codex-config"}}Codex{{else}}Claude Code{{end}} 配置{{else}}复制 {{if eq . "recall-example"}}recall{{else if eq . "read-example"}}read{{else}}remember{{end}} 示例{{end}}" title="复制" hidden><svg class="icon" aria-hidden="true"><use href="#copy"/></svg></button><span class="copy-status sr-only" role="status"></span></div>
+{{end}}

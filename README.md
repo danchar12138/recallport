@@ -23,6 +23,8 @@ RecallPort 是一款即插即用的本地 AI 记忆服务。记忆随日常使�
 
 Web 使用 Bootstrap 和 Flatpickr，静态资源随 exe 打包，无 CDN 或 Node.js 运行依赖。依赖许可证在 internal/transport/vendor。
 
+从源码对照原始与量化权重时，可将 `RECALLPORT_FLOAT_WEIGHTS` 指向固定版本的 `model.safetensors`，然后运行 `go test -tags model -run TestQuantizationComparison -v ./internal/embedding`。该对照使用合成数据和相同的分词、检索逻辑，不读取个人记忆库。
+
 ## 备份与恢复
 
 在 Web 的「数据」页点击「下载快照」。恢复时，在同页选择快照并确认。恢复会替换当前库，不会合并；程序先保留替换前的快照，再恢复记忆和引用并重建索引，无需重启。最近的回退快照可在同页下载或直接恢复。

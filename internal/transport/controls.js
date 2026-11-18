@@ -2,6 +2,7 @@ for (const copy of document.querySelectorAll('[data-copy]')) {
   copy.hidden = false;
   const endpoint = document.getElementById(copy.dataset.copy);
   const status = copy.parentElement.querySelector('.copy-status');
+  let restore;
   copy.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(endpoint.value ?? endpoint.textContent);
@@ -19,11 +20,61 @@ for (const copy of document.querySelectorAll('[data-copy]')) {
       }
       status.textContent = '已选中';
     }
+    copy.dataset.copied = 'true';
+    copy.title = status.textContent;
+    clearTimeout(restore);
+    restore = setTimeout(() => {
+      delete copy.dataset.copied;
+      copy.title = '复制';
+      status.textContent = '';
+    }, 1600);
   });
 }
 
 for (const field of document.querySelectorAll('[data-calendar]')) {
   if (window.flatpickr) window.flatpickr(field, {dateFormat:'Y-m-d', allowInput:true, disableMobile:true, monthSelectorType:'static'});
+}
+
+const testMCP = document.getElementById('test-mcp');
+if (testMCP) {
+  const status = document.getElementById('mcp-status');
+  testMCP.hidden = false;
+  testMCP.addEventListener('click', async () => {
+    testMCP.disabled = true;
+    status.textContent = '检查中…';
+    status.className = 'small';
+    try {
+      const signal = AbortSignal.timeout(4000);
+      const send = async (body, protocol) => {
+        const headers = {'Content-Type':'application/json', Accept:'application/json, text/event-stream'};
+        if (protocol) headers['MCP-Protocol-Version'] = protocol;
+        const response = await fetch('/mcp', {method:'POST', headers, signal, body:JSON.stringify({jsonrpc:'2.0', ...body})});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (body.id === undefined) return;
+        const reply = await response.json();
+        if (!reply.result || reply.error || reply.id !== body.id) throw new Error('Invalid MCP response');
+        return reply.result;
+      };
+      const init = await send({id:1, method:'initialize', params:{protocolVersion:'2025-11-25', capabilities:{}, clientInfo:{name:'RecallPort Web', version:'1'}}});
+      await send({method:'notifications/initialized'}, init.protocolVersion);
+      const result = await send({id:2, method:'tools/list', params:{}}, init.protocolVersion);
+      const names = new Set(result.tools.map(tool => tool.name));
+      if (!['recall','read','remember'].every(name => names.has(name))) throw new Error('Missing tools');
+      status.textContent = '连接正常 · 3 个工具可用';
+      status.className = 'small text-success';
+    } catch {
+      status.textContent = '连接失败，未能读取工具列表';
+      status.className = 'small text-danger';
+    } finally {
+      testMCP.disabled = false;
+    }
+  });
+  const openTool = () => {
+    const tool = document.getElementById(location.hash.slice(1));
+    if (tool?.matches('.tool-doc')) tool.open = true;
+  };
+  openTool();
+  window.addEventListener('hashchange',openTool);
 }
 
 const indexPanel = document.getElementById('search-index');
