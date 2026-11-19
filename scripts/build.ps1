@@ -64,5 +64,6 @@ try {
     $licenses = (New-Item -ItemType Directory -Force -Path (Join-Path $Output 'licenses')).FullName
     Get-ChildItem -LiteralPath 'web/vendor' -Filter '*.LICENSE' | Copy-Item -Destination $licenses
     Copy-Item -LiteralPath $exe -Destination (Join-Path $Output 'recallport.exe')
+    foreach ($doc in @('README.md','README.en.md','LICENSE','CHANGELOG.md')) { if (Test-Path -LiteralPath $doc) { Copy-Item -LiteralPath $doc -Destination $Output } }
     Get-Item -LiteralPath (Join-Path $Output 'recallport.exe') | Select-Object FullName, Length
 } finally { Pop-Location }
