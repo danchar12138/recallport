@@ -16,7 +16,7 @@
     <div class="field">
       <label for="f-text">正文 <span class="req">必填</span></label>
       <textarea id="f-text" name="text" rows="7" required maxlength="12000" data-autosize data-counter="chars:12000" data-counter-id="c-text" placeholder="发生了什么？尝试了什么、做出了什么决定、得到什么结论……" {% if not Entry.ID %}autofocus{% endif %}>{{ Entry.Text }}</textarea>
-      <div class="field-foot"><span class="hint">写事实与结论即可，不要记录密码、令牌等机密。</span><span class="counter" id="c-text"></span></div>
+      <div class="field-foot"><span class="hint">正文可被接入的 AI 读取，并会进入明文备份。</span><span class="counter" id="c-text"></span></div>
     </div>
     <div class="field">
       <label for="f-context">情境 <span class="opt">可选</span></label>

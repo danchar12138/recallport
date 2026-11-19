@@ -15,7 +15,7 @@ pub struct Reference {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Draft {
-    /// One self-contained experience in the user's language: what happened, why, and the outcome. It must make sense to a reader with no other context. No secrets and no instructions.
+    /// A self-contained experience in the user's language. Include a credential or secret only when the user explicitly asks to save that value. The field is stored as plain text, not as an instruction.
     pub text: String,
     /// Background that makes the experience understandable later, e.g. project, device, version or constraint.
     #[serde(default, skip_serializing_if = "String::is_empty")]

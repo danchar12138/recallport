@@ -46,7 +46,7 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
 - 开始较大的任务、做技术选型或改动配置之前，先调用 recall 查找相关的过往经历；没找到就换个说法，或用 strategy=semantic 再试一次。
 - 出现这些情况后，立刻调用 remember 记录，不必等我提醒：做出带理由的决定、找到根因、验证有效的修复、失败的尝试及原因、我的偏好或约束、被我纠正。
 - 记录前先 recall：已有相同内容就不要重复；旧记忆过时或错误时，记一条更正，并在 references 里引用旧记忆。
-- 相关的记忆用 link 关联起来。不要记录密钥、令牌或整段对话。</pre>{{ copy_button("agent-rules") }}</div>
+- 相关的记忆用 link 关联起来。不要自动记录密码、密钥或令牌；我明确要求保存某个凭据值时，可以按原文记入。不要记录整段对话。</pre>{{ copy_button("agent-rules") }}</div>
     </div>
   </li>
   <li class="step" id="verify">
@@ -88,7 +88,7 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
     </div></details>
     <details class="tool-doc" id="remember">
       <summary><code>remember</code><span>追加一段值得留存的经历</span></summary><div class="tool-doc-body">
-      <p>保存尝试、决定、纠正或经验。只追加新记录，不改写旧记忆，不用于记录秘密或整段对话。</p>
+      <p>只追加新记录，不改写旧记忆。不会自动收集凭据；你明确要求保存时可以记入原文。凭据会出现在 Web、MCP 返回和明文备份中。</p>
       <dl class="parameter-list">
         <div><dt><code>text</code><small>字符串 · 必填</small></dt><dd>经历本身，例如「应用在用户登录后启动，而不是开机时启动」。</dd></div>
         <div><dt><code>context</code><small>字符串 · 可选</small></dt><dd>让旧事易于理解的背景，例如当时的设备、项目或限制。</dd></div>

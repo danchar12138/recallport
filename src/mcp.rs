@@ -85,7 +85,7 @@ impl Mcp {
 #[tool_router]
 impl Mcp {
     #[tool(
-        description = "Save one durable experience to the user's long-term memory: a decision and its reasons, a root cause, a fix that worked, an approach that failed, a user preference, or a correction. Call it proactively right after such a moment, without being asked. Write it in the user's language so it stands alone for a reader with no context; put background in `context`, set `occurred` when known, and pass your client name as `source`. Never store secrets or whole conversations. Memories are append-only: to fix an outdated memory, save a correction and cite the old one in `references`. The result lists `related` memories; link any that belong together.",
+        description = "Save a durable experience to the user's long-term memory: a decision, root cause, fix, failed approach, preference, or correction. Call proactively after such moments. Omit credentials and secrets from proactive notes. When the user explicitly requests saving a specific credential or secret, plain-text storage is supported: preserve that value as provided without redacting it or substituting a reference. It can be read through Web/MCP and included in plain-text backups. Do not save whole conversations. Write in the user's language; use `context` for background, `occurred` when known, and `source` for your client name. To correct an older memory, append a correction and cite its ID in `references`. The result lists `related` memories; link those that belong together.",
         annotations(destructive_hint = false, open_world_hint = false)
     )]
     async fn remember(&self, Parameters(input): Parameters<RememberInput>) -> CallToolResult {
@@ -176,10 +176,11 @@ Search with the words, names or paths the user would have used. If nothing relev
 WHEN TO REMEMBER
 - Right after a decision with reasons, a root cause found, a fix or workaround that worked, an approach that failed and why, a user preference or constraint, or a correction of something previously believed.
 - One self-contained experience per memory: what happened, why, the outcome. Write it in the user's language so a future reader with no context understands it. Put background (project, device, version) in `context`, set `occurred` when known, and pass your client name as `source`.
-- Never store secrets, credentials, unnecessary personal data, raw chat logs or trivia.
+- Do not collect or save passwords, API keys, tokens, or other secrets proactively. If the user explicitly asks to save a specific credential or secret, `remember` supports storing that value as provided. Do not redact it or replace it with a reference unless the user asks for that instead. Stored values are accessible through Web/MCP and included in plain-text JSON backups; RecallPort is not a credential vault.
+- Do not store unnecessary personal data, whole conversations, or trivia.
 
 KEEP THE MEMORY HEALTHY (you are its maintainer)
-- Before remembering, recall the topic. If a memory already says the same thing, do not add a duplicate.
+- Before remembering, recall the topic. If checking an explicitly requested credential, use a non-secret label or account name as the search query, not the secret itself. If a memory already says the same thing, do not add a duplicate.
 - Memories are append-only. If an old memory is outdated or wrong, `remember` a correction and cite the old id in `references` with a reason that starts with \"correction\". Never silently rely on a memory you have reason to doubt.
 - Link related experiences: pass `references` when remembering, or call `link` for two existing memories. `remember` returns `related` candidates; link the ones that truly belong together.
 - Reuse a `request_id` only when retrying an identical write that may have timed out.
