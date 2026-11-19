@@ -4,6 +4,12 @@ version = "0.3.0"
 edition = "2024"
 rust-version = "1.94"
 publish = false
+description = "Local, cross-client long-term memory for AI assistants, served over MCP."
+license = "MIT"
+repository = "https://github.com/danchar12138/recallport"
+readme = "README.md"
+keywords = ["mcp", "memory", "ai", "local-first", "semantic-search"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1"

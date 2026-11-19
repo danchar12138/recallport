@@ -134,7 +134,11 @@ impl Mcp {
 
     #[tool(
         description = "Connect two existing memories so they are found and read together. Use it when you notice that two experiences belong to the same topic, or that a newer one corrects or follows up an older one. Safe to repeat; linking again updates the reason.",
-        annotations(destructive_hint = false, idempotent_hint = true, open_world_hint = false)
+        annotations(
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
     )]
     async fn link(&self, Parameters(input): Parameters<LinkInput>) -> CallToolResult {
         let (from, to) = (input.from.trim().to_owned(), input.to.trim().to_owned());

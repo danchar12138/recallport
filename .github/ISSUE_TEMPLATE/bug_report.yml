@@ -1,0 +1,53 @@
+name: Bug 报告 / Bug report
+description: 程序行为不符合预期 / Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请先确认已升级到[最新版本](https://github.com/danchar12138/recallport/releases/latest)。
+        涉及安全问题请不要在这里公开，见 [SECURITY.md](https://github.com/danchar12138/recallport/security/policy)。
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / Version
+      description: 例如 v0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及的部分 / Area
+      options: [网页界面 / Web UI, MCP 工具 / MCP tools, 检索与索引 / Search and index, 备份与恢复 / Backup and restore, 打包与启动 / Packaging and startup, 其他 / Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么 / What happened
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望的行为 / Expected behavior
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境与 AI 客户端 / Environment and client
+      description: Windows 版本、浏览器，以及使用的 MCP 客户端（如 Codex、Claude Code）
+  - type: textarea
+    id: logs
+    attributes:
+      label: 控制台输出或截图 / Console output or screenshots
+      description: 请先去掉其中的敏感内容
+      render: text
