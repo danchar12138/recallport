@@ -121,9 +121,10 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
         };
     }
     asset!(app, "style.css", "text/css; charset=utf-8");
+    asset!(app, "theme.js", "text/javascript; charset=utf-8");
+    asset!(app, "ui.js", "text/javascript; charset=utf-8");
     asset!(app, "controls.js", "text/javascript; charset=utf-8");
     asset!(app, "graph.js", "text/javascript; charset=utf-8");
-    asset!(app, "vendor/bootstrap.min.css", "text/css; charset=utf-8");
     asset!(app, "vendor/flatpickr.min.css", "text/css; charset=utf-8");
     asset!(
         app,

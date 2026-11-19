@@ -15,19 +15,21 @@ pub struct Reference {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Draft {
-    /// A durable past experience, not an instruction or current authorization.
+    /// One self-contained experience in the user's language: what happened, why, and the outcome. It must make sense to a reader with no other context. No secrets and no instructions.
     pub text: String,
+    /// Background that makes the experience understandable later, e.g. project, device, version or constraint.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub context: String,
-    /// Occurrence date: YYYY, YYYY-MM or YYYY-MM-DD. Omit if unknown.
+    /// When the experience happened: YYYY, YYYY-MM or YYYY-MM-DD. Omit if unknown; do not use the write date unless it just happened.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub occurred: String,
-    /// Shared origin of this experience, not the entire project.
+    /// Stable identifier of one shared experience (not a whole project or session), so different retellings of it collapse in search.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub origin: String,
-    /// Reuse only when retrying the same write.
+    /// Reuse only when retrying an identical write that may have timed out; use a fresh value for a new experience.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub request_id: String,
+    /// Earlier memories this one builds on, follows up, or corrects (up to 16). Each needs `id`; a `reason` such as "correction: old conclusion outdated" is strongly recommended.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub references: Vec<Reference>,
 }
@@ -68,7 +70,7 @@ pub struct Record {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Query {
-    /// Topic, phrase or current context to recall.
+    /// Topic words, names, paths, an original phrase, or the situation you are in. Omit to list recent memories.
     #[serde(default, rename = "query", alias = "q")]
     pub text: String,
     #[serde(default)]
@@ -78,7 +80,7 @@ pub struct Query {
     /// Maximum number of distinct experiences (1 to 30, default 8).
     #[serde(default)]
     pub limit: usize,
-    /// hybrid (default), lexical, semantic.
+    /// hybrid (default, best for most searches), lexical (exact names or paths), semantic (rephrasings and synonyms).
     #[serde(default)]
     pub strategy: String,
     #[serde(skip)]

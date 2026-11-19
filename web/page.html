@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RecallPort · {% if View == "clients" %}接入{% elif View == "data" %}数据{% else %}记忆{% endif %}</title>
-<link rel="stylesheet" href="/vendor/bootstrap.min.css">
+<meta name="color-scheme" content="light dark">
+<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "detail" %}{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}{% else %}时间线{% endif %} · RecallPort</title>
+<script src="/theme.js"></script>
 <link rel="stylesheet" href="/vendor/flatpickr.min.css">
 <link rel="stylesheet" href="/style.css">
 <script src="/vendor/flatpickr.min.js" defer></script>
+<script src="/ui.js" defer></script>
 <script src="/controls.js" defer></script>
-{% if (View == "graph") or ((View == "detail") and Entry.ID) %}<script src="/vendor/cytoscape.min.js" defer></script><script src="/graph.js" defer></script>{% endif %}
+{% if (View == "graph") or ((View == "detail") and Entry.ID) %}<meta id="__________cytoscape_stylesheet" name="cytoscape-style" content="rules live in style.css">
+<script src="/vendor/cytoscape.min.js" defer></script><script src="/graph.js" defer></script>{% endif %}
 </head>
-<body>
+<body data-view="{{ View }}">
 <!-- Lucide icon license
 ISC License
 
@@ -76,18 +79,38 @@ SOFTWARE.
   <symbol id="copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol>
   <symbol id="save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /><path d="M7 3v4a1 1 0 0 0 1 1h7" /></symbol>
   <symbol id="trash" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" /></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></symbol>
+  <symbol id="circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></symbol>
+  <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol>
+  <symbol id="keyboard" viewBox="0 0 24 24"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></symbol>
+  <symbol id="moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></symbol>
+  <symbol id="monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></symbol>
 </svg>
-<header class="top"><div class="container-fluid top-inner">
+<a class="skip-link" href="#main">跳到主要内容</a>
+<header class="top">
   <a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#history"/></svg></span>RecallPort</a>
-  <nav class="tabs nav flex-md-column" aria-label="主导航">
+  <nav class="tabs" aria-label="主导航">
     <a href="/" {% if (View == "timeline") or (View == "detail") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>时间线</a>
     <a href="/overview" {% if View == "overview" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
     <a href="/graph" {% if View == "graph" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a>
     <a href="/clients" {% if View == "clients" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入</a>
     <a href="/data" {% if View == "data" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#database"/></svg>数据</a>
   </nav>
-</div></header>
-<main class="container-fluid shell">
+  <div class="theme-switch theme-switch-mobile" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
+  <div class="side-foot">
+    <div class="status-line"><span class="dot"></span>本地运行 · 仅本机可访问</div>
+    <div class="status-line"><span class="dot"></span>语义检索已启用</div>
+    <div class="theme-switch" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
+
+    <button type="button" class="btn btn-ghost btn-sm side-shortcuts" data-shortcuts><svg class="icon icon-sm" aria-hidden="true"><use href="#keyboard"/></svg>快捷键 <kbd>?</kbd></button>
+  </div>
+</header>
+<main id="main" class="shell">
 {% if View == "timeline" %}{% include "timeline.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% else %}{% include "data.html" %}{% endif %}
 </main>
 </body>

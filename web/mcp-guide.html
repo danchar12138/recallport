@@ -1,37 +1,74 @@
 {% from "copy-button.html" import copy_button %}
-<header class="heading mcp-heading"><h1>MCP 接入</h1><span class="mode"><span class="dot"></span>仅本机 · 无需认证</span></header>
-<nav class="guide-nav" aria-label="接入页导航"><a href="#connection">连接</a><a href="#configuration">客户端配置</a><a href="#tools">工具手册</a></nav>
-<section id="connection" class="guide-band">
-  <div class="guide-label"><h2>连接</h2><span>Streamable HTTP</span></div>
-  <div class="guide-body">
-    <label class="field-label" for="endpoint">MCP 地址</label>
-    <div class="endpoint-line"><input class="form-control" id="endpoint" readonly value="{{ Base }}/mcp">{{ copy_button("endpoint") }}</div>
-    <p class="guide-note">粘贴完整 URL，包含协议、端口和 <code>/mcp</code>。不用填令牌或启动命令。</p>
-    <div class="connection-test"><button class="btn btn-outline-primary" type="button" id="test-mcp" hidden><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>测试本机连接</button><span id="mcp-status" class="small" role="status"></span></div>
-  </div>
-</section>
-<section id="configuration" class="guide-band">
-  <div class="guide-label"><h2>客户端配置</h2></div>
-  <div class="guide-body">
-    <div class="client-config"><div class="config-title"><h3>Codex</h3><code>~/.codex/config.toml</code></div><div class="code-block"><pre id="codex-config">[mcp_servers.recallport]
-url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div></div>
-    <details class="client-config"><summary class="config-title"><span>Claude Code</span><code>.mcp.json</code></summary><div class="code-block"><pre id="claude-config">{
+<header class="page-head">
+  <div><h1>接入 AI</h1><p class="sub">让你的 AI 客户端使用这份本地记忆。仅本机可访问，无需账号或令牌。</p></div>
+</header>
+<ol class="steps">
+  <li class="step" id="connection">
+    <div class="step-body">
+      <h2>复制 MCP 地址</h2>
+      <p>在客户端里选择 <b>Streamable HTTP</b> 方式，粘贴下面的完整地址（含协议、端口和 <code>/mcp</code>）。</p>
+      <div class="endpoint-line"><input type="text" id="endpoint" readonly value="{{ Base }}/mcp" aria-label="MCP 地址" data-select-all>{{ copy_button("endpoint") }}</div>
+    </div>
+  </li>
+  <li class="step" id="configuration">
+    <div class="step-body">
+      <h2>添加到客户端</h2>
+      <p>选择你使用的客户端，把配置合并到对应文件中（已有配置时只加 <code>recallport</code> 这一项），然后重载或重启客户端。</p>
+      <div data-tabs>
+        <div class="tablist" role="tablist" aria-label="客户端" data-tablist>
+          <button type="button" class="tab" role="tab" id="tab-codex" aria-controls="panel-codex" aria-selected="true">Codex</button>
+          <button type="button" class="tab" role="tab" id="tab-claude" aria-controls="panel-claude" aria-selected="false">Claude Code</button>
+        </div>
+        <div class="tabpanel" role="tabpanel" id="panel-codex" aria-labelledby="tab-codex">
+          <span class="path">写入 <code>~/.codex/config.toml</code></span>
+          <div class="code-block"><pre id="codex-config">[mcp_servers.recallport]
+url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
+        </div>
+        <div class="tabpanel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude" data-js-hidden>
+          <span class="path">写入项目根目录的 <code>.mcp.json</code></span>
+          <div class="code-block"><pre id="claude-config">{
   "mcpServers": {
     "recallport": {
       "type": "http",
       "url": "{{ Base }}/mcp"
     }
   }
-}</pre>{{ copy_button("claude-config") }}</div></details>
-    <p class="guide-note">已有配置时，只合并 <code>recallport</code> 这一项。配置后重载或重启客户端。测试按钮只检查本页到本机端点是否通，不能代替客户端连接测试。</p>
-  </div>
-</section>
-<section id="tools" class="guide-band">
-  <div class="guide-label"><h2>工具手册</h2><span>3 个工具</span></div>
-  <div class="guide-body tool-reference">
-    <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a></div>
+}</pre>{{ copy_button("claude-config") }}</div>
+        </div>
+      </div>
+    </div>
+  </li>
+  <li class="step" id="proactive">
+    <div class="step-body">
+      <h2>让 AI 主动用起来 <span class="opt">推荐</span></h2>
+      <p>服务端已内置使用指引，但有些客户端会忽略它。把下面这段加入客户端的规则文件（如 <code>AGENTS.md</code>、<code>CLAUDE.md</code>），模型就会在任务开始前主动查记忆，并在决策、踩坑、被纠正后主动记录、去重和关联。</p>
+      <div class="code-block"><pre id="agent-rules">## 长期记忆（RecallPort）
+- 开始较大的任务、做技术选型或改动配置之前，先调用 recall 查找相关的过往经历；没找到就换个说法，或用 strategy=semantic 再试一次。
+- 出现这些情况后，立刻调用 remember 记录，不必等我提醒：做出带理由的决定、找到根因、验证有效的修复、失败的尝试及原因、我的偏好或约束、被我纠正。
+- 记录前先 recall：已有相同内容就不要重复；旧记忆过时或错误时，记一条更正，并在 references 里引用旧记忆。
+- 相关的记忆用 link 关联起来。不要记录密钥、令牌或整段对话。</pre>{{ copy_button("agent-rules") }}</div>
+    </div>
+  </li>
+  <li class="step" id="verify">
+    <div class="step-body">
+      <h2>测试连接</h2>
+      <p>检查本页能否连上本机的 MCP 端点。这不能代替客户端自己的连接测试，但能先排除服务端问题。</p>
+      <div class="test-row"><button class="btn btn-primary" type="button" id="test-mcp" hidden><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>测试本机连接</button><span id="mcp-status" class="note" role="status"></span></div>
+      <ul class="checks" id="mcp-checks" aria-label="检查步骤" hidden>
+        <li data-check="health" data-state="idle">本机服务可访问</li>
+        <li data-check="init" data-state="idle">完成 MCP 握手</li>
+        <li data-check="tools" data-state="idle">读取工具列表（recall、read、remember、link）</li>
+      </ul>
+    </div>
+  </li>
+</ol>
+
+<section id="tools" class="section" aria-labelledby="tools-title">
+  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 4 个工具。服务端会在每次返回中附带提示，引导模型去重、关联和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
+  <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a><a href="#link"><code>link</code><span>建关联</span></a></div>
+  <div class="tool-list">
     <details class="tool-doc" id="recall" open>
-      <summary><code>recall</code><span>找以前的相关经历</span></summary>
+      <summary><code>recall</code><span>找以前的相关经历</span></summary><div class="tool-doc-body">
       <p>用关键词、换一种说法，或按日期找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实。</p>
       <dl class="parameter-list">
         <div><dt><code>query</code><small>字符串 · 可选</small></dt><dd>要找的话题、原话或当前情境，最多 600 字符。例如 <code>开机自启</code>。</dd></div>
@@ -40,17 +77,17 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div></div>
         <div><dt><code>limit</code><small>整数 · 默认 8</small></dt><dd>最多返回多少条，取值 <code>1–30</code>。</dd></div>
       </dl>
       <div class="code-block example-block"><pre id="recall-example">{"query": "开机自启", "strategy": "hybrid", "limit": 5}</pre>{{ copy_button("recall-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> <code>memories</code> 是带 ID、时间及来源的片段；<code>mode</code> 是实际检索模式；<code>more</code> 表示这次结果已截断；<code>degraded</code> 表示已降级。</p>
-    </details>
+      <p class="tool-output"><strong>返回</strong> <code>hint</code> 提示下一步怎么做；<code>memories</code> 是带 ID、时间及来源的片段；<code>mode</code> 是实际检索模式；<code>more</code> 表示这次结果已截断；<code>degraded</code> 表示已降级。</p>
+    </div></details>
     <details class="tool-doc" id="read">
-      <summary><code>read</code><span>展开某条记忆的原文</span></summary>
+      <summary><code>read</code><span>展开某条记忆的原文</span></summary><div class="tool-doc-body">
       <p>搜到线索后，用记录 ID 查看完整上下文和引用。传 ID，不传标题或搜索词。</p>
       <dl class="parameter-list"><div><dt><code>id</code><small>字符串 · 必填</small></dt><dd>从 <code>recall</code> 或 <code>remember</code> 的返回值取出的记忆 ID。</dd></div></dl>
       <div class="code-block example-block"><pre id="read-example">{"id": "替换成 recall 返回的 id"}</pre>{{ copy_button("read-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> 正文、情境、发生时间、写入时间、来源，以及引用和反向引用。</p>
-    </details>
+      <p class="tool-output"><strong>返回</strong> 正文、情境、发生时间、写入时间、来源，以及引用和反向引用；<code>hint</code> 提醒记忆可能过时，错误时应记录更正而不是直接依赖。</p>
+    </div></details>
     <details class="tool-doc" id="remember">
-      <summary><code>remember</code><span>追加一段值得留存的经历</span></summary>
+      <summary><code>remember</code><span>追加一段值得留存的经历</span></summary><div class="tool-doc-body">
       <p>保存尝试、决定、纠正或经验。只追加新记录，不改写旧记忆，不用于记录秘密或整段对话。</p>
       <dl class="parameter-list">
         <div><dt><code>text</code><small>字符串 · 必填</small></dt><dd>经历本身，例如「应用在用户登录后启动，而不是开机时启动」。</dd></div>
@@ -67,7 +104,18 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div></div>
   "occurred": "2024-09",
   "source": "Codex"
 }</pre>{{ copy_button("remember-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> 新记录和稳定的 <code>id</code>。后续可用此 ID 读取或建立引用。</p>
-    </details>
+      <p class="tool-output"><strong>返回</strong> 新记录和稳定的 <code>id</code>，另有 <code>related</code>（内容相近的已有记忆）和 <code>hint</code>。模型据此判断是否重复，并用 <code>link</code> 建立关联或记录更正。</p>
+    </div></details>
+    <details class="tool-doc" id="link">
+      <summary><code>link</code><span>把两条已有记忆关联起来</span></summary><div class="tool-doc-body">
+      <p>发现两段经历属于同一话题，或新记忆更正、延续了旧记忆时使用。重复调用只会更新说明。</p>
+      <dl class="parameter-list">
+        <div><dt><code>from</code><small>字符串 · 必填</small></dt><dd>发起引用的记忆 ID，通常是较新的那条。</dd></div>
+        <div><dt><code>to</code><small>字符串 · 必填</small></dt><dd>被引用的旧记忆或相关记忆 ID。</dd></div>
+        <div><dt><code>reason</code><small>字符串 · 推荐</small></dt><dd>为什么相关。更正旧结论时以「更正」开头，例如「更正：旧方案在企业策略机器上不可用」。</dd></div>
+      </dl>
+      <div class="code-block example-block"><pre id="link-example">{"from": "新记忆的 id", "to": "旧记忆的 id", "reason": "更正：旧结论已过时"}</pre>{{ copy_button("link-example") }}</div>
+      <p class="tool-output"><strong>返回</strong> <code>linked</code>、<code>from</code>、<code>to</code>。关联会立即出现在 Web 的详情页和关系图里。</p>
+    </div></details>
   </div>
 </section>

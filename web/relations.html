@@ -1,16 +1,32 @@
-<section class="relation-section" id="relations">
-<div class="section-heading"><h2>这段记忆的关联</h2><a href="#add-link">添加引用</a></div>
-{% include "graph-canvas.html" %}
-<div class="relation-map">
-<div class="relation-column"><h3><span class="edge-dot incoming"></span>被引用 <span class="muted">{{ (Incoming|length) }}</span></h3>
-{% for r0 in Incoming %}<article class="relation-node"><a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a>{% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p>{{ r0.Reason }}</p>{% endif %}</article>{% else %}<p class="muted">暂无引用来源</p>{% endfor %}</div>
-<div class="focus-node"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><strong>当前记忆</strong>{% if Entry.Occurred %}<time>{{ Entry.Occurred }}</time>{% endif %}</div>
-<div class="relation-column"><h3><span class="edge-dot outgoing"></span>引用了 <span class="muted">{{ (Outgoing|length) }}</span></h3>
-{% for r0 in Outgoing %}<article class="relation-node"><div class="node-line"><a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a><form method="post" action="/memory/{{ Entry.ID }}/links"><input type="hidden" name="target" value="{{ r0.ID }}"><input type="hidden" name="back" value="{{ Back }}"><button class="quiet icon-button" name="action" value="remove" title="移除引用" aria-label="移除引用"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg></button></form></div>{% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p>{{ r0.Reason }}</p>{% endif %}</article>{% else %}<p class="muted">暂无引用</p>{% endfor %}</div>
-</div>
-<details id="add-link" class="link-picker" {% if LinkQuery %}open{% endif %}>
-<summary>添加或更新引用</summary>
-<form method="get" action="/memory/{{ Entry.ID }}#add-link" class="inline-controls"><input type="hidden" name="back" value="{{ Back }}"><input type="search" name="find" value="{{ LinkQuery }}" placeholder="搜索目标记忆" aria-label="搜索目标记忆" maxlength="600"><button>搜索</button></form>
-{% if Choices %}<form method="post" action="/memory/{{ Entry.ID }}/links" class="pick-form"><input type="hidden" name="back" value="{{ Back }}"><label>目标<select name="target" required><option value="">选择记忆</option>{% for r1 in Choices %}<option value="{{ r1.ID }}">{% if r1.Occurred %}{{ r1.Occurred }} · {% endif %}{{ r1.Text }}</option>{% endfor %}</select></label><label>关联说明<input name="reason" maxlength="260"></label><button><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>保存引用</button></form>{% else %}<p class="muted">没有其他记忆可引用。</p>{% endif %}
-</details>
-</section>
+<aside class="relations" id="relations" aria-label="关联记忆">
+  <div class="relations-head"><h2>关联记忆</h2><button type="button" class="btn btn-sm" data-link-open><svg class="icon icon-sm" aria-hidden="true"><use href="#plus"/></svg>添加引用</button></div>
+  <p class="sub">引用表示这条经历与哪些旧记忆有关，AI 读取时会一并看到。</p>
+  <div class="rel-group">
+    <h3 class="rel-title"><span class="edge-dot"></span>引用了 <span class="count">{{ (Outgoing|length) }}</span></h3>
+    {% for r0 in Outgoing %}<div class="rel-item" data-linked-id="{{ r0.ID }}">
+      <a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a>
+      <form method="post" action="/memory/{{ Entry.ID }}/links" data-confirm-title="移除这条引用？" data-confirm-body="只会移除两条记忆之间的关联，记忆本身不受影响。" data-confirm-ok="移除" data-flash-after="已移除引用"><input type="hidden" name="target" value="{{ r0.ID }}"><input type="hidden" name="back" value="{{ Back }}"><button class="btn btn-ghost btn-icon btn-sm" name="action" value="remove" title="移除引用" aria-label="移除引用"><svg class="icon icon-sm" aria-hidden="true"><use href="#x"/></svg></button></form>
+      {% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p class="reason">{{ r0.Reason }}</p>{% endif %}
+    </div>{% else %}<p class="rel-empty">还没有引用其他记忆。</p>{% endfor %}
+  </div>
+  <div class="rel-group">
+    <h3 class="rel-title"><span class="edge-dot incoming"></span>被引用 <span class="count">{{ (Incoming|length) }}</span></h3>
+    {% for r0 in Incoming %}<div class="rel-item">
+      <a href="/memory/{{ r0.ID }}?back={{ Back | urlencode }}">{{ r0.Text }}</a>
+      {% if r0.Date %}<small>{{ r0.Date }}</small>{% endif %}{% if r0.Reason %}<p class="reason">{{ r0.Reason }}</p>{% endif %}
+    </div>{% else %}<p class="rel-empty">暂时没有其他记忆引用它。</p>{% endfor %}
+  </div>
+</aside>
+
+<dialog class="dialog dialog-lg" id="link-dialog" aria-labelledby="link-title" data-self="{{ Entry.ID }}" data-linked="{% for r0 in Outgoing %}{{ r0.ID }} {% endfor %}">
+  <form method="post" action="/memory/{{ Entry.ID }}/links" class="dialog-form" data-flash-after="已添加引用">
+    <div class="dialog-head"><h2 id="link-title">添加引用</h2><button type="button" class="btn btn-ghost btn-icon btn-sm" data-close aria-label="关闭"><svg class="icon" aria-hidden="true"><use href="#x"/></svg></button></div>
+    <div class="dialog-body">
+      <div class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input type="search" data-link-search placeholder="搜索要引用的记忆" aria-label="搜索要引用的记忆" maxlength="600" autocomplete="off"></div>
+      <div class="pick-list" data-link-results role="listbox" aria-label="可引用的记忆"></div>
+      <div class="field" data-link-reason hidden><label for="link-reason">关联说明 <span class="opt">可选</span></label><input id="link-reason" type="text" name="reason" maxlength="260" placeholder="为什么这两段经历相关？例如：这是同一问题的后续"></div>
+      <input type="hidden" name="target" data-link-target><input type="hidden" name="back" value="{{ Back }}">
+    </div>
+    <div class="dialog-foot"><button type="button" class="btn" data-close>取消</button><button class="btn btn-primary" data-link-submit disabled>添加引用</button></div>
+  </form>
+</dialog>

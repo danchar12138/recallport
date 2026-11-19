@@ -1,8 +1,7 @@
 {% macro date_control(arg) %}
-<fieldset class="date-control" data-date-control><legend>发生日期</legend><div class="date-type">
-  <label><span class="sr-only">日期精度</span><select name="precision"><option value="unknown" {% if ((arg|length)) == 0 %}selected{% endif %}>未记日期</option><option value="day" {% if ((arg|length)) == 10 %}selected{% endif %}>具体日期</option><option value="month" {% if ((arg|length)) == 7 %}selected{% endif %}>仅年月</option><option value="year" {% if ((arg|length)) == 4 %}selected{% endif %}>仅年份</option></select></label>
-  <label data-unit="day"><span class="sr-only">具体日期</span><input class="form-control" data-calendar type="text" name="occurred_day" value="{% if ((arg|length)) == 10 %}{{ arg }}{% endif %}" placeholder="YYYY-MM-DD" maxlength="10"></label>
-  <label data-unit="month"><span class="sr-only">年月</span><input class="form-control" type="text" inputmode="decimal" name="occurred_month" value="{% if ((arg|length)) == 7 %}{{ arg }}{% endif %}" placeholder="YYYY-MM" maxlength="7"></label>
-  <label data-unit="year"><span class="sr-only">年份</span><input type="number" name="occurred_year" min="1" max="9999" placeholder="YYYY" value="{% if ((arg|length)) == 4 %}{{ arg }}{% endif %}"></label>
-</div></fieldset>
+<div class="field" data-date-field data-date-hint-field>
+  <label for="f-occurred">发生时间 <span class="opt">可选</span></label>
+  <div class="datefield"><input id="f-occurred" type="text" name="occurred" value="{{ arg }}" placeholder="例如 2024-09-12，或只填 2024-09、2024" maxlength="10" autocomplete="off" data-date-input aria-describedby="f-occurred-hint"><button type="button" class="btn btn-icon" data-date-pick aria-label="打开日历选择日期" title="选择日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div>
+  <div class="field-foot"><span class="hint" id="f-occurred-hint" data-date-hint>不确定具体日子时，只填年或年月即可；留空表示日期未记。</span><span class="quick"><button type="button" class="link-btn" data-date-set="today">今天</button><button type="button" class="link-btn" data-date-set="yesterday">昨天</button><button type="button" class="link-btn" data-date-set="">清空</button></span></div>
+</div>
 {% endmacro %}

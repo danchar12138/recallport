@@ -18,9 +18,6 @@ struct Args {
     data: Option<PathBuf>,
     #[arg(long)]
     model: Option<PathBuf>,
-    /// Run with keyword search only, e.g. when testing the portable package.
-    #[arg(long)]
-    lexical_only: bool,
     /// Restore a portable backup into an empty library, then exit.
     #[arg(long, value_name = "BACKUP")]
     import: Option<PathBuf>,
@@ -36,13 +33,10 @@ async fn main() -> Result<()> {
     let exe = std::env::current_exe()?;
     let root = exe.parent().context("无法找到程序目录")?;
     let model = args.model.unwrap_or_else(|| root.join("model"));
-    let engine: Option<Arc<dyn embedding::Embed>> = if args.lexical_only {
-        None
-    } else {
-        Some(Arc::new(embedding::Granite::open(&model).with_context(
-            || format!("无法加载本地模型：{}", model.display()),
-        )?))
-    };
+    let engine: Option<Arc<dyn embedding::Embed>> = Some(Arc::new(
+        embedding::Granite::open(&model)
+            .with_context(|| format!("无法加载本地模型：{}", model.display()))?,
+    ));
     let dir = args.data.unwrap_or_else(|| root.join("data"));
     let dir = std::path::absolute(dir)?;
     let store = Arc::new(Store::open(&dir, engine).await?);
