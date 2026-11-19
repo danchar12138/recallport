@@ -1,54 +1,81 @@
 <header class="page-head">
   <div><h1>数据</h1><p class="sub">所有记忆只保存在这台电脑上（本地 LanceDB）</p></div>
 </header>
-<nav class="subnav" aria-label="本页内容"><a href="#search-index">检索索引</a><a href="#backups">备份与恢复</a><a href="#search-config">运行参数</a></nav>
-{% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}{% if Notice %}<div data-flash="success" hidden>{{ Notice }}</div>{% endif %}
+<nav class="subnav" aria-label="本页内容"><a href="#backups">备份与恢复</a><a href="#attachments">附件文件</a>{% if Settings %}<a href="#general">常规</a>{% endif %}<a href="#search-index">检索索引</a><a href="#search-config">运行参数</a></nav>
 
-<section id="search-index" aria-labelledby="index-title" data-index-panel>
-  <div class="section-head">
-    <div><h2 id="index-title">检索索引</h2><p>索引只用来加速搜索，随时可以重建，不会改动记忆本身。</p></div>
-    <form method="post" action="/reindex"><input type="hidden" name="kind" value="all"><button class="btn" data-index-rebuild="all"><svg class="icon" aria-hidden="true"><use href="#refresh"/></svg>全部重建</button></form>
-  </div>
-  <div class="lanes">
-    <section class="lane" data-index-lane="keyword" aria-labelledby="keyword-index-title">
-      <div class="lane-head"><div><h3 id="keyword-index-title"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>关键词索引</h3><small>LanceDB BM25 · Jieba + 双字</small></div><span class="badge" data-index-state data-state="{{ Index.Keyword.State }}" role="status"></span></div>
-      <progress class="bar" data-index-bar hidden aria-label="关键词索引重建中"></progress>
-      <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Keyword.CheckedAt %}{{ local_time(Index.Keyword.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Keyword.RepairedAt %}{{ local_time(Index.Keyword.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
-      <p class="problem" data-index-problem {% if not Index.Keyword.Problem %}hidden{% endif %}>关键词索引出现异常，系统会自动重试，也可以手动重建。</p>
-      <div class="lane-foot"><form method="post" action="/reindex"><input type="hidden" name="kind" value="keyword"><button class="btn btn-sm" data-index-rebuild="keyword"><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>重建关键词索引</button></form></div>
-    </section>
-    <section class="lane" data-index-lane="semantic" aria-labelledby="semantic-index-title">
-      <div class="lane-head"><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量</h3><small id="index-engine">{% if Index.Model %}LanceDB · {{ Index.Dimensions }} 维 · {% if Index.Ann %}IVF-HNSW-Flat{% else %}精确扫描{% endif %}{% else %}语义模型未启用{% endif %}</small></div><span class="badge" data-index-state data-state="{{ Index.Semantic.State }}" role="status"></span></div>
-      <div class="coverage" {% if not Index.Model %}hidden{% endif %}><div class="row"><span>向量覆盖</span><strong id="index-coverage">{{ Index.Indexed }} / {{ Index.Total }}</strong></div><progress class="bar" id="index-progress" max="{% if Index.Total %}{{ Index.Total }}{% else %}1{% endif %}" value="{{ Index.Indexed }}" aria-label="语义索引覆盖率"></progress><small class="muted" id="index-skipped" {% if not Index.Skipped %}hidden{% endif %}>跳过 {{ Index.Skipped }} 条</small></div>
-      <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Semantic.CheckedAt %}{{ local_time(Index.Semantic.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Semantic.RepairedAt %}{{ local_time(Index.Semantic.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
-      <details class="model-id" {% if not Index.Model %}hidden{% endif %}><summary>模型标识</summary><code id="index-model">{{ Index.Model }}</code></details>
-      <p class="problem" data-index-problem {% if not Index.Semantic.Problem %}hidden{% endif %}>语义索引出现异常，系统会自动重试，也可以手动重建。</p>
-      <div class="lane-foot"><form method="post" action="/reindex"><input type="hidden" name="kind" value="semantic"><button class="btn btn-sm" data-index-rebuild="semantic" {% if not Index.Model %}disabled{% endif %}><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>重建语义向量</button></form></div>
-    </section>
-  </div>
-</section>
-
-<section id="backups" class="section" aria-labelledby="backup-title">
-  <div class="section-head"><div><h2 id="backup-title">备份与恢复</h2><p>备份是明文 JSON，含全部记忆、引用与来源。请妥善保管，不要上传到公开位置。</p></div></div>
+<section id="backups" aria-labelledby="backup-title">
+  <div class="section-head"><div><h2 id="backup-title">备份与恢复</h2><p>备份是一个 ZIP：含全部记忆、实体、引用、来源和已入库的附件文件，不含模型和索引（恢复后自动重建）。内容是明文，请妥善保管，不要上传到公开位置。</p></div></div>
   <div class="panel-list">
     <div class="panel">
-      <div><h3>下载备份</h3><p>生成包含全部记忆的便携文件，可用于搬迁或日常保护。</p></div>
-      <form method="post" action="/backup" id="backup-form"><button class="btn btn-primary"><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载备份</button></form>
+      <div><h3>导出备份</h3><p>生成一个可随身携带的 .zip，用于搬迁、换电脑或日常保护。</p></div>
+      <button class="btn btn-primary" type="button" data-export><svg class="icon" aria-hidden="true"><use href="#download"/></svg>导出备份</button>
     </div>
     <div class="panel is-column">
-      <div><h3>从备份恢复</h3><p>恢复会<b>替换</b>当前全部记忆，而不是合并。替换前会自动保留一份回退快照，恢复后索引会自动重建。</p></div>
-      <form method="post" action="/restore" enctype="multipart/form-data" class="restore-form" id="restore-form" data-total="{{ Index.Total }}">
-        <label class="dropzone" data-dropzone><svg class="icon" aria-hidden="true"><use href="#upload"/></svg><div><b data-file-name>选择或拖入备份文件</b><span data-file-meta>.recallport.json</span></div><input type="file" name="backup" accept=".json,application/json" aria-label="选择备份文件" required></label>
-        <label class="check-line" data-fallback-confirm><input type="checkbox" name="confirm" value="yes" required>我确认用此文件替换当前全部记忆</label>
-        <div class="restore-actions"><button class="btn btn-danger" data-restore-submit><svg class="icon" aria-hidden="true"><use href="#upload"/></svg>恢复…</button></div>
+      <div><h3>导入备份</h3><p>选择之前导出的 .zip。导入前会先完整校验，通过后才会动用现有数据，并自动保留一份回退快照。</p></div>
+      <form class="restore-form" id="restore-form" data-total="{{ Total }}">
+        <label class="dropzone" data-dropzone><svg class="icon" aria-hidden="true"><use href="#upload"/></svg><div><b data-file-name>选择或拖入备份文件</b><span data-file-meta>.recallport.zip</span></div><input type="file" name="backup" accept=".zip,application/zip" aria-label="选择备份文件"></label>
+        <fieldset class="mode-choice" aria-label="导入方式">
+          <label class="choice"><input type="radio" name="mode" value="restore" checked><span><b>替换当前记忆库</b><small>用备份完全替换现在的内容，不是合并。适合恢复或换电脑。</small></span></label>
+          <label class="choice"><input type="radio" name="mode" value="merge"><span><b>合并到当前记忆库</b><small>把备份里的记忆并入现在的库，两边都保留；同名实体不会被自动合并。适合把另一台电脑的新记忆合进来。</small></span></label>
+        </fieldset>
+        <div class="restore-actions"><button class="btn btn-primary" type="button" data-restore-submit disabled><svg class="icon" aria-hidden="true"><use href="#upload"/></svg>开始导入…</button></div>
       </form>
     </div>
     {% if Recovery %}<div class="panel">
-      <div><h3>回退快照</h3><p>上一次恢复前自动保留的原库，可下载，或一键恢复回去。</p></div>
-      <div class="restore-actions"><a class="btn" href="/recovery" download><svg class="icon" aria-hidden="true"><use href="#download"/></svg>下载</a>
-        <form method="post" action="/recovery" id="rollback-form" data-confirm-title="恢复到上一份快照？" data-confirm-body="当前记忆将被回退快照替换，恢复期间请勿关闭页面。" data-confirm-ok="确认恢复" data-confirm-tone="danger"><input type="hidden" name="snapshot" value="{{ Recovery }}"><input type="hidden" name="confirm" value="yes"><button class="btn"><svg class="icon" aria-hidden="true"><use href="#history"/></svg>恢复上一份</button></form></div>
+      <div><h3>回退快照</h3><p>上一次导入或合并之前自动保留的状态：{{ Recovery.Memories }} 条记忆、{{ Recovery.Entities }} 个实体、{{ Recovery.Attachments }} 个附件。</p></div>
+      <div class="restore-actions"><button class="btn" type="button" data-recovery-export><svg class="icon" aria-hidden="true"><use href="#download"/></svg>导出</button><button class="btn" type="button" data-rollback data-confirm-title="回到导入之前？" data-confirm-body="当前记忆库会被回退快照替换（当前状态也会保留为新的回退快照，可再换回来）。操作期间请勿关闭页面。" data-confirm-ok="回退" data-confirm-tone="danger"><svg class="icon" aria-hidden="true"><use href="#history"/></svg>回退到这个状态</button></div>
     </div>{% endif %}
   </div>
+</section>
+
+<section id="attachments" class="section" aria-labelledby="attachments-title">
+  <div class="section-head"><div><h2 id="attachments-title">附件文件</h2><p>由接入的 AI 归档的图片、音视频和文档。「已入库」的文件在数据目录里，随备份带走；「仅引用」只记录位置，不保证搬家后还能打开。</p></div></div>
+  <div class="panel">
+    <div><h3>已入库 {{ Files.Stored }} 个 · 占用 {{ Files.Size }}</h3><p>仅引用 {{ Files.Referenced }} 个。</p></div>
+    <button class="btn" type="button" data-cleanup data-confirm-title="清理未使用的文件？" data-confirm-body="删除没有任何记忆关联、也不在回退快照里的附件文件。这不会影响任何记忆。" data-confirm-ok="清理"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg>清理未使用的文件</button>
+  </div>
+</section>
+
+{% if Settings %}
+<section id="general" class="section" aria-labelledby="general-title">
+  <div class="section-head"><div><h2 id="general-title">常规</h2><p>RecallPort 在系统托盘常驻，关闭网页不会停止服务。</p></div></div>
+  <div class="panel-list">
+    <div class="panel">
+      <div><h3>登录 Windows 时自动启动</h3><p>开机登录后在后台运行，AI 随时可以读写记忆。只对当前用户生效，不需要管理员权限。</p></div>
+      <label class="switch"><input type="checkbox" data-autostart {% if Settings.Autostart %}checked{% endif %} aria-label="登录时自动启动"><span class="switch-ui" aria-hidden="true"></span></label>
+    </div>
+    <div class="panel">
+      <div><h3>退出 RecallPort</h3><p>停止服务。AI 客户端将无法读写记忆，直到你再次启动。</p></div>
+      <button class="btn btn-danger-ghost" type="button" data-quit data-confirm-title="退出 RecallPort？" data-confirm-body="服务会停止，托盘图标也会消失。需要时再双击 recallport.exe 启动。" data-confirm-ok="退出" data-confirm-tone="danger"><svg class="icon" aria-hidden="true"><use href="#power"/></svg>退出</button>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section id="search-index" class="section" aria-labelledby="index-title" data-index-panel>
+  <details class="diagnostics" {% if (Index.Keyword.State == "error") or (Index.Semantic.State == "error") or (Index.Keyword.State == "degraded") or (Index.Semantic.State == "degraded") %}open{% endif %}>
+    <summary><span id="index-title">检索索引</span><span class="summary-note">用于加速搜索，可随时重建，不会改动记忆本身。</span><span class="badge" data-index-overall data-state="{{ Index.Semantic.State }}"></span></summary>
+    <div class="section-head"><span></span>
+      <form method="post" action="/reindex"><input type="hidden" name="kind" value="all"><button class="btn btn-sm" data-index-rebuild="all"><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>全部重建</button></form>
+    </div>
+    <div class="lanes">
+      <section class="lane" data-index-lane="keyword" aria-labelledby="keyword-index-title">
+        <div class="lane-head"><div><h3 id="keyword-index-title"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>关键词索引</h3><small>LanceDB BM25 · Jieba + 双字</small></div><span class="badge" data-index-state data-state="{{ Index.Keyword.State }}" role="status"></span></div>
+        <progress class="bar" data-index-bar hidden aria-label="关键词索引重建中"></progress>
+        <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Keyword.CheckedAt %}{{ local_time(Index.Keyword.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Keyword.RepairedAt %}{{ local_time(Index.Keyword.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
+        <p class="problem" data-index-problem {% if not Index.Keyword.Problem %}hidden{% endif %}>关键词索引出现异常，系统会自动重试，也可以手动重建。</p>
+        <div class="lane-foot"><form method="post" action="/reindex"><input type="hidden" name="kind" value="keyword"><button class="btn btn-sm" data-index-rebuild="keyword"><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>重建关键词索引</button></form></div>
+      </section>
+      <section class="lane" data-index-lane="semantic" aria-labelledby="semantic-index-title">
+        <div class="lane-head"><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量</h3><small id="index-engine">{% if Index.Model %}LanceDB · {{ Index.Dimensions }} 维 · {% if Index.Ann %}IVF-HNSW-Flat{% else %}精确扫描{% endif %}{% else %}语义模型未启用{% endif %}</small></div><span class="badge" data-index-state data-state="{{ Index.Semantic.State }}" role="status"></span></div>
+        <div class="coverage" {% if not Index.Model %}hidden{% endif %}><div class="row"><span>向量覆盖</span><strong id="index-coverage">{{ Index.Indexed }} / {{ Index.Total }}</strong></div><progress class="bar" id="index-progress" max="{% if Index.Total %}{{ Index.Total }}{% else %}1{% endif %}" value="{{ Index.Indexed }}" aria-label="语义索引覆盖率"></progress><small class="muted" id="index-skipped" {% if not Index.Skipped %}hidden{% endif %}>跳过 {{ Index.Skipped }} 条</small></div>
+        <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Semantic.CheckedAt %}{{ local_time(Index.Semantic.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Semantic.RepairedAt %}{{ local_time(Index.Semantic.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
+        <details class="model-id" {% if not Index.Model %}hidden{% endif %}><summary>模型标识</summary><code id="index-model">{{ Index.Model }}</code></details>
+        <p class="problem" data-index-problem {% if not Index.Semantic.Problem %}hidden{% endif %}>语义索引出现异常，系统会自动重试，也可以手动重建。</p>
+        <div class="lane-foot"><form method="post" action="/reindex"><input type="hidden" name="kind" value="semantic"><button class="btn btn-sm" data-index-rebuild="semantic" {% if not Index.Model %}disabled{% endif %}><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>重建语义向量</button></form></div>
+      </section>
+    </div>
+  </details>
 </section>
 
 <section id="search-config" class="section" aria-labelledby="search-config-title">

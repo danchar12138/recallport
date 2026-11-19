@@ -1,6 +1,8 @@
 //! One authoritative Lance table; a memory, its outgoing links and its write key commit together.
 use crate::{
     embedding::{self, Embed},
+    entities::{EntityChoice, Index as EntityIndex},
+    kv,
     memory::*,
 };
 use anyhow::{Context, Result, ensure};
@@ -19,13 +21,16 @@ use lancedb::{
     query::{ExecutableQuery, QueryBase, Select},
     table::AddDataMode,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet},
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
-    sync::{Arc, OnceLock},
+    sync::{
+        Arc, OnceLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 use tokio::sync::{Mutex, RwLock};
 
@@ -39,19 +44,11 @@ pub const MIN_PASSAGE: usize = 7;
 pub const RRF: f64 = 45.0;
 pub const LEXICAL_WEIGHT: f64 = 1.0;
 pub const SEMANTIC_WEIGHT: f64 = 0.9;
-pub const MAX_BACKUP: usize = 1 << 30;
 const TABLE: &str = "memories_v1";
 const FTS: &str = "search_text_idx";
 const ANN: &str = "vector_idx";
 const EMBEDDING_VERSION: &str =
     "granite-embedding-97m-multilingual-r2/835ad140/fp32/cls-v1/passages-v1";
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Backup {
-    pub format: String,
-    pub version: u32,
-    pub memories: Vec<Record>,
-}
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct Lane {
@@ -82,17 +79,28 @@ pub enum LaneKind {
     Semantic,
 }
 
+/// The result of a write: the saved memory, plus entity names that need the AI to choose.
+pub struct Saved {
+    pub entry: Entry,
+    pub choices: Vec<EntityChoice>,
+}
+
 pub struct Store {
-    table: Table,
+    pub(crate) table: Table,
+    pub(crate) etable: Table,
+    pub(crate) atable: Table,
+    pub(crate) dir: PathBuf,
     embedder: Option<Arc<dyn Embed>>,
     pub status: RwLock<IndexStatus>,
-    writes: Mutex<()>,
+    pub(crate) writes: Mutex<()>,
     maintenance: Arc<Mutex<()>>,
-    recovery: PathBuf,
+    pub(crate) idx: RwLock<EntityIndex>,
+    snapshot: RwLock<Option<Arc<Vec<Entry>>>>,
+    generation: AtomicU64,
     _lock: File,
 }
 
-struct Row {
+pub(crate) struct Row {
     record: Record,
     vector: Option<Vec<Vec<f32>>>,
     deleted: bool,
@@ -134,6 +142,24 @@ fn schema() -> Arc<Schema> {
     Arc::new(Schema::new(fields))
 }
 
+/// Text the keyword index sees: the memory plus the entity names and attachment captions around it.
+fn searchable(e: &Entry) -> String {
+    let mut text = format!("{}\n{}", e.text, e.context);
+    for m in &e.mentions {
+        text.push('\n');
+        text.push_str(&m.name);
+    }
+    for a in &e.attachments {
+        text.push('\n');
+        text.push_str(&a.name);
+        if !a.caption.is_empty() {
+            text.push('\n');
+            text.push_str(&a.caption);
+        }
+    }
+    text
+}
+
 fn batch(rows: &[Row]) -> Result<RecordBatch> {
     let mut columns: [Vec<String>; 12] = Default::default();
     for row in rows {
@@ -160,12 +186,12 @@ fn batch(rows: &[Row]) -> Result<RecordBatch> {
             if row.deleted {
                 String::new()
             } else {
-                terms(&format!("{} {}", e.text, e.context), usize::MAX)
+                terms(&searchable(e), usize::MAX)
             },
             if row.deleted {
                 String::new()
             } else {
-                format!("{}\n{}", e.text.to_lowercase(), e.context.to_lowercase())
+                searchable(e).to_lowercase()
             },
             if row.vector.is_some() {
                 EMBEDDING_VERSION.into()
@@ -208,13 +234,13 @@ fn reader(rows: &[Row]) -> Result<impl arrow_array::RecordBatchReader + Send + '
     Ok(RecordBatchIterator::new(vec![Ok(batch(rows)?)], schema()))
 }
 
-fn col<'a, T: 'static>(b: &'a RecordBatch, name: &str) -> Result<&'a T> {
+pub(crate) fn col<'a, T: 'static>(b: &'a RecordBatch, name: &str) -> Result<&'a T> {
     b.column_by_name(name)
         .and_then(|c| c.as_any().downcast_ref())
         .with_context(|| format!("Unexpected Lance column: {name}"))
 }
 
-fn sql(s: &str) -> String {
+pub(crate) fn sql(s: &str) -> String {
     format!("'{}'", s.replace('\'', "''"))
 }
 
@@ -284,13 +310,18 @@ impl Store {
         } else {
             db.create_empty_table(TABLE, schema()).execute().await?
         };
+        let etable = kv::open(&db, "entities_v1").await?;
+        let atable = kv::open(&db, "attachments_v1").await?;
         let model = if embedder.is_some() {
             embedding::ID
         } else {
             ""
         };
-        Ok(Self {
+        let store = Self {
             table,
+            etable,
+            atable,
+            dir: dir.to_path_buf(),
             embedder,
             status: RwLock::new(IndexStatus {
                 model,
@@ -299,9 +330,13 @@ impl Store {
             }),
             writes: Mutex::new(()),
             maintenance: Arc::new(Mutex::new(())),
-            recovery: dir.join("recovery.recallport.json"),
+            idx: RwLock::new(EntityIndex::default()),
+            snapshot: RwLock::new(None),
+            generation: AtomicU64::new(0),
             _lock: lock,
-        })
+        };
+        store.load_index().await?;
+        Ok(store)
     }
 
     pub fn uses_vectors(&self) -> bool {
@@ -320,7 +355,7 @@ impl Store {
         Ok(Some(vector))
     }
 
-    async fn row(&self, record: Record) -> Result<Row> {
+    pub(crate) async fn row(&self, record: Record) -> Result<Row> {
         let text = if record.entry.context.is_empty() {
             record.entry.text.clone()
         } else {
@@ -348,7 +383,7 @@ impl Store {
         })
     }
 
-    async fn records(&self, filter: &str) -> Result<Vec<Record>> {
+    pub(crate) async fn records(&self, filter: &str) -> Result<Vec<Record>> {
         let batches: Vec<RecordBatch> = self
             .table
             .query()
@@ -367,7 +402,7 @@ impl Store {
         Ok(records)
     }
 
-    async fn find(&self, id: &str) -> Result<Record> {
+    pub(crate) async fn find(&self, id: &str) -> Result<Record> {
         ensure!(valid_id(id), "记忆 ID 无效");
         self.records(&format!("NOT deleted AND id = {}", sql(id)))
             .await?
@@ -383,29 +418,75 @@ impl Store {
         Ok(())
     }
 
+    pub(crate) async fn upsert_rows(&self, rows: &[Row]) -> Result<()> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+        self.upsert(rows).await
+    }
+
+    /// Encode vectors for records one by one, reporting how many are done.
+    pub(crate) async fn embed_records(
+        &self,
+        records: Vec<Record>,
+        mut step: impl FnMut(usize),
+    ) -> Result<Vec<Row>> {
+        let mut rows = Vec::with_capacity(records.len());
+        for (i, record) in records.into_iter().enumerate() {
+            rows.push(self.row(record).await?);
+            step(i + 1);
+        }
+        Ok(rows)
+    }
+
+    pub(crate) async fn overwrite_memories(&self, rows: &[Row]) -> Result<()> {
+        self.table
+            .add(batch(rows)?)
+            .mode(AddDataMode::Overwrite)
+            .execute()
+            .await?;
+        Ok(())
+    }
+
+    pub(crate) async fn invalidate(&self) {
+        self.generation.fetch_add(1, Ordering::SeqCst);
+        *self.snapshot.write().await = None;
+    }
+
+    /// Persist an edited record without touching its vector, and refresh the derived lookups.
+    pub(crate) async fn rewrite_locked(&self, record: &Record) -> Result<()> {
+        let text = searchable(&record.entry);
+        self.table
+            .update()
+            .only_if(format!("NOT deleted AND id = {}", sql(&record.entry.id)))
+            .column("payload", sql(&serde_json::to_string(record)?))
+            .column("search_text", sql(&terms(&text, usize::MAX)))
+            .column("body", sql(&text.to_lowercase()))
+            .execute()
+            .await?;
+        self.idx.write().await.put_memory(&record.entry);
+        self.invalidate().await;
+        Ok(())
+    }
+
+    /// Outgoing references that still exist, and the memories that cite this one.
     async fn hydrate(&self, mut item: Entry) -> Result<Entry> {
-        let ids: Vec<_> = item.references.iter().map(|r| sql(&r.id)).collect();
-        if !ids.is_empty() {
-            let existing = self
-                .records(&format!("NOT deleted AND id IN ({})", ids.join(",")))
-                .await?;
-            let keep: HashSet<_> = existing.iter().map(|r| r.entry.id.as_str()).collect();
-            item.references.retain(|r| keep.contains(r.id.as_str()));
-        }
-        for row in self
-            .records(&format!(
-                "NOT deleted AND contains(payload,{})",
-                sql(&item.id)
-            ))
-            .await?
-        {
-            if let Some(link) = row.entry.references.iter().find(|r| r.id == item.id) {
-                item.cited_by.push(Reference {
-                    id: row.entry.id.clone(),
-                    reason: link.reason.clone(),
-                });
-            }
-        }
+        let idx = self.idx.read().await;
+        item.references.retain(|r| idx.live.contains(&r.id));
+        item.cited_by = idx
+            .cites
+            .get(&item.id)
+            .map(|list| {
+                list.iter()
+                    .filter(|(source, _)| idx.live.contains(source))
+                    .map(|(source, r)| Reference {
+                        id: source.clone(),
+                        reason: r.reason.clone(),
+                        kind: r.kind,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         item.cited_by.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(item)
     }
@@ -414,28 +495,52 @@ impl Store {
         self.hydrate(self.find(id).await?.entry).await
     }
 
-    pub async fn remember(&self, draft: Draft, actor: &str, source: &str) -> Result<Entry> {
-        let draft = draft.clean()?;
-        ensure!(source.len() <= 160, "来源名称过长");
-        let hash = fingerprint(&draft)?;
-        let _guard = self.writes.lock().await;
-        if !draft.request_id.is_empty() {
-            let filter = format!(
-                "NOT deleted AND actor = {} AND request_id = {}",
-                sql(actor),
-                sql(&draft.request_id)
-            );
-            if let Some(r) = self.records(&filter).await?.pop() {
+    async fn replay(&self, actor: &str, request_id: &str, hash: &str) -> Result<Option<Entry>> {
+        if request_id.is_empty() {
+            return Ok(None);
+        }
+        let filter = format!(
+            "NOT deleted AND actor = {} AND request_id = {}",
+            sql(actor),
+            sql(request_id)
+        );
+        match self.records(&filter).await?.pop() {
+            Some(r) => {
                 ensure!(
                     r.request.as_ref().is_some_and(|r| r.fingerprint == hash),
                     "此请求 ID 已用于不同的内容"
                 );
-                return self.hydrate(r.entry).await;
+                Ok(Some(self.hydrate(r.entry).await?))
             }
+            None => Ok(None),
+        }
+    }
+
+    pub async fn remember(&self, draft: Draft, actor: &str, source: &str) -> Result<Saved> {
+        let draft = draft.clean()?;
+        ensure!(source.len() <= 160, "来源名称过长");
+        let hash = fingerprint(&draft)?;
+        if let Some(entry) = self.replay(actor, &draft.request_id, &hash).await? {
+            return Ok(Saved {
+                entry,
+                choices: vec![],
+            });
+        }
+        // Files are content-addressed, so they can be copied in before the write lock is taken.
+        let attachments = self.ingest(&draft.attachments, source).await?;
+        let _guard = self.writes.lock().await;
+        if let Some(entry) = self.replay(actor, &draft.request_id, &hash).await? {
+            return Ok(Saved {
+                entry,
+                choices: vec![],
+            });
         }
         for target in &draft.references {
             self.find(&target.id).await.context("引用的记忆不存在")?;
         }
+        // Entities first, the memory row last: the row is the commit point, an orphan entity is harmless.
+        let (mentions, choices) = self.resolve_entities(&draft.entities, source).await?;
+        let stamp = now();
         let record = Record {
             entry: Entry {
                 id: uuid::Uuid::new_v4().simple().to_string(),
@@ -444,10 +549,13 @@ impl Store {
                 occurred: draft.occurred,
                 origin: draft.origin,
                 source: source.into(),
-                recorded: now(),
+                recorded: stamp.clone(),
+                updated: stamp,
                 revision: 1,
                 references: draft.references,
-                cited_by: vec![],
+                mentions,
+                attachments,
+                ..Default::default()
             },
             request: (!draft.request_id.is_empty()).then(|| Request {
                 actor: actor.into(),
@@ -460,19 +568,45 @@ impl Store {
             .add(batch(std::slice::from_ref(&row))?)
             .execute()
             .await?;
-        self.hydrate(row.record.entry).await
+        self.idx.write().await.put_memory(&row.record.entry);
+        self.invalidate().await;
+        Ok(Saved {
+            entry: self.hydrate(row.record.entry).await?,
+            choices,
+        })
     }
 
-    pub async fn edit(&self, id: &str, revision: u32, draft: Draft) -> Result<()> {
+    /// Edit by a person. The previous text is kept in the memory's history, never overwritten silently.
+    pub async fn edit(&self, id: &str, revision: u32, draft: Draft, by: &str) -> Result<()> {
         let draft = draft.clean()?;
         let _guard = self.writes.lock().await;
         let mut row = self.find(id).await?;
         ensure!(row.entry.revision == revision, "记忆已被修改，请刷新后重试");
+        if row.entry.text == draft.text
+            && row.entry.context == draft.context
+            && row.entry.occurred == draft.occurred
+        {
+            return Ok(());
+        }
+        let stamp = now();
+        row.entry.history.push(Revision {
+            revision,
+            text: std::mem::take(&mut row.entry.text),
+            context: std::mem::take(&mut row.entry.context),
+            occurred: std::mem::take(&mut row.entry.occurred),
+            replaced_at: stamp.clone(),
+            replaced_by: by.into(),
+        });
         row.entry.text = draft.text;
         row.entry.context = draft.context;
         row.entry.occurred = draft.occurred;
+        row.entry.updated = stamp;
         row.entry.revision = revision.checked_add(1).context("版本超出范围")?;
-        self.upsert(&[self.row(row).await?]).await
+        let entry = row.entry.clone();
+        self.upsert(&[self.row(row).await?]).await?;
+        self.idx.write().await.put_memory(&entry);
+        self.invalidate().await;
+        Ok(())
     }
 
     pub async fn delete(&self, id: &str, revision: u32) -> Result<()> {
@@ -485,40 +619,38 @@ impl Store {
             ..Default::default()
         };
         row.request = None;
+        let id = row.entry.id.clone();
         self.upsert(&[Row {
             record: row,
             vector: None,
             deleted: true,
         }])
-        .await
+        .await?;
+        self.idx.write().await.forget_memory(&id);
+        self.invalidate().await;
+        Ok(())
     }
 
+    /// Connect a memory to another memory.
     pub async fn link(&self, id: &str, link: Reference, remove: bool) -> Result<()> {
         ensure!(id != link.id && link.reason.len() <= 800, "引用无效");
         let _guard = self.writes.lock().await;
         self.find(&link.id).await?;
-        let mut row = self.find(id).await?;
-        let targets: Vec<_> = row.entry.references.iter().map(|r| sql(&r.id)).collect();
-        if !targets.is_empty() {
-            let active = self
-                .records(&format!("NOT deleted AND id IN ({})", targets.join(",")))
-                .await?;
-            let ids: HashSet<_> = active.into_iter().map(|r| r.entry.id).collect();
-            row.entry.references.retain(|r| ids.contains(&r.id));
+        let mut record = self.find(id).await?;
+        {
+            let idx = self.idx.read().await;
+            record.entry.references.retain(|r| idx.live.contains(&r.id));
         }
-        row.entry.references.retain(|r| r.id != link.id);
+        record.entry.references.retain(|r| r.id != link.id);
         if !remove {
-            ensure!(row.entry.references.len() < 16, "最多引用 16 条记忆");
-            row.entry.references.push(link);
+            ensure!(
+                record.entry.references.len() < MAX_REFERENCES,
+                "最多引用 64 条记忆"
+            );
+            record.entry.references.push(link);
         }
-        let filter = format!("NOT deleted AND id = {}", sql(id));
-        self.table
-            .update()
-            .only_if(filter)
-            .column("payload", sql(&serde_json::to_string(&row)?))
-            .execute()
-            .await?;
-        Ok(())
+        record.entry.updated = now();
+        self.rewrite_locked(&record).await
     }
 
     async fn text_search(&self, filter: &str, query: &str) -> Result<Vec<String>> {
@@ -616,7 +748,10 @@ impl Store {
         }
         let more = found.len() > offset.saturating_add(limit);
         let mut memories = vec![];
+        let snapshot = self.all().await?;
+        let by_id: HashMap<&str, &Entry> = snapshot.iter().map(|e| (e.id.as_str(), e)).collect();
         for entry in found.into_iter().skip(offset).take(limit) {
+            let trail = self.trail(&entry, &by_id).await;
             let mut other_accounts = vec![];
             if !entry.origin.is_empty() {
                 let filter = format!(
@@ -636,6 +771,7 @@ impl Store {
             memories.push(Hit {
                 entry: excerpt(entry),
                 other_accounts,
+                trail,
             });
         }
         Ok(Results {
@@ -648,7 +784,7 @@ impl Store {
 
     pub async fn timeline(&self, q: &Query, offset: usize) -> Result<Results> {
         let mut entries: Vec<_> = self
-            .records(&q.filter()?)
+            .records(&self.scope(q).await?)
             .await?
             .into_iter()
             .map(|r| r.entry)
@@ -661,7 +797,7 @@ impl Store {
     }
 
     pub async fn recall(&self, q: &Query) -> Result<Results> {
-        let filter = q.filter()?;
+        let filter = self.scope(q).await?;
         let limit = if q.limit == 0 { 8 } else { q.limit };
         let text = q.text.trim();
         if text.is_empty() {
@@ -700,7 +836,7 @@ impl Store {
                         }
                     }
                     Err(error) => {
-                        eprintln!("Vector query: {error:#}");
+                        crate::log!("Vector query: {error:#}");
                         degraded = true;
                     }
                 },
@@ -708,7 +844,7 @@ impl Store {
                     degraded = q.strategy == "semantic";
                 }
                 Err(error) => {
-                    eprintln!("Embedding: {error:#}");
+                    crate::log!("Embedding: {error:#}");
                     degraded = true;
                 }
             }
@@ -725,7 +861,7 @@ impl Store {
                         }
                     }
                     Err(error) => {
-                        eprintln!("Full-text query: {error:#}");
+                        crate::log!("Full-text query: {error:#}");
                         degraded = true;
                     }
                 }
@@ -755,57 +891,78 @@ impl Store {
         self.result_page(entries, 0, limit, mode, degraded).await
     }
 
-    pub async fn all(&self) -> Result<Vec<Entry>> {
-        Ok(self
-            .records("NOT deleted")
-            .await?
-            .into_iter()
-            .map(|r| r.entry)
-            .collect())
+    /// Every live memory, cached until the next write.
+    pub async fn all(&self) -> Result<Arc<Vec<Entry>>> {
+        if let Some(cached) = self.snapshot.read().await.clone() {
+            return Ok(cached);
+        }
+        let before = self.generation.load(Ordering::SeqCst);
+        let list = Arc::new(
+            self.records("NOT deleted")
+                .await?
+                .into_iter()
+                .map(|r| r.entry)
+                .collect::<Vec<_>>(),
+        );
+        if self.generation.load(Ordering::SeqCst) == before {
+            *self.snapshot.write().await = Some(list.clone());
+        }
+        Ok(list)
     }
 
-    pub async fn backup(&self) -> Result<Backup> {
-        let mut memories = self.records("NOT deleted").await?;
-        let ids: HashSet<_> = memories.iter().map(|r| r.entry.id.clone()).collect();
-        for r in &mut memories {
-            r.entry.references.retain(|link| ids.contains(&link.id));
-            r.entry.references.sort_by(|a, b| a.id.cmp(&b.id));
+    /// The query filter, narrowed to one entity's memories when asked.
+    async fn scope(&self, q: &Query) -> Result<String> {
+        let mut filter = q.filter()?;
+        if !q.entity.is_empty() {
+            ensure!(valid_id(&q.entity), "实体 ID 无效");
+            let idx = self.idx.read().await;
+            let canon = idx
+                .canonical(&q.entity)
+                .map(|e| e.id.clone())
+                .context("未找到实体")?;
+            let ids = idx.memory_ids(&canon);
+            let list = if ids.is_empty() {
+                "''".to_owned()
+            } else {
+                ids.iter().map(|i| sql(i)).collect::<Vec<_>>().join(",")
+            };
+            filter.push_str(&format!(" AND id IN ({list})"));
         }
-        memories.sort_by(|a, b| a.entry.id.cmp(&b.entry.id));
-        Ok(Backup {
-            format: "recallport".into(),
-            version: 1,
-            memories,
-        })
+        Ok(filter)
     }
 
-    pub fn recovery(&self) -> &Path {
-        &self.recovery
-    }
-
-    pub async fn replace(&self, backup: Backup, save_recovery: bool) -> Result<()> {
-        backup.validate()?;
-        let mut rows = Vec::with_capacity(backup.memories.len());
-        // Finish model inference before replacing a single live row.
-        for record in backup.memories {
-            rows.push(self.row(record).await?);
+    /// How a memory was corrected or summarized, with when and by whom.
+    pub(crate) async fn trail(&self, entry: &Entry, by_id: &HashMap<&str, &Entry>) -> Vec<Trail> {
+        let idx = self.idx.read().await;
+        let step = |relation: &'static str, other: &str, reason: &str| -> Option<Trail> {
+            let e = by_id.get(other)?;
+            Some(Trail {
+                relation,
+                id: e.id.clone(),
+                occurred: e.occurred.clone(),
+                recorded: e.recorded.clone(),
+                source: e.source.clone(),
+                reason: reason.to_owned(),
+                text: snippet(&e.text, 120),
+            })
+        };
+        let mut out = Vec::new();
+        for r in &entry.references {
+            match r.kind {
+                RefKind::Corrects => out.extend(step("corrects", &r.id, &r.reason)),
+                RefKind::Summarizes => out.extend(step("summarizes", &r.id, &r.reason)),
+                RefKind::Relates => {}
+            }
         }
-        let _lock = self.writes.lock().await;
-        if save_recovery {
-            use std::io::Write;
-            let mut temp =
-                tempfile::NamedTempFile::new_in(self.recovery.parent().context("Recovery path")?)?;
-            serde_json::to_writer(temp.as_file_mut(), &self.backup().await?)?;
-            temp.flush()?;
-            temp.as_file().sync_all()?;
-            temp.persist(&self.recovery)?;
+        for (source, r) in idx.cites.get(&entry.id).into_iter().flatten() {
+            match r.kind {
+                RefKind::Corrects => out.extend(step("corrected_by", source, &r.reason)),
+                RefKind::Summarizes => out.extend(step("summarized_by", source, &r.reason)),
+                RefKind::Relates => {}
+            }
         }
-        self.table
-            .add(batch(&rows)?)
-            .mode(AddDataMode::Overwrite)
-            .execute()
-            .await?;
-        Ok(())
+        out.truncate(8);
+        out
     }
 
     pub async fn maintain(&self, selected: Option<LaneKind>) -> Result<()> {
@@ -830,7 +987,7 @@ impl Store {
         tokio::spawn(async move {
             let _maintenance = maintenance;
             if let Err(e) = store.maintain_locked(Some(kind)).await {
-                eprintln!("Index rebuild: {e:#}");
+                crate::log!("Index rebuild: {e:#}");
             }
         });
         true
@@ -859,7 +1016,7 @@ impl Store {
                 update_lane(&mut status.keyword, "ready", repaired, None);
             }
             Err(err) => {
-                eprintln!("Keyword index: {err:#}");
+                crate::log!("Keyword index: {err:#}");
                 update_lane(
                     &mut status.keyword,
                     "degraded",
@@ -888,7 +1045,7 @@ impl Store {
                 update_lane(&mut status.semantic, state, repaired, None);
             }
             Err(err) => {
-                eprintln!("Semantic index: {err:#}");
+                crate::log!("Semantic index: {err:#}");
                 update_lane(
                     &mut status.semantic,
                     "degraded",
@@ -977,124 +1134,160 @@ impl Store {
         ))
     }
 
+    /// Graph data. Memories and entities are nodes; edges are saved references and AI-provided mentions.
+    /// `overview` shows the most mentioned entities and how often they appear together.
     pub async fn graph(
         &self,
         selected: &[String],
         focus: &str,
         suggested: bool,
+        overview: bool,
     ) -> Result<serde_json::Value> {
+        use serde_json::json;
         let entries = self.all().await?;
-        let by_id: HashMap<_, _> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
-        let mut nodes = selected.to_vec();
-        let mut guesses = vec![];
-        if !focus.is_empty() {
-            let f = by_id.get(focus).context("未找到记忆")?;
-            nodes = vec![focus.into()];
-            nodes.extend(f.references.iter().map(|r| r.id.clone()));
-            nodes.extend(
-                entries
+        let by_id: HashMap<&str, &Entry> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
+        let last_of = |e: &Entry| (e.occurred.clone(), e.recorded.clone());
+        let memory_node = |e: &Entry| json!({"id": e.id, "kind": "memory", "text": snippet(&e.text, 110), "occurred": e.occurred, "source": e.source});
+        let idx = self.idx.read().await;
+        let entity_node = |id: &str, count: usize| {
+            idx.entities.get(id).map(|e| {
+                json!({"id": e.id, "kind": "entity", "text": e.name, "hint": e.hint, "aliases": e.aliases, "count": count})
+            })
+        };
+        let mut nodes: Vec<serde_json::Value> = vec![];
+        let mut edges: Vec<serde_json::Value> = vec![];
+        let more: bool;
+
+        if overview {
+            let mut ranked: Vec<(String, usize)> = idx
+                .entities
+                .values()
+                .filter(|e| e.merged_into.is_none())
+                .map(|e| (e.id.clone(), idx.memory_ids(&e.id).len()))
+                .filter(|(_, n)| *n > 0)
+                .collect();
+            ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+            more = ranked.len() > 40;
+            ranked.truncate(40);
+            let top: HashSet<&str> = ranked.iter().map(|r| r.0.as_str()).collect();
+            let mut pairs: HashMap<(String, String), usize> = HashMap::new();
+            for e in entries.iter() {
+                let mut here: Vec<String> = e
+                    .mentions
                     .iter()
-                    .filter(|e| e.references.iter().any(|r| r.id == focus))
-                    .map(|e| e.id.clone()),
-            );
-            if suggested
-                && let Some(v) = self.embedding(format!("{}\n{}", f.text, f.context)).await?
-            {
-                for (id, similarity) in self
-                    .neighbors(
-                        &format!("NOT deleted AND id != {}", sql(focus)),
-                        v,
-                        GRAPH,
-                        20,
-                    )
-                    .await?
-                {
-                    if !nodes.contains(&id) && guesses.len() < 8 {
-                        guesses.push(serde_json::json!({"from":focus,"to":id,"suggested":true,"reason":format!("语义接近 {similarity:.2}")}));
-                        nodes.push(id);
+                    .filter_map(|m| m.entity.as_deref())
+                    .filter_map(|id| idx.canonical(id))
+                    .map(|c| c.id.clone())
+                    .filter(|id| top.contains(id.as_str()))
+                    .collect();
+                here.sort();
+                here.dedup();
+                for (i, a) in here.iter().enumerate() {
+                    for b in &here[i + 1..] {
+                        *pairs.entry((a.clone(), b.clone())).or_default() += 1;
                     }
                 }
             }
-        }
-        nodes.retain(|id| by_id.contains_key(id.as_str()));
-        let mut seen = HashSet::new();
-        nodes.retain(|id| seen.insert(id.clone()));
-        let more = nodes.len() > 100;
-        nodes.truncate(100);
-        let mut edges = vec![];
-        let visible = nodes.iter().collect::<HashSet<_>>();
-        for id in &nodes {
-            for r in &by_id[id.as_str()].references {
-                if visible.contains(&r.id) {
-                    edges.push(serde_json::json!({"from":id,"to":r.id,"reason":r.reason}));
+            nodes.extend(ranked.iter().filter_map(|(id, n)| entity_node(id, *n)));
+            for ((a, b), n) in pairs {
+                edges.push(
+                    json!({"from": a, "to": b, "co": n, "reason": format!("{n} 条记忆同时提及")}),
+                );
+            }
+        } else if let Some(entity) = (!focus.is_empty()).then(|| idx.canonical(focus)).flatten() {
+            let mut ids: Vec<&Entry> = idx
+                .memory_ids(&entity.id)
+                .iter()
+                .filter_map(|id| by_id.get(id.as_str()).copied())
+                .collect();
+            ids.sort_by_key(|e| std::cmp::Reverse(last_of(e)));
+            more = ids.len() > 60;
+            ids.truncate(60);
+            nodes.extend(entity_node(&entity.id, ids.len()));
+            let visible: HashSet<&str> = ids.iter().map(|e| e.id.as_str()).collect();
+            for e in &ids {
+                nodes.push(memory_node(e));
+                edges.push(json!({"from": e.id, "to": entity.id, "mention": true}));
+                for r in &e.references {
+                    if visible.contains(r.id.as_str()) {
+                        edges.push(
+                            json!({"from": e.id, "to": r.id, "reason": r.reason, "rk": r.kind}),
+                        );
+                    }
                 }
             }
-        }
-        edges.extend(guesses.into_iter().filter(|g| {
-            g["to"]
-                .as_str()
-                .is_some_and(|id| nodes.iter().any(|n| n == id))
-        }));
-        Ok(
-            serde_json::json!({"nodes": nodes.iter().map(|id| { let e=by_id[id.as_str()]; serde_json::json!({"id":id,"text":snippet(&e.text,110),"occurred":e.occurred,"source":e.source}) }).collect::<Vec<_>>(),"edges":edges,"more":more}),
-        )
-    }
-}
-
-impl Backup {
-    pub fn parse(bytes: &[u8]) -> Result<Self> {
-        ensure!(bytes.len() <= MAX_BACKUP, "备份文件过大");
-        let backup: Self = serde_json::from_slice(bytes).context("不是 RecallPort 备份")?;
-        backup.validate()?;
-        Ok(backup)
-    }
-
-    fn validate(&self) -> Result<()> {
-        ensure!(
-            self.format == "recallport" && self.version == 1,
-            "不支持的备份格式或版本"
-        );
-        let mut ids = HashSet::new();
-        let mut keys = HashSet::new();
-        for r in &self.memories {
-            let e = &r.entry;
-            ensure!(
-                valid_id(&e.id) && ids.insert(&e.id) && e.revision > 0 && e.cited_by.is_empty(),
-                "备份含有无效或重复的记忆"
+        } else {
+            let mut ids = selected.to_vec();
+            let mut guesses = vec![];
+            if !focus.is_empty() {
+                let f = by_id.get(focus).context("未找到记忆")?;
+                ids = vec![focus.into()];
+                ids.extend(f.references.iter().map(|r| r.id.clone()));
+                ids.extend(
+                    idx.cites
+                        .get(focus)
+                        .into_iter()
+                        .flatten()
+                        .map(|(source, _)| source.clone()),
+                );
+                if suggested
+                    && let Some(v) = self.embedding(format!("{}\n{}", f.text, f.context)).await?
+                {
+                    for (id, similarity) in self
+                        .neighbors(
+                            &format!("NOT deleted AND id != {}", sql(focus)),
+                            v,
+                            GRAPH,
+                            20,
+                        )
+                        .await?
+                    {
+                        if !ids.contains(&id) && guesses.len() < 8 {
+                            guesses.push(json!({"from": focus, "to": id, "suggested": true, "reason": format!("语义接近 {similarity:.2}")}));
+                            ids.push(id);
+                        }
+                    }
+                }
+            }
+            ids.retain(|id| by_id.contains_key(id.as_str()));
+            let mut seen = HashSet::new();
+            ids.retain(|id| seen.insert(id.clone()));
+            more = ids.len() > 100;
+            ids.truncate(100);
+            let visible: HashSet<&str> = ids.iter().map(String::as_str).collect();
+            let mut shown_entities: Vec<String> = vec![];
+            for id in &ids {
+                let e = by_id[id.as_str()];
+                nodes.push(memory_node(e));
+                for r in &e.references {
+                    if visible.contains(r.id.as_str()) {
+                        edges.push(
+                            json!({"from": id, "to": r.id, "reason": r.reason, "rk": r.kind}),
+                        );
+                    }
+                }
+                for m in &e.mentions {
+                    if let Some(c) = m.entity.as_deref().and_then(|x| idx.canonical(x)) {
+                        if !shown_entities.contains(&c.id) && shown_entities.len() < 60 {
+                            shown_entities.push(c.id.clone());
+                        }
+                        if shown_entities.contains(&c.id) {
+                            edges.push(json!({"from": id, "to": c.id, "mention": true}));
+                        }
+                    }
+                }
+            }
+            for id in &shown_entities {
+                nodes.extend(entity_node(id, idx.memory_ids(id).len()));
+            }
+            edges.extend(
+                guesses
+                    .into_iter()
+                    .filter(|g| g["to"].as_str().is_some_and(|id| visible.contains(id))),
             );
-            chrono::DateTime::parse_from_rfc3339(&e.recorded)?;
-            Draft {
-                text: e.text.clone(),
-                context: e.context.clone(),
-                occurred: e.occurred.clone(),
-                origin: e.origin.clone(),
-                references: e.references.clone(),
-                request_id: String::new(),
-            }
-            .clean()?;
-            ensure!(e.source.len() <= 160, "来源名称过长");
-            if let Some(k) = &r.request {
-                ensure!(
-                    !k.actor.is_empty()
-                        && k.actor.len() <= 164
-                        && !k.request_id.is_empty()
-                        && k.request_id.len() <= 128
-                        && k.fingerprint.len() == 64
-                        && k.fingerprint.bytes().all(|x| x.is_ascii_hexdigit())
-                        && keys.insert((&k.actor, &k.request_id)),
-                    "备份含有无效或重复的去重记录"
-                );
-            }
+            edges.dedup_by(|a, b| a == b);
         }
-        for r in &self.memories {
-            for link in &r.entry.references {
-                ensure!(
-                    link.id != r.entry.id && ids.contains(&link.id),
-                    "备份含有悬空或自指引用"
-                );
-            }
-        }
-        Ok(())
+        Ok(json!({"nodes": nodes, "edges": edges, "more": more}))
     }
 }
 
@@ -1123,6 +1316,8 @@ fn ids(batches: Vec<RecordBatch>) -> Result<Vec<String>> {
 fn excerpt(mut e: Entry) -> Entry {
     e.text = snippet(&e.text, 420);
     e.context = snippet(&e.context, 240);
+    e.history.clear();
+    e.cited_by.clear();
     e
 }
 pub fn now() -> String {
@@ -1130,182 +1325,4 @@ pub fn now() -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct Fixed;
-    impl Embed for Fixed {
-        fn encode(&self, input: &str) -> Result<Vec<f32>> {
-            let mut v = vec![0.0; embedding::DIMENSIONS as usize];
-            if input.contains("自启") || input.contains("开机") {
-                v[0] = 1.0;
-            } else {
-                v[1] = 1.0;
-            }
-            Ok(v)
-        }
-    }
-
-    #[tokio::test]
-    async fn transactions_search_and_backup() -> Result<()> {
-        let tmp = tempfile::tempdir()?;
-        let store = Store::open(tmp.path(), Some(Arc::new(Fixed))).await?;
-        assert!(Store::open(tmp.path(), None).await.is_err());
-        store.maintain(None).await?;
-        let d = Draft {
-            text: "服务器配置为自启服务".into(),
-            occurred: "2024-02".into(),
-            request_id: "same".into(),
-            ..Default::default()
-        };
-        let (a, b) = tokio::join!(
-            store.remember(d.clone(), "mcp:test", "test"),
-            store.remember(d.clone(), "mcp:test", "test")
-        );
-        let a = a?;
-        assert_eq!(a.id, b?.id);
-        let changed = Draft {
-            text: "把配置改成手动".into(),
-            ..d
-        };
-        assert!(
-            store
-                .remember(changed.clone(), "mcp:test", "test")
-                .await
-                .is_err()
-        );
-        let other = store
-            .remember(
-                Draft {
-                    text: "配置回滚策略".into(),
-                    occurred: "2025".into(),
-                    ..Default::default()
-                },
-                "web",
-                "Web",
-            )
-            .await?;
-        store
-            .link(
-                &a.id,
-                Reference {
-                    id: other.id.clone(),
-                    reason: "与旧配置的差异 ' 中文".into(),
-                },
-                false,
-            )
-            .await?;
-        assert_eq!(store.read(&other.id).await?.cited_by[0].id, a.id);
-        for (text, strategy, id) in [
-            ("自启", "lexical", &a.id),
-            ("开机", "semantic", &a.id),
-            ("回滚", "hybrid", &other.id),
-        ] {
-            let r = store
-                .recall(&Query {
-                    text: text.into(),
-                    strategy: strategy.into(),
-                    ..Default::default()
-                })
-                .await?;
-            assert_eq!(&r.memories[0].entry.id, id);
-            assert!(!r.degraded);
-        }
-        let found = store
-            .recall(&Query {
-                text: "开机".into(),
-                strategy: "semantic".into(),
-                from: "2024-02-29".into(),
-                through: "2024-02-29".into(),
-                ..Default::default()
-            })
-            .await?;
-        assert_eq!(found.memories[0].entry.id, a.id);
-        assert!(
-            !store
-                .recall(&Query {
-                    text: "回滚".into(),
-                    strategy: "lexical".into(),
-                    from: "2024".into(),
-                    through: "2024".into(),
-                    ..Default::default()
-                })
-                .await?
-                .memories
-                .iter()
-                .any(|h| h.entry.id == other.id)
-        );
-        let backup = store.backup().await?;
-        store.edit(&a.id, 1, changed.clone()).await?;
-        assert!(store.edit(&a.id, 1, changed).await.is_err());
-        store.delete(&other.id, 1).await?;
-        assert!(store.read(&a.id).await?.references.is_empty());
-        let mut malformed = backup.clone();
-        malformed.memories.push(malformed.memories[0].clone());
-        assert!(store.replace(malformed, true).await.is_err());
-        store
-            .replace(Backup::parse(&serde_json::to_vec(&backup)?)?, true)
-            .await?;
-        store.maintain(Some(LaneKind::All)).await?;
-        assert!(store.recovery().is_file());
-        drop(store);
-        let reopened = Store::open(tmp.path(), Some(Arc::new(Fixed))).await?;
-        assert_eq!(reopened.backup().await?, backup);
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn ann_and_chinese_terms_on_a_populated_table() -> Result<()> {
-        let tmp = tempfile::tempdir()?;
-        let store = Store::open(tmp.path(), Some(Arc::new(Fixed))).await?;
-        let items = (0..ANN_MIN + 2)
-            .map(|i| Record {
-                entry: Entry {
-                    id: format!("{i:032x}"),
-                    text: if i == 0 {
-                        "自启策略".into()
-                    } else {
-                        format!("其他经验 {i}")
-                    },
-                    occurred: if i == 0 {
-                        "2024-02".into()
-                    } else {
-                        "2025-02".into()
-                    },
-                    source: "test".into(),
-                    recorded: now(),
-                    revision: 1,
-                    ..Default::default()
-                },
-                request: None,
-            })
-            .collect();
-        store
-            .replace(
-                Backup {
-                    format: "recallport".into(),
-                    version: 1,
-                    memories: items,
-                },
-                false,
-            )
-            .await?;
-        store.maintain(None).await?;
-        let s = store.status.read().await;
-        assert!(s.ann, "{:?}", s.semantic);
-        assert_eq!(s.indexed, ANN_MIN + 2);
-        drop(s);
-        let r = store
-            .recall(&Query {
-                text: "开机".into(),
-                strategy: "semantic".into(),
-                from: "2024".into(),
-                through: "2024".into(),
-                ..Default::default()
-            })
-            .await?;
-        assert_eq!(r.memories.len(), 1);
-        assert_eq!(r.memories[0].entry.id, format!("{:032x}", 0));
-        Ok(())
-    }
-}
+mod tests {}

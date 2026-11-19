@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "detail" %}{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}{% else %}时间线{% endif %} · RecallPort</title>
+<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "entities" %}实体{% elif View == "entity" %}{{ Entity.Name }}{% elif View == "detail" %}{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}{% else %}时间线{% endif %} · RecallPort</title>
 <script src="/theme.js"></script>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/vendor/flatpickr.min.css">
 <link rel="stylesheet" href="/style.css">
 <script src="/vendor/flatpickr.min.js" defer></script>
@@ -89,6 +90,11 @@ SOFTWARE.
   <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></symbol>
   <symbol id="moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></symbol>
   <symbol id="monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></symbol>
+  <symbol id="paperclip" viewBox="0 0 24 24"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" /></symbol>
+  <symbol id="edit" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></symbol>
+  <symbol id="file" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /></symbol>
+  <symbol id="power" viewBox="0 0 24 24"><path d="M12 2v10" /><path d="M18.4 6.6a9 9 0 1 1-12.77.04" /></symbol>
   <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></symbol>
 </svg>
 <a class="skip-link" href="#main">跳到主要内容</a>
@@ -97,6 +103,7 @@ SOFTWARE.
   <nav class="tabs" aria-label="主导航">
     <a href="/" {% if (View == "timeline") or (View == "detail") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>时间线</a>
     <a href="/overview" {% if View == "overview" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
+    <a href="/entities" {% if (View == "entities") or (View == "entity") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#tag"/></svg>实体</a>
     <a href="/graph" {% if View == "graph" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a>
     <a href="/clients" {% if View == "clients" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入</a>
     <a href="/data" {% if View == "data" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#database"/></svg>数据</a>
@@ -111,7 +118,7 @@ SOFTWARE.
   </div>
 </header>
 <main id="main" class="shell">
-{% if View == "timeline" %}{% include "timeline.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% else %}{% include "data.html" %}{% endif %}
+{% if View == "timeline" %}{% include "timeline.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% elif View == "entities" %}{% include "entities.html" %}{% elif View == "entity" %}{% include "entity.html" %}{% else %}{% include "data.html" %}{% endif %}
 </main>
 </body>
 </html>

@@ -12,8 +12,11 @@
   </li>
   <li class="step" id="configuration">
     <div class="step-body">
-      <h2>添加到客户端</h2>
-      <p>选择你使用的客户端，把配置合并到对应文件中（已有配置时只加 <code>recallport</code> 这一项），然后重载或重启客户端。</p>
+      <h2>接入你的 AI 客户端</h2>
+      <p>RecallPort 会检测本机的 Codex 和 Claude Code，只修改它们配置里的 <code>recallport</code> 这一项：修改前先备份原文件，同名但指向别处的配置不会被悄悄覆盖。接入后重启客户端生效。</p>
+      <div class="client-list" data-clients aria-live="polite"><p class="muted">正在检测本机的客户端…</p></div>
+      <details class="manual">
+        <summary>手动配置（其他客户端，或想自己改配置文件）</summary>
       <div data-tabs>
         <div class="tablist" role="tablist" aria-label="客户端" data-tablist>
           <button type="button" class="tab" role="tab" id="tab-codex" aria-controls="panel-codex" aria-selected="true">Codex</button>
@@ -36,17 +39,20 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
 }</pre>{{ copy_button("claude-config") }}</div>
         </div>
       </div>
+      </details>
     </div>
   </li>
   <li class="step" id="proactive">
     <div class="step-body">
       <h2>让 AI 主动用起来 <span class="opt">推荐</span></h2>
-      <p>服务端已内置使用指引，但有些客户端会忽略它。把下面这段加入客户端的规则文件（如 <code>AGENTS.md</code>、<code>CLAUDE.md</code>），模型就会在任务开始前主动查记忆，并在决策、踩坑、被纠正后主动记录、去重和关联。</p>
+      <p>服务端已内置使用指引，但有些客户端会忽略它。把下面这段加入客户端的规则文件（如 <code>AGENTS.md</code>、<code>CLAUDE.md</code>），模型就会在任务开始前主动查记忆，并在决策、变化、被纠正后主动记录，补充实体、归档附件，并保留更正的来龙去脉。</p>
       <div class="code-block"><pre id="agent-rules">## 长期记忆（RecallPort）
 - 开始较大的任务、做技术选型或改动配置之前，先调用 recall 查找相关的过往经历；没找到就换个说法，或用 strategy=semantic 再试一次。
-- 出现这些情况后，立刻调用 remember 记录，不必等我提醒：做出带理由的决定、找到根因、验证有效的修复、失败的尝试及原因、我的偏好或约束、被我纠正。
-- 记录前先 recall：已有相同内容就不要重复；旧记忆过时或错误时，记一条更正，并在 references 里引用旧记忆。
-- 相关的记忆用 link 关联起来。不要自动记录密码、密钥或令牌；我明确要求保存某个凭据值时，可以按原文记入。不要记录整段对话。</pre>{{ copy_button("agent-rules") }}</div>
+- 做出带理由的决定、找到根因、验证有效的修复、失败的尝试及原因、我的偏好或约束、情况发生变化、被我纠正之后，立刻调用 remember 记录，不必等我提醒。账号、密码等私人信息按我的要求原文保存，不要打码。
+- 情况变了，就新记一条并用 references（kind=corrects）引用旧记忆，不要改写过去；多条零散记忆讲同一件事时，记一条汇总（kind=summarizes），保留原文。
+- 记录或读取时留意涉及的项目、设备、工具、人，用 entities 提交（先用 entity 工具查已有的，按 id 复用）；同名但不是同一个时用 new。
+- 我给你的文件、图片、音视频、文档，如果和某条记忆相关且你能读取，就用 attachments 归档（给绝对路径和一句说明）。
+- 记录前先 recall，已有相同内容就不要重复；相关的记忆用 link 关联起来。</pre>{{ copy_button("agent-rules") }}</div>
     </div>
   </li>
   <li class="step" id="verify">
@@ -57,65 +63,84 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
       <ul class="checks" id="mcp-checks" aria-label="检查步骤" hidden>
         <li data-check="health" data-state="idle">本机服务可访问</li>
         <li data-check="init" data-state="idle">完成 MCP 握手</li>
-        <li data-check="tools" data-state="idle">读取工具列表（recall、read、remember、link）</li>
+        <li data-check="tools" data-state="idle">读取工具列表（recall、read、remember、link、entity）</li>
       </ul>
     </div>
   </li>
 </ol>
 
 <section id="tools" class="section" aria-labelledby="tools-title">
-  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 4 个工具。服务端会在每次返回中附带提示，引导模型去重、关联和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
-  <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a><a href="#link"><code>link</code><span>建关联</span></a></div>
+  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 5 个工具。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
+  <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a><a href="#link"><code>link</code><span>建关联</span></a><a href="#entity"><code>entity</code><span>管实体</span></a></div>
   <div class="tool-list">
     <details class="tool-doc" id="recall" open>
       <summary><code>recall</code><span>找以前的相关经历</span></summary><div class="tool-doc-body">
-      <p>用关键词、换一种说法，或按日期找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实。</p>
+      <p>用关键词、换一种说法，或按日期、按实体找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实；命中项如果被更正或汇总过，会带 <code>trail</code>，列出后续记录的时间和来源，请一起判断，较新的记录不一定更准确。</p>
       <dl class="parameter-list">
         <div><dt><code>query</code><small>字符串 · 可选</small></dt><dd>要找的话题、原话或当前情境，最多 600 字符。例如 <code>开机自启</code>。</dd></div>
-        <div><dt><code>strategy</code><small>枚举 · 默认 hybrid</small></dt><dd><code>hybrid</code> 混合，默认推荐；<code>lexical</code> 关键词，适合路径或精确名称；<code>semantic</code> 语义，适合改写与同义词。索引异常时可能降级。</dd></div>
-        <div><dt><code>from</code> / <code>through</code><small>日期字符串 · 可选</small></dt><dd>按发生时间筛选，含起止边界，可只填一端。支持 <code>YYYY</code>、<code>YYYY-MM</code> 或 <code>YYYY-MM-DD</code>。</dd></div>
+        <div><dt><code>strategy</code><small>枚举 · 默认 hybrid</small></dt><dd><code>hybrid</code> 混合，默认推荐；<code>lexical</code> 关键词，适合路径或精确名称；<code>semantic</code> 语义，适合改写与同义词。</dd></div>
+        <div><dt><code>entity</code><small>字符串 · 可选</small></dt><dd>只看提及某个实体的记忆（传实体 ID）。</dd></div>
+        <div><dt><code>from</code> / <code>through</code><small>日期字符串 · 可选</small></dt><dd>按发生时间筛选，含起止边界。支持 <code>YYYY</code>、<code>YYYY-MM</code> 或 <code>YYYY-MM-DD</code>。</dd></div>
         <div><dt><code>limit</code><small>整数 · 默认 8</small></dt><dd>最多返回多少条，取值 <code>1–30</code>。</dd></div>
       </dl>
       <div class="code-block example-block"><pre id="recall-example">{"query": "开机自启", "strategy": "hybrid", "limit": 5}</pre>{{ copy_button("recall-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> <code>hint</code> 提示下一步怎么做；<code>memories</code> 是带 ID、时间及来源的片段；<code>mode</code> 是实际检索模式；<code>more</code> 表示这次结果已截断；<code>degraded</code> 表示已降级。</p>
-    </div></details>
+      <p class="tool-output"><strong>返回</strong> <code>memories</code>（带 ID、时间、来源、提及的实体和 <code>trail</code>）、<code>mode</code>、<code>more</code>、<code>degraded</code>，以及提示下一步的 <code>hint</code>。</p>
+      </div>
+    </details>
     <details class="tool-doc" id="read">
-      <summary><code>read</code><span>展开某条记忆的原文</span></summary><div class="tool-doc-body">
-      <p>搜到线索后，用记录 ID 查看完整上下文和引用。传 ID，不传标题或搜索词。</p>
+      <summary><code>read</code><span>展开某条记忆的完整内容</span></summary><div class="tool-doc-body">
+      <p>搜到线索后，用记录 ID 查看完整内容。传 ID，不传标题或搜索词。</p>
       <dl class="parameter-list"><div><dt><code>id</code><small>字符串 · 必填</small></dt><dd>从 <code>recall</code> 或 <code>remember</code> 的返回值取出的记忆 ID。</dd></div></dl>
       <div class="code-block example-block"><pre id="read-example">{"id": "替换成 recall 返回的 id"}</pre>{{ copy_button("read-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> 正文、情境、发生时间、写入时间、来源，以及引用和反向引用；<code>hint</code> 提醒记忆可能过时，错误时应记录更正而不是直接依赖。</p>
-    </div></details>
+      <p class="tool-output"><strong>返回</strong> 正文、情境、发生与写入时间、来源；双向的引用（带种类和原因）、实体、附件（含文件在本机的路径，可直接打开）、旧版本正文，以及更正轨迹。</p>
+      </div>
+    </details>
     <details class="tool-doc" id="remember">
       <summary><code>remember</code><span>追加一段值得留存的经历</span></summary><div class="tool-doc-body">
-      <p>只追加新记录，不改写旧记忆。不会自动收集凭据；你明确要求保存时可以记入原文。凭据会出现在 Web、MCP 返回和明文备份中。</p>
+      <p>保存决策、根因、有效的修复、失败的尝试、偏好、约束、变化和更正。只追加新记录，不改写旧记忆。账号、密码等私人信息按原文保存，不做分级，也不打码。</p>
       <dl class="parameter-list">
-        <div><dt><code>text</code><small>字符串 · 必填</small></dt><dd>经历本身，例如「应用在用户登录后启动，而不是开机时启动」。</dd></div>
-        <div><dt><code>context</code><small>字符串 · 可选</small></dt><dd>让旧事易于理解的背景，例如当时的设备、项目或限制。</dd></div>
+        <div><dt><code>text</code><small>字符串 · 必填</small></dt><dd>经历本身，用用户的语言，写得让没有上下文的人也能看懂。</dd></div>
+        <div><dt><code>context</code><small>字符串 · 可选</small></dt><dd>背景，例如当时的设备、项目或限制。</dd></div>
         <div><dt><code>occurred</code><small>日期字符串 · 可选</small></dt><dd>经历发生的时间，不等于写入时间。只知道月份就填 <code>2024-09</code>，不知道就省略。</dd></div>
         <div><dt><code>source</code><small>字符串 · 默认 MCP</small></dt><dd>自报的记入来源，例如 <code>Codex</code>；不是已验证身份。</dd></div>
-        <div><dt><code>origin</code><small>字符串 · 可选</small></dt><dd>同一次经历的稳定标识，用来在检索时折叠不同转述。不要用整个项目或会话的 ID 代替。</dd></div>
-        <div><dt><code>request_id</code><small>字符串 · 可选</small></dt><dd>写入超时后，重试完全相同的请求时复用原 ID，避免重复写入。新经历用新 ID。</dd></div>
-        <div><dt><code>references</code><small>数组 · 可选</small></dt><dd>明确引用的旧记忆。每项传 <code>id</code>，可附 <code>reason</code> 解释为什么相关。</dd></div>
+        <div><dt><code>references</code><small>数组 · 可选</small></dt><dd>引用的旧记忆。每项传 <code>id</code>，<code>kind</code> 取 <code>relates</code>（默认）、<code>corrects</code>（本条更正了它，旧的保留作历史）或 <code>summarizes</code>（本条汇总了它们，原文保留），可附 <code>reason</code>。</dd></div>
+        <div><dt><code>entities</code><small>数组 · 可选</small></dt><dd>这条记忆讲的是什么。已有实体传 <code>id</code> 复用；新事物只传 <code>name</code>。同名时系统不会替你猜：会保存为「待确认」并在返回里给出候选，请用 <code>link</code> 选择；确实是另一个同名事物就加 <code>new: true</code> 和区分说明 <code>hint</code>。</dd></div>
+        <div><dt><code>attachments</code><small>数组 · 可选</small></dt><dd>相关的文件。传绝对路径 <code>path</code>（小文件可传 <code>data_base64</code>，约 90 KB 以内），可附 <code>name</code> 和一句说明 <code>caption</code>（可被搜索）。默认复制入库；<code>mode: reference</code> 只记录位置，不进备份。</dd></div>
+        <div><dt><code>origin</code> / <code>request_id</code><small>字符串 · 可选</small></dt><dd><code>origin</code> 是同一次经历的稳定标识，用来折叠不同转述；<code>request_id</code> 只在写入超时后重试完全相同的请求时复用，避免重复写入。</dd></div>
       </dl>
       <div class="code-block example-block"><pre id="remember-example">{
   "text": "应用在用户登录后启动，而不是开机时启动。",
   "context": "Windows 后台工具，使用任务计划程序",
   "occurred": "2024-09",
-  "source": "Codex"
+  "source": "Codex",
+  "entities": [{"name": "任务计划程序"}],
+  "references": [{"id": "旧记忆的 id", "kind": "corrects", "reason": "旧方案不可行"}]
 }</pre>{{ copy_button("remember-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> 新记录和稳定的 <code>id</code>，另有 <code>related</code>（内容相近的已有记忆）和 <code>hint</code>。模型据此判断是否重复，并用 <code>link</code> 建立关联或记录更正。</p>
-    </div></details>
+      <p class="tool-output"><strong>返回</strong> 新记录和稳定的 <code>id</code>，另有 <code>related</code>（内容相近的已有记忆）、<code>entity_choices</code>（待你选择的重名候选）和 <code>hint</code>。</p>
+      </div>
+    </details>
     <details class="tool-doc" id="link">
-      <summary><code>link</code><span>把两条已有记忆关联起来</span></summary><div class="tool-doc-body">
-      <p>发现两段经历属于同一话题，或新记忆更正、延续了旧记忆时使用。重复调用只会更新说明。</p>
+      <summary><code>link</code><span>把记忆与记忆、实体、附件关联起来</span></summary><div class="tool-doc-body">
+      <p>三选一：<code>to</code>（另一条记忆）、<code>entity</code>（它讲的是什么，也用来确认「待确认」的名称）、<code>attachment</code>（附上文件）。重复调用只会更新；<code>remove: true</code> 只断开关联，不删除任何东西。</p>
       <dl class="parameter-list">
-        <div><dt><code>from</code><small>字符串 · 必填</small></dt><dd>发起引用的记忆 ID，通常是较新的那条。</dd></div>
-        <div><dt><code>to</code><small>字符串 · 必填</small></dt><dd>被引用的旧记忆或相关记忆 ID。</dd></div>
-        <div><dt><code>reason</code><small>字符串 · 推荐</small></dt><dd>为什么相关。更正旧结论时以「更正」开头，例如「更正：旧方案在企业策略机器上不可用」。</dd></div>
+        <div><dt><code>from</code><small>字符串 · 必填</small></dt><dd>发起关联的记忆 ID，通常是较新的那条。</dd></div>
+        <div><dt><code>to</code> + <code>kind</code> + <code>reason</code><small>可选</small></dt><dd>关联另一条记忆；<code>kind</code> 同上，更正旧结论时用 <code>corrects</code>。</dd></div>
+        <div><dt><code>entity</code><small>对象 · 可选</small></dt><dd><code>{"name", "id", "aliases", "hint", "new"}</code>：有 <code>id</code> 就复用，没有就按名称解析。</dd></div>
+        <div><dt><code>attachment</code><small>对象 · 可选</small></dt><dd><code>{"path" | "data_base64" | "hash", "name", "caption", "mode"}</code>；断开时传 <code>hash</code>。</dd></div>
       </dl>
-      <div class="code-block example-block"><pre id="link-example">{"from": "新记忆的 id", "to": "旧记忆的 id", "reason": "更正：旧结论已过时"}</pre>{{ copy_button("link-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> <code>linked</code>、<code>from</code>、<code>to</code>。关联会立即出现在 Web 的详情页和关系图里。</p>
-    </div></details>
+      <div class="code-block example-block"><pre id="link-example">{"from": "记忆 id", "entity": {"name": "主服务器", "id": "已有实体的 id"}}</pre>{{ copy_button("link-example") }}</div>
+      <p class="tool-output"><strong>返回</strong> 关联结果；实体重名时给出 <code>entity_choices</code>。</p>
+      </div>
+    </details>
+    <details class="tool-doc" id="entity">
+      <summary><code>entity</code><span>实体目录：查找、查看、改名、合并</span></summary><div class="tool-doc-body">
+      <p>提交实体之前先查一下，复用正确的那个。名称不会被自动合并，是否同一个由 AI 判断，网页端也可以撤销合并。</p>
+      <dl class="parameter-list">
+        <div><dt><code>action</code><small>枚举 · 默认 search</small></dt><dd><code>search</code> 按名称、别名或说明查找（不传 <code>query</code> 则列出提及最多的，并列出待确认的名称）；<code>get</code> 看一个实体及其随时间的记忆和同时出现的实体；<code>update</code> 改名、增删别名、设置区分说明；<code>merge</code> 把 <code>id</code> 并入 <code>merge_into</code>。</dd></div>
+      </dl>
+      <div class="code-block example-block"><pre id="entity-example">{"action": "search", "query": "服务器"}</pre>{{ copy_button("entity-example") }}</div>
+      <p class="tool-output"><strong>返回</strong> 实体列表（含 ID、别名、说明、提及次数、最近出现）或单个实体的详情。</p>
+      </div>
+    </details>
   </div>
 </section>

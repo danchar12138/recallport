@@ -5,7 +5,7 @@
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
 <div class="stats">
   <a class="stat" href="/"><span>全部记忆</span><strong>{{ Total }}</strong><span class="go">查看时间线<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span></a>
-  <div class="stat"><span>覆盖年份</span><strong>{{ (Years|length) }}</strong></div>
+  <a class="stat" href="/entities"><span>实体</span><strong>{{ Entities }}</strong>{% if Entities %}<span class="go">查看实体<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
   <a class="stat" href="/?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
 </div>
 <section class="years" aria-label="按年、月浏览记忆">

@@ -1,7 +1,7 @@
 /* 页面专属交互。依赖 ui.js 提供的 window.RP。 */
 (() => {
   'use strict';
-  const {$, $$, h, toast, confirmDialog, progressDialog, formatBytes, rebuilds} = window.RP;
+  const {$, $$, h, toast, openDialog, confirmDialog, progressDialog, formatBytes, rebuilds} = window.RP;
   const pad = value => String(value).padStart(2, '0');
   const ymd = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
@@ -251,6 +251,81 @@
     void panels;
   }
 
+  /* ---------- 接入：检测、接入、取消、验证 ---------- */
+  const clientList = $('[data-clients]');
+  if (clientList) {
+    const ago = iso => {
+      const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+      if (seconds < 60) return '刚刚';
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
+      return new Date(iso).toLocaleDateString();
+    };
+    const states = {connected: ['已接入', 'ready'], none: ['未接入', ''], conflict: ['地址不同', 'degraded'], error: ['无法读取', 'error']};
+    let latest = null;
+    const post = async (url, body) => {
+      const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams(body)});
+      return {status: response.status, json: await response.json().catch(() => ({}))};
+    };
+    const detail = c => [
+      h('p', {text: `范围：${c.scope}`}), h('p', {class: 'muted', text: `配置文件：${c.path}`}),
+      h('p', {text: '将写入这一项（其余内容保持不变）：'}), h('pre', {class: 'quote', text: c.preview}),
+    ];
+    const refresh = async () => {
+      try {
+        const response = await fetch('/clients-status');
+        if (!response.ok) throw new Error('status');
+        latest = await response.json();
+        clientList.replaceChildren(...latest.clients.map(card));
+      } catch { /* 下次再试 */ }
+    };
+    const act = async (c, kind) => {
+      if (kind === 'connect' || kind === 'replace') {
+        const conflict = kind === 'replace';
+        const ok = await confirmDialog({
+          title: conflict ? `替换 ${c.name} 里的同名配置？` : `接入 ${c.name}？`,
+          body: conflict ? [`${c.name} 里已经有一个叫 recallport 的配置，指向 ${c.existing}。替换后它会改为指向当前地址，原文件会先备份。`, ...detail(c)] : detail(c),
+          ok: conflict ? '替换为当前地址' : '接入', tone: conflict ? 'danger' : undefined,
+        });
+        if (!ok) return;
+        const result = await post(`/clients/${c.id}/connect`, {replace: conflict ? '1' : '0'});
+        if (result.status === 409) { toast(`${c.name} 里已有同名配置（指向 ${result.json.existing}），请在卡片上选择「替换」`, {tone: 'info', timeout: 8000}); }
+        else if (result.json.ok) toast(result.json.already ? `${c.name} 已经接入` : `已接入 ${c.name}。请重启 ${c.name} 使其生效。`, {timeout: 6000});
+        else toast(result.json.error || '接入未完成', {tone: 'error', timeout: 9000});
+      } else if (kind === 'disconnect') {
+        const ok = await confirmDialog({title: `取消接入 ${c.name}？`, body: [`只会从 ${c.name} 的配置里移除 recallport 这一项（原文件先备份）。你的记忆不会被删除，随时可以重新接入。`, h('p', {class: 'muted', text: `配置文件：${c.path}`})], ok: '取消接入', tone: 'danger'});
+        if (!ok) return;
+        const result = await post(`/clients/${c.id}/disconnect`, {});
+        if (result.json.ok) toast(result.json.removed ? `已取消接入 ${c.name}` : `${c.name} 本来就没有接入`, {tone: result.json.removed ? 'success' : 'info'});
+        else toast(result.json.error || '操作未完成', {tone: 'error'});
+      } else if (kind === 'verify') {
+        await refresh();
+        const now = latest.clients.find(x => x.id === c.id);
+        if (now.state !== 'connected') toast(`${c.name} 的配置还不正确，请先接入`, {tone: 'error'});
+        else if (now.last_seen) toast(`配置正确，${now.last_seen.client} ${ago(now.last_seen.at)}连接过`);
+        else toast(`配置正确，但还没有收到 ${c.name} 的连接。请重启 ${c.name} 后再点「验证」`, {tone: 'info', timeout: 7000});
+        return;
+      }
+      await refresh();
+    };
+    const card = c => {
+      const [label, tone] = states[c.state] || states.none;
+      const buttons = [];
+      const button = (text, kind, primary) => { const b = h('button', {type: 'button', class: `btn btn-sm${primary ? ' btn-primary' : ''}`, text}); b.addEventListener('click', () => { b.classList.add('is-busy'); act(c, kind).finally(() => b.classList.remove('is-busy')); }); return b; };
+      if (c.state === 'none') buttons.push(button('接入', 'connect', true));
+      if (c.state === 'conflict') buttons.push(button('替换为当前地址…', 'replace', true));
+      if (c.state === 'connected') buttons.push(button('验证', 'verify', true), button('取消接入', 'disconnect'));
+      const note = c.state === 'error' ? c.error : c.state === 'conflict' ? `配置里已有同名项，指向 ${c.existing}。` : c.state === 'connected'
+        ? (c.last_seen ? `最近连接：${c.last_seen.client} · ${ago(c.last_seen.at)}` : `还没有收到它的连接。重启 ${c.name} 后点「验证」。`) : '';
+      return h('div', {class: 'client-card'},
+        h('div', {class: 'client-head'}, h('b', {text: c.name}), h('span', {class: 'badge', 'data-state': tone, text: label}), c.installed ? null : h('span', {class: 'muted', text: '未检测到安装，仍可接入'})),
+        h('p', {class: 'muted client-path', text: `${c.scope} · ${c.path}`}), note ? h('p', {class: 'client-note', text: note}) : null,
+        h('div', {class: 'client-actions'}, ...buttons));
+    };
+    refresh();
+    setInterval(() => { if (!document.hidden) refresh(); }, 4000);
+  }
+
   const testMCP = $('#test-mcp');
   if (testMCP) {
     const status = $('#mcp-status'), list = $('#mcp-checks'), step = $('#verify');
@@ -283,9 +358,9 @@
         mark('init', 'ok'); current = 'tools'; mark('tools', 'run');
         const result = await send({id: 2, method: 'tools/list', params: {}}, init.protocolVersion);
         const names = new Set(result.tools.map(tool => tool.name));
-        if (!['recall', 'read', 'remember', 'link'].every(name => names.has(name))) throw new Error('Missing tools');
+        if (!['recall', 'read', 'remember', 'link', 'entity'].every(name => names.has(name))) throw new Error('Missing tools');
         mark('tools', 'ok');
-        status.textContent = '连接正常，4 个工具可用。现在可以去客户端里添加这个地址了。';
+        status.textContent = '连接正常，5 个工具可用。现在可以去客户端里添加这个地址了。';
         step.classList.add('is-done');
         toast('MCP 连接正常');
       } catch {
@@ -347,6 +422,9 @@
           busy ||= working;
         }
         $('[data-index-rebuild="all"]', indexPanel).disabled = busy || pending.size > 0;
+        const rank = {error: 4, degraded: 3, working: 2, queued: 2, ready: 1};
+        const overall = $('[data-index-overall]', indexPanel);
+        if (overall) setState(overall, ['keyword', 'semantic'].map(k => s[k].state).sort((a, b) => (rank[b] || 0) - (rank[a] || 0))[0]);
         document.getElementById('index-coverage').textContent = `${s.indexed} / ${s.total}`;
         document.getElementById('index-engine').textContent = s.model ? `LanceDB · ${s.dimensions} 维 · ${s.ann ? 'IVF-HNSW-Flat' : '精确扫描'}` : '语义模型未启用';
         const progress = document.getElementById('index-progress');
@@ -387,54 +465,81 @@
     poll();
   }
 
-  const backupForm = $('#backup-form');
-  if (backupForm) {
-    const button = $('button', backupForm);
-    backupForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      button.classList.add('is-busy');
+  /* ---------- 数据：后台任务（导出、导入、合并、回退）与进度 ---------- */
+  const pollJob = (id, dialog) => new Promise((resolve, reject) => {
+    const tick = async () => {
       try {
-        const response = await fetch(backupForm.action, {method: 'POST'});
-        if (!response.ok) throw new Error('backup failed');
-        const blob = await response.blob();
-        const name = /filename="?([^";]+)/.exec(response.headers.get('Content-Disposition') || '')?.[1] || 'recallport.recallport.json';
-        const url = URL.createObjectURL(blob);
-        const link = h('a', {href: url, download: name});
-        document.body.append(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 15000);
-        toast(`备份已生成：${name}（${formatBytes(blob.size)}），请在浏览器的下载列表中查看`, {timeout: 5000});
-      } catch {
-        toast('生成备份失败，请重试', {tone: 'error'});
-      } finally {
-        button.classList.remove('is-busy');
-      }
-    });
-  }
+        const response = await fetch(`/jobs/${id}`);
+        if (!response.ok) throw new Error('无法读取任务进度');
+        const state = await response.json();
+        dialog.set(state.fraction, state.phase);
+        if (!state.finished) { setTimeout(tick, 500); return; }
+        if (state.error) reject(new Error(state.error)); else resolve(state);
+      } catch (error) { reject(error); }
+    };
+    tick();
+  });
+  const startJob = async (url, options = {method: 'POST'}) => {
+    const response = await fetch(url, options);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || '操作未能开始');
+    return body.id;
+  };
+  const ask = btn => confirmDialog({title: btn.dataset.confirmTitle, body: btn.dataset.confirmBody, ok: btn.dataset.confirmOk || '确认', tone: btn.dataset.confirmTone});
+  const download = (id, file) => {
+    const link = h('a', {href: `/download/${id}`, download: file});
+    document.body.append(link); link.click(); link.remove();
+  };
 
-  /** 带上传进度的恢复请求。成功后服务端重定向到 /data?done=restore。 */
-  const runRestore = (url, body, title) => new Promise(resolve => {
-    const dialog = progressDialog({title, message: '正在提交…'});
+  for (const btn of $$('[data-export], [data-recovery-export]')) btn.addEventListener('click', async () => {
+    const recovery = btn.hasAttribute('data-recovery-export');
+    const dialog = progressDialog({title: recovery ? '正在导出回退快照' : '正在导出备份', message: '正在准备…'});
+    btn.classList.add('is-busy');
+    try {
+      const id = await startJob(recovery ? '/recovery/export' : '/backup');
+      const state = await pollJob(id, dialog);
+      dialog.close();
+      download(id, state.result.file);
+      const warnings = state.result.info?.warnings || [];
+      toast(`已生成 ${state.result.file}（${state.result.size}），已开始下载`, {timeout: 6000});
+      if (warnings.length) toast(warnings.slice(0, 3).join('；'), {tone: 'info', timeout: 10000});
+    } catch (error) {
+      dialog.close();
+      toast(error.message, {tone: 'error', timeout: 10000});
+    } finally {
+      btn.classList.remove('is-busy');
+    }
+  });
+
+  const finishRestored = (state) => {
+    const mode = state.result?.mode;
+    try { sessionStorage.setItem('rp-flash', mode === 'rollback' ? '已回到导入之前的状态' : '备份已导入，检索索引已重建'); } catch { /* 忽略 */ }
+    location.href = '/data';
+  };
+  const showMerge = report => openDialog({
+    title: '合并完成', icon: 'circle-check',
+    body: [
+      h('p', {text: `新增 ${report.added} 条记忆，合并了 ${report.merged} 条已存在的记忆，${report.unchanged} 条没有变化。新增 ${report.entities_added} 个实体、${report.attachments_added} 个附件。`}),
+      ...(report.same_name_entities.length ? [h('p', {text: `有 ${report.same_name_entities.length} 个名称现在对应不止一个实体，系统没有擅自合并，请到「实体」页确认：${report.same_name_entities.slice(0, 8).join('、')}${report.same_name_entities.length > 8 ? ' 等' : ''}`})] : []),
+      h('p', {class: 'muted', text: '已自动保留合并之前的回退快照。'}),
+    ],
+    actions: [{label: '知道了', value: 'ok', primary: true}],
+  }).then(() => { location.href = '/data'; });
+
+  const uploadBackup = (file, mode, dialog) => new Promise((resolve, reject) => {
+    const body = new FormData();
+    body.append('mode', mode);
+    body.append('backup', file);
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', url);
+    xhr.open('POST', '/restore');
     xhr.upload.onprogress = event => { if (event.lengthComputable) dialog.set(event.loaded / event.total, `正在上传 ${formatBytes(event.loaded)} / ${formatBytes(event.total)}`); };
-    xhr.upload.onload = () => dialog.set(null, '正在替换记忆并重建索引。数据较多时可能需要几分钟，请勿关闭页面。');
-    const fail = message => { dialog.close(); toast(message, {tone: 'error', timeout: 10000}); resolve(false); };
-    xhr.onerror = () => fail('无法连接本地服务，恢复未完成');
-    xhr.ontimeout = () => fail('恢复超时，请在「数据」页确认当前状态');
+    xhr.upload.onload = () => dialog.set(null, '上传完成，正在校验…');
+    xhr.onerror = () => reject(new Error('无法连接本地服务，导入未完成'));
     xhr.onload = () => {
-      let done = false;
-      try { done = new URL(xhr.responseURL).searchParams.get('done') === 'restore'; } catch { /* 忽略 */ }
-      if (done) {
-        try { sessionStorage.setItem('rp-flash', '备份已恢复，索引正在重建'); } catch { /* 忽略 */ }
-        dialog.close();
-        location.href = '/data';
-        resolve(true);
-        return;
-      }
-      const page = new DOMParser().parseFromString(xhr.responseText, 'text/html');
-      fail(page.querySelector('.banner-error')?.textContent.trim() || (xhr.status === 413 ? '备份文件过大' : '恢复失败，当前记忆未被改动'));
+      let json = {};
+      try { json = JSON.parse(xhr.responseText); } catch { /* 忽略 */ }
+      if (xhr.status === 202 && json.id) resolve(json.id);
+      else reject(new Error(json.error || (xhr.status === 413 ? '备份文件过大' : '导入未能开始，当前记忆未被改动')));
     };
     xhr.send(body);
   });
@@ -443,15 +548,11 @@
   if (restoreForm) {
     const file = restoreForm.elements.backup, zone = $('[data-dropzone]', restoreForm);
     const nameEl = $('[data-file-name]', restoreForm), metaEl = $('[data-file-meta]', restoreForm), submit = $('[data-restore-submit]', restoreForm);
-    restoreForm.elements.confirm.required = false;
-    $('[data-fallback-confirm]', restoreForm).hidden = true;
-    file.required = false;
-    submit.disabled = true;
     const show = () => {
       const chosen = file.files[0];
       zone.classList.toggle('has-file', Boolean(chosen));
       nameEl.textContent = chosen ? chosen.name : '选择或拖入备份文件';
-      metaEl.textContent = chosen ? formatBytes(chosen.size) : '.recallport.json';
+      metaEl.textContent = chosen ? formatBytes(chosen.size) : '.recallport.zip';
       submit.disabled = !chosen;
     };
     file.addEventListener('change', show);
@@ -461,29 +562,195 @@
       event.preventDefault();
       if (event.dataTransfer.files.length) { file.files = event.dataTransfer.files; show(); }
     });
-    restoreForm.addEventListener('submit', async event => {
-      event.preventDefault();
+    submit.addEventListener('click', async () => {
       const chosen = file.files[0];
       if (!chosen) return;
+      const merge = restoreForm.elements.mode.value === 'merge';
       const total = Number(restoreForm.dataset.total) || 0;
       const ok = await confirmDialog({
-        title: '用此备份替换当前记忆？',
-        body: [`文件：${chosen.name}（${formatBytes(chosen.size)}）`, `当前的 ${total} 条记忆将被替换，不会合并。替换前会自动保留一份回退快照，之后仍可恢复回来。`],
-        ok: '确认恢复', tone: 'danger',
+        title: merge ? '把此备份合并进当前记忆库？' : '用此备份替换当前记忆库？',
+        body: merge
+          ? [`文件：${chosen.name}（${formatBytes(chosen.size)}）`, '备份里的记忆会并入现在的库，两边都保留。同名实体不会被自动合并，相同的附件按内容去重。合并前会自动保留回退快照。']
+          : [`文件：${chosen.name}（${formatBytes(chosen.size)}）`, `当前的 ${total} 条记忆将被替换，不会合并。替换前会自动保留一份回退快照，之后仍可回退。`],
+        ok: merge ? '开始合并' : '确认替换', tone: merge ? undefined : 'danger',
       });
       if (!ok) return;
-      const body = new FormData();
-      body.append('confirm', 'yes');
-      body.append('backup', chosen);
-      runRestore(restoreForm.action, body, '正在恢复备份');
+      const dialog = progressDialog({title: merge ? '正在合并备份' : '正在导入备份', message: '正在上传…'});
+      try {
+        const id = await uploadBackup(chosen, merge ? 'merge' : 'restore', dialog);
+        const state = await pollJob(id, dialog);
+        dialog.close();
+        if (merge) showMerge(state.result.report); else finishRestored(state);
+      } catch (error) {
+        dialog.close();
+        toast(error.message, {tone: 'error', timeout: 12000});
+      }
     });
   }
 
-  const rollbackForm = $('#rollback-form');
-  if (rollbackForm) {
-    rollbackForm.addEventListener('submit', event => {
-      event.preventDefault();
-      runRestore(rollbackForm.action, new URLSearchParams(new FormData(rollbackForm)), '正在恢复到上一份快照');
+  const rollback = $('[data-rollback]');
+  if (rollback) rollback.addEventListener('click', async () => {
+    if (!(await ask(rollback))) return;
+    const dialog = progressDialog({title: '正在回退', message: '正在准备…'});
+    try {
+      const id = await startJob('/recovery/rollback');
+      finishRestored(await pollJob(id, dialog));
+    } catch (error) {
+      dialog.close();
+      toast(error.message, {tone: 'error', timeout: 10000});
+    }
+  });
+
+  const cleanup = $('[data-cleanup]');
+  if (cleanup) cleanup.addEventListener('click', async () => {
+    if (!(await ask(cleanup))) return;
+    cleanup.classList.add('is-busy');
+    try {
+      const response = await fetch('/files/cleanup', {method: 'POST'});
+      if (!response.ok) throw new Error('清理未完成');
+      const result = await response.json();
+      toast(result.files ? `已清理 ${result.files} 个文件，释放 ${result.size}` : '没有需要清理的文件', {tone: result.files ? 'success' : 'info'});
+      if (result.files) setTimeout(() => location.reload(), 1200);
+    } catch (error) {
+      toast(error.message, {tone: 'error'});
+    } finally {
+      cleanup.classList.remove('is-busy');
+    }
+  });
+
+  /* ---------- 设置：自启与退出（托盘版本提供） ---------- */
+  const autostart = $('[data-autostart]');
+  if (autostart) autostart.addEventListener('change', async () => {
+    const want = autostart.checked;
+    try {
+      const response = await fetch('/settings/autostart', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({enabled: want ? '1' : '0'})});
+      if (!response.ok) throw new Error('设置未能保存');
+      toast(want ? '已开启：登录 Windows 后会自动在后台运行' : '已关闭自动启动');
+    } catch (error) {
+      autostart.checked = !want;
+      toast(error.message, {tone: 'error'});
+    }
+  });
+  const quit = $('[data-quit]');
+  if (quit) quit.addEventListener('click', async () => {
+    if (!(await ask(quit))) return;
+    try { await fetch('/settings/quit', {method: 'POST'}); } catch { /* 服务已退出 */ }
+    document.body.replaceChildren(h('main', {class: 'shell'}, h('div', {class: 'empty'}, h('h3', {text: 'RecallPort 已退出'}), h('p', {text: '需要时再双击 recallport.exe 启动。'}))));
+  });
+
+  /* ---------- 通用：对话框、自动提交 ---------- */
+  for (const btn of $$('[data-dialog-open]')) btn.addEventListener('click', () => {
+    const dialog = document.getElementById(btn.dataset.dialogOpen);
+    dialog.showModal();
+    $('input[type=text], input[type=search], textarea', dialog)?.focus();
+  });
+  for (const dialog of $$('dialog.dialog')) dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close('cancel'); });
+  for (const group of $$('[data-autosubmit]')) group.addEventListener('change', () => group.closest('form').requestSubmit());
+
+  /* ---------- 实体选择（详情页添加、实体页合并） ---------- */
+  const pickList = (container, items, choose, selectedId) => {
+    container.replaceChildren(...items.map(item => {
+      const row = h('button', {type: 'button', class: 'pick', role: 'option', 'aria-selected': String(item.id === selectedId)},
+        h('time', {text: item.count || ''}), h('span', {text: item.name + (item.hint ? ` · ${item.hint}` : '')}), h('small', {text: item.note || ''}));
+      row.addEventListener('click', () => choose(item, row));
+      return row;
+    }));
+  };
+  const entityApi = async q => {
+    const response = await fetch(`/entity-search?${new URLSearchParams({q})}`);
+    if (!response.ok) throw new Error('search failed');
+    return (await response.json()).entities;
+  };
+  const mergeDialog = $('#entity-merge');
+  if (mergeDialog) {
+    const input = $('[data-entity-search]', mergeDialog), results = $('[data-entity-results]', mergeDialog);
+    const target = $('[data-entity-target]', mergeDialog), submit = $('[data-entity-submit]', mergeDialog);
+    let timer, epoch = 0;
+    const load = async () => {
+      const mark = ++epoch;
+      try {
+        const found = (await entityApi(input.value.trim())).filter(e => e.ID !== mergeDialog.dataset.self);
+        if (mark !== epoch) return;
+        if (!found.length) { results.replaceChildren(h('div', {class: 'pick-note', text: '没有可合并的实体'})); return; }
+        pickList(results, found.map(e => ({id: e.ID, name: e.Name, hint: e.Hint, count: `${e.Mentions} 条`, note: e.Aliases.join('、')})), (item, row) => {
+          target.value = item.id; submit.disabled = false;
+          for (const other of $$('.pick', results)) other.setAttribute('aria-selected', String(other === row));
+        }, target.value);
+      } catch { results.replaceChildren(h('div', {class: 'pick-note', text: '搜索失败，请重试'})); }
+    };
+    input.addEventListener('input', () => { clearTimeout(timer); target.value = ''; submit.disabled = true; timer = setTimeout(load, 220); });
+    mergeDialog.addEventListener('toggle', () => { if (mergeDialog.open) load(); });
+    new MutationObserver(() => { if (mergeDialog.open) load(); }).observe(mergeDialog, {attributes: true, attributeFilter: ['open']});
+  }
+
+  const entityDialog = $('#entity-dialog');
+  if (entityDialog) {
+    const name = $('[data-entity-search]', entityDialog), results = $('[data-entity-results]', entityDialog);
+    const target = $('[data-entity-target]', entityDialog), fresh = $('[data-entity-new]', entityDialog), hintBox = $('[data-entity-hint]', entityDialog);
+    const submit = $('[data-entity-submit]', entityDialog);
+    let timer, epoch = 0, matches = [];
+    const same = (a, b) => a.normalize('NFKC').toLowerCase().trim() === b.normalize('NFKC').toLowerCase().trim();
+    const render = () => {
+      const typed = name.value.trim();
+      const rows = matches.map(e => ({id: e.ID, name: e.Name, hint: e.Hint, count: `${e.Mentions} 条`, note: e.Aliases.join('、')}));
+      const exact = matches.some(e => same(e.Name, typed) || e.Aliases.some(a => same(a, typed)));
+      if (typed && exact) rows.push({id: '', name: `另一个叫「${typed}」的新事物`, hint: '', count: '新建', note: '与上面的同名但不是同一个，需要填区分说明'});
+      pickList(results, rows, (item, row) => {
+        target.value = item.id; fresh.value = item.id ? '' : '1';
+        hintBox.hidden = Boolean(item.id);
+        if (item.id) name.value = matches.find(e => e.ID === item.id).Name;
+        for (const other of $$('.pick', results)) other.setAttribute('aria-selected', String(other === row));
+      }, target.value);
+      if (!rows.length) results.replaceChildren(h('div', {class: 'pick-note', text: typed ? `没有同名的实体，将新建「${typed}」` : '输入名称，或从已有实体中选择'}));
+    };
+    const load = async () => {
+      const mark = ++epoch;
+      try { const found = await entityApi(name.value.trim()); if (mark === epoch) { matches = found; render(); } } catch { /* 忽略 */ }
+    };
+    name.addEventListener('input', () => { clearTimeout(timer); target.value = ''; fresh.value = ''; hintBox.hidden = true; timer = setTimeout(load, 200); });
+    entityDialog.querySelector('form').addEventListener('submit', event => {
+      const typed = name.value.trim();
+      const exact = matches.some(e => same(e.Name, typed) || e.Aliases.some(a => same(a, typed)));
+      if (exact && !target.value && !fresh.value) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        toast('已经有同名的实体：请选择其中一个，或选择「另一个同名的新事物」', {tone: 'info', timeout: 5000});
+      }
+    }, true);
+    for (const btn of $$('[data-entity-open]')) btn.addEventListener('click', () => {
+      name.value = btn.dataset.entityName || '';
+      target.value = ''; fresh.value = ''; hintBox.hidden = true;
+      entityDialog.showModal(); name.focus(); load();
     });
+    void submit;
+  }
+
+  /* ---------- 附件预览 ---------- */
+  const preview = $('#preview-dialog');
+  if (preview) {
+    const body = $('[data-preview-body]', preview);
+    for (const btn of $$('[data-preview]')) btn.addEventListener('click', async () => {
+      const {kind, url, name} = btn.dataset;
+      $('[data-preview-title]', preview).textContent = name;
+      body.replaceChildren();
+      const usable = Boolean(btn.dataset.available);
+      $('[data-preview-open]', preview).hidden = !usable;
+      $('[data-preview-download]', preview).hidden = !usable;
+      if (usable) { $('[data-preview-open]', preview).href = url; $('[data-preview-download]', preview).href = `${url}?download=1`; }
+      if (!usable) body.append(h('p', {class: 'muted', text: '这个文件没有入库，或已经找不到了，无法预览。'}));
+      else if (kind === 'image') body.append(h('img', {src: url, alt: name}));
+      else if (kind === 'audio') body.append(h('audio', {src: url, controls: true}));
+      else if (kind === 'video') body.append(h('video', {src: url, controls: true}));
+      else if (kind === 'pdf') body.append(h('p', {class: 'muted', text: 'PDF 请在新标签页中打开查看。'}));
+      else if (kind === 'text') {
+        body.append(h('p', {class: 'muted', text: '正在读取…'}));
+        try {
+          const response = await fetch(`${url}/text`);
+          if (!response.ok) throw new Error('unsupported');
+          body.replaceChildren(h('pre', {text: await response.text()}));
+        } catch { body.replaceChildren(h('p', {class: 'muted', text: '无法预览这个文件，可以下载后查看。'})); }
+      } else body.append(h('p', {class: 'muted', text: '这类文件不支持在线预览，可以下载后查看。'}));
+      preview.showModal();
+    });
+    preview.addEventListener('close', () => body.replaceChildren());
   }
 })();

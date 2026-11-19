@@ -1,14 +1,13 @@
 use crate::{
-    mcp::Mcp,
-    memory::{Draft, Entry, Hit, Query, Reference, snippet},
-    store::{self, Backup, IndexStatus, LaneKind, Store},
+    app::App, detail::Link, files::AttachmentView, jobs::Jobs, mcp::Mcp, memory::*, store::Store,
+    web_admin,
 };
 use anyhow::Result;
 use axum::{
     Form, Json, Router,
     body::Body,
-    extract::{DefaultBodyLimit, Multipart, Path, Query as Params, Request, State},
-    http::{HeaderMap, StatusCode, header},
+    extract::{DefaultBodyLimit, Path, Query as Params, Request, State},
+    http::{StatusCode, header},
     middleware::{self, Next},
     response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
@@ -25,16 +24,18 @@ use std::{
 };
 
 #[derive(Clone)]
-struct Web {
-    store: Arc<Store>,
-    base: String,
-    host: String,
-    alternate: String,
-    templates: Arc<Environment<'static>>,
+pub(crate) struct Web {
+    pub store: Arc<Store>,
+    pub base: String,
+    pub host: String,
+    pub alternate: String,
+    pub templates: Arc<Environment<'static>>,
+    pub jobs: Arc<Jobs>,
+    pub app: Arc<App>,
 }
-type Fields = HashMap<String, String>;
+pub(crate) type Fields = HashMap<String, String>;
 
-pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
+pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<Router> {
     let mut templates = Environment::new();
     templates.add_function("local_time", |value: String, seconds: Option<bool>| {
         chrono::DateTime::parse_from_rfc3339(&value)
@@ -53,12 +54,15 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
     templates!(
         "page",
         "timeline",
+        "rows",
         "overview",
         "editor",
         "relations",
         "date-control",
         "graph-page",
         "graph-canvas",
+        "entities",
+        "entity",
         "data",
         "mcp-guide",
         "copy-button"
@@ -69,6 +73,8 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
         host: address.to_string(),
         alternate: format!("localhost:{}", address.port()),
         templates: Arc::new(templates),
+        jobs: Arc::new(Jobs::default()),
+        app: app.clone(),
     };
     let config = StreamableHttpServerConfig::default()
         .with_legacy_session_mode(false)
@@ -76,7 +82,7 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
         .with_allowed_hosts([web.host.clone(), web.alternate.clone()])
         .with_allowed_origins([web.base.clone(), format!("http://{}", web.alternate)]);
     let mcp = StreamableHttpService::new(
-        move || Ok(Mcp::new(store.clone())),
+        move || Ok(Mcp::new(store.clone(), app.clone())),
         Arc::new(LocalSessionManager::default()),
         config,
     );
@@ -91,22 +97,19 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
         .route("/memory/{id}", get(detail).post(edit))
         .route("/memory/{id}/delete", post(delete))
         .route("/memory/{id}/links", post(link))
+        .route("/memory/{id}/entities", post(memory_entities))
+        .route("/memory/{id}/attachments", post(memory_attachments))
+        .route("/entities", get(entities_page))
+        .route("/entity/{id}", get(entity_page).post(entity_update))
+        .route("/entity/{id}/merge", post(entity_merge))
+        .route("/entity/{id}/unmerge", post(entity_unmerge))
+        .route("/entity/{id}/delete", post(entity_delete))
+        .route("/entity-search", get(entity_search))
         .route(
             "/clients",
             get(|State(w): State<Web>| async move { w.render(json!({"View":"clients"})) }),
         )
-        .route("/data", get(data))
-        .route(
-            "/index-status",
-            get(|State(w): State<Web>| async move { Json(w.store.status.read().await.clone()) }),
-        )
-        .route("/backup", post(backup))
-        .route(
-            "/restore",
-            post(restore).layer(DefaultBodyLimit::max(store::MAX_BACKUP + 64 * 1024)),
-        )
-        .route("/recovery", get(recovery).post(rollback))
-        .route("/reindex", post(reindex));
+        .merge(web_admin::routes());
     macro_rules! asset {
         ($app:ident,$name:literal,$mime:literal) => {
             let $app = $app.route(
@@ -121,6 +124,7 @@ pub fn router(store: Arc<Store>, address: SocketAddr) -> Result<Router> {
         };
     }
     asset!(app, "style.css", "text/css; charset=utf-8");
+    asset!(app, "icon.svg", "image/svg+xml");
     asset!(app, "theme.js", "text/javascript; charset=utf-8");
     asset!(app, "ui.js", "text/javascript; charset=utf-8");
     asset!(app, "controls.js", "text/javascript; charset=utf-8");
@@ -172,7 +176,8 @@ async fn local_only(State(w): State<Web>, req: Request, next: Next) -> Response 
 
 fn headers(mut r: Response) -> Response {
     let h = r.headers_mut();
-    h.insert(header::CONTENT_SECURITY_POLICY,"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'".parse().unwrap());
+    // Pages get the strict default. Attachment responses bring their own, stricter policy.
+    h.entry(header::CONTENT_SECURITY_POLICY).or_insert("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'".parse().unwrap());
     h.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
     h.insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
     h.insert(header::REFERRER_POLICY, "same-origin".parse().unwrap());
@@ -180,7 +185,7 @@ fn headers(mut r: Response) -> Response {
 }
 
 impl Web {
-    fn render(&self, mut model: Value) -> Response {
+    pub(crate) fn render(&self, mut model: Value) -> Response {
         model["Base"] = json!(self.base);
         model["Semantic"] = json!(self.store.uses_vectors());
         match self
@@ -190,14 +195,14 @@ impl Web {
         {
             Ok(body) => Html(body).into_response(),
             Err(error) => {
-                eprintln!("Template error: {error:#}");
+                crate::log!("Template error: {error:#}");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         }
     }
 }
 
-fn get_field(f: &Fields, key: &str) -> String {
+pub(crate) fn get_field(f: &Fields, key: &str) -> String {
     f.get(key).map(|s| s.trim().to_owned()).unwrap_or_default()
 }
 fn number(f: &Fields, key: &str) -> usize {
@@ -209,6 +214,7 @@ fn query(f: &Fields, limit: usize) -> Query {
         from: get_field(f, "from"),
         through: get_field(f, "through"),
         strategy: get_field(f, "strategy"),
+        entity: get_field(f, "entity"),
         period: get_field(f, "period"),
         undated: get_field(f, "undated") == "1",
         limit,
@@ -234,22 +240,99 @@ fn draft(f: &Fields) -> Draft {
 fn qview(q: &Query) -> Value {
     json!({"Text":q.text,"From":q.from,"Through":q.through,"Strategy":q.strategy})
 }
+fn kind_label(k: RefKind) -> &'static str {
+    match k {
+        RefKind::Relates => "",
+        RefKind::Corrects => "更正",
+        RefKind::Summarizes => "汇总",
+    }
+}
+fn kind_of(s: &str) -> RefKind {
+    match s {
+        "corrects" => RefKind::Corrects,
+        "summarizes" => RefKind::Summarizes,
+        _ => RefKind::Relates,
+    }
+}
+pub(crate) fn human(bytes: u64) -> String {
+    const UNITS: [&str; 4] = ["B", "KB", "MB", "GB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1024.0 && unit < UNITS.len() - 1 {
+        value /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} B")
+    } else {
+        format!("{value:.1} {}", UNITS[unit])
+    }
+}
+fn file_kind(mime: &str) -> &'static str {
+    if mime.starts_with("image/") && mime != "image/svg+xml" {
+        "image"
+    } else if mime.starts_with("audio/") {
+        "audio"
+    } else if mime.starts_with("video/") {
+        "video"
+    } else if mime == "application/pdf" {
+        "pdf"
+    } else if mime.starts_with("text/") || mime.contains("json") || mime.contains("xml") {
+        "text"
+    } else {
+        "file"
+    }
+}
+pub(crate) fn file_view(a: &AttachmentView) -> Value {
+    json!({"Hash":a.hash,"Name":a.name,"Caption":a.caption,"Mime":a.mime,"Size":human(a.size),
+        "Stored":a.storage==Storage::Stored,"Available":a.available,"Path":a.path,"URL":a.url,"Kind":file_kind(&a.mime)})
+}
 fn entry(e: &Entry) -> Value {
-    json!({"ID":e.id,"Text":e.text,"Context":e.context,"Occurred":e.occurred,"Source":e.source,"Recorded":e.recorded,"Revision":e.revision})
+    json!({"ID":e.id,"Text":e.text,"Context":e.context,"Occurred":e.occurred,"Source":e.source,"Recorded":e.recorded,"Revision":e.revision,"Updated":e.updated})
+}
+fn trail_label(relation: &str) -> &'static str {
+    match relation {
+        "corrected_by" => "已被更正",
+        "corrects" => "更正了旧记录",
+        "summarized_by" => "已被汇总",
+        _ => "汇总了其他记录",
+    }
+}
+fn row(e: &Entry, trail: &[Trail], others: &[Entry], period: &str) -> Value {
+    let mut view = entry(e);
+    view["Period"] = json!(period);
+    view["Accounts"] = json!(others.iter().map(entry).collect::<Vec<_>>());
+    view["Mentions"] = json!(
+        e.mentions
+            .iter()
+            .take(6)
+            .map(|m| json!({"Name":m.name,"ID":m.entity}))
+            .collect::<Vec<_>>()
+    );
+    view["MoreMentions"] = json!(e.mentions.len().saturating_sub(6));
+    view["Trail"] = json!(
+        trail
+            .iter()
+            .map(|t| json!({"Label":trail_label(t.relation),"ID":t.id,"Relation":t.relation}))
+            .collect::<Vec<_>>()
+    );
+    view["Files"] = json!(e.attachments.len());
+    view["Edited"] = json!(e.revision > 1);
+    view
 }
 fn hit(h: Hit, period: &str) -> Value {
-    let mut view = entry(&h.entry);
-    view["Period"] = json!(period);
-    view["Accounts"] = json!(h.other_accounts.iter().map(entry).collect::<Vec<_>>());
-    view
+    row(&h.entry, &h.trail, &h.other_accounts, period)
 }
 fn local_back(f: &Fields) -> String {
     let back = get_field(f, "back");
     if !back.contains(['\\', '\n', '\r'])
         && (back == "/"
             || back == "/graph"
+            || back == "/entities"
             || back.starts_with("/?")
-            || back.starts_with("/graph?"))
+            || back.starts_with("/graph?")
+            || back.starts_with("/entities?")
+            || back.starts_with("/entity/"))
     {
         back
     } else {
@@ -273,16 +356,16 @@ pub fn public_error(err: &anyhow::Error) -> String {
     if s.chars().next().is_some_and(|c| !c.is_ascii()) {
         s
     } else {
-        eprintln!("Request failed: {err:#}");
+        crate::log!("Request failed: {err:#}");
         "操作未完成，请检查输入或重试。".into()
     }
 }
-fn mem_location(id: &str, f: &Fields, saved: bool) -> String {
+fn mem_location(id: &str, f: &Fields, saved: bool, anchor: &str) -> String {
     let mut args = BTreeMap::from([("back".into(), local_back(f))]);
     if saved {
         args.insert("saved".into(), "1".into());
     }
-    uri(&format!("/memory/{id}"), &args)
+    format!("{}{anchor}", uri(&format!("/memory/{id}"), &args))
 }
 
 async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
@@ -301,7 +384,12 @@ async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
         p.insert("page".into(), page.to_string());
         uri("/", &p)
     };
-    let mut p = json!({"View":"timeline","Query":qview(&q),"Back":uri("/",&qs(&f)),"Period":q.period,"Undated":q.undated,"Chronological":ordered,"ByRank":by_rank,"ByDate":by_date,"GraphURL":graph});
+    let entity_label = if q.entity.is_empty() {
+        String::new()
+    } else {
+        w.store.entity_label(&q.entity).await.unwrap_or_default()
+    };
+    let mut p = json!({"View":"timeline","Query":qview(&q),"Back":uri("/",&qs(&f)),"Period":q.period,"Undated":q.undated,"EntityID":q.entity,"EntityName":entity_label,"Chronological":ordered,"ByRank":by_rank,"ByDate":by_date,"GraphURL":graph});
     let list = if q.text.is_empty() {
         w.store.timeline(&q, (n - 1) * q.limit).await
     } else {
@@ -358,7 +446,7 @@ async fn overview(State(w): State<Web>) -> Response {
     };
     let mut by_year = BTreeMap::<String, [usize; 13]>::new();
     let mut unknown = 0;
-    for e in &list {
+    for e in list.iter() {
         if let Some(year) = e.occurred.get(..4) {
             let counts = by_year.entry(year.into()).or_default();
             counts[0] += 1;
@@ -376,16 +464,23 @@ async fn overview(State(w): State<Web>) -> Response {
         let months=(1..=12).map(|m|json!({"Label":format!("{m:02}"),"Count":counts[m],"Max":max,"URL":format!("/?period={year}-{m:02}")})).collect::<Vec<_>>();
         json!({"Year":year,"Count":counts[0],"URL":format!("/?period={year}"),"Months":months})
     }).collect();
-    w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown}))
+    let entities = w
+        .store
+        .entity_page("", "mentions", 0, 1)
+        .await
+        .map(|p| p.1)
+        .unwrap_or(0);
+    w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown,"Entities":entities}))
 }
 
 async fn graph_page(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
     let q = query(&f, 30);
-    w.render(json!({"View":"graph","Query":qview(&q),"Period":q.period,"Undated":q.undated}))
+    w.render(json!({"View":"graph","Query":qview(&q),"Period":q.period,"Undated":q.undated,"Overview":get_field(&f,"view")=="entities"}))
 }
 async fn graph_data(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
     let q = query(&f, 30);
     let focus = get_field(&f, "focus");
+    let overview = get_field(&f, "overview") == "1";
     let n = if q.text.is_empty() {
         number(&f, "page").clamp(1, 10000)
     } else {
@@ -395,7 +490,7 @@ async fn graph_data(State(w): State<Web>, Params(f): Params<Fields>) -> Response
         let mut ids = vec![];
         let mut more = false;
         let mut degraded = false;
-        if focus.is_empty() {
+        if focus.is_empty() && !overview {
             let results = if q.text.is_empty() {
                 w.store.timeline(&q, (n - 1) * q.limit).await?
             } else {
@@ -407,11 +502,12 @@ async fn graph_data(State(w): State<Web>, Params(f): Params<Fields>) -> Response
         }
         let mut g = w
             .store
-            .graph(&ids, &focus, get_field(&f, "suggested") == "1")
+            .graph(&ids, &focus, get_field(&f, "suggested") == "1", overview)
             .await?;
+        let paged = focus.is_empty() && !overview;
         g["page"] = json!(n);
-        g["next"] = json!(focus.is_empty() && q.text.is_empty() && more);
-        g["limited"] = json!(!q.text.is_empty() && more);
+        g["next"] = json!(paged && q.text.is_empty() && more);
+        g["limited"] = json!(paged && !q.text.is_empty() && more);
         g["degraded"] = json!(degraded);
         Ok::<_, anyhow::Error>(g)
     }
@@ -432,6 +528,13 @@ async fn detail(
 ) -> Response {
     detail_view(&w, &id, &f, "", None).await
 }
+
+fn links(list: &[Link]) -> Vec<Value> {
+    list.iter()
+        .map(|l| json!({"ID":l.id,"Reason":l.reason,"Date":l.occurred,"Text":l.text,"Kind":l.kind,"KindLabel":kind_label(l.kind)}))
+        .collect()
+}
+
 async fn detail_view(
     w: &Web,
     id: &str,
@@ -439,53 +542,41 @@ async fn detail_view(
     error: &str,
     unsaved: Option<Draft>,
 ) -> Response {
-    let mut e = match w.store.read(id).await {
-        Ok(e) => e,
+    let mut d = match w.store.detail(id).await {
+        Ok(d) => d,
         Err(err) => return (StatusCode::NOT_FOUND, public_error(&err)).into_response(),
     };
-    if let Some(d) = unsaved {
-        e.text = d.text;
-        e.context = d.context;
-        e.occurred = d.occurred;
+    if let Some(u) = unsaved {
+        d.entry.text = u.text;
+        d.entry.context = u.context;
+        d.entry.occurred = u.occurred;
     }
-    let find = get_field(f, "find");
-    let options = w
-        .store
-        .recall(&Query {
-            text: find.clone(),
-            limit: 12,
-            ..Default::default()
-        })
-        .await
-        .ok()
-        .map(|r| {
-            r.memories
-                .into_iter()
-                .filter(|h| h.entry.id != id)
-                .map(|h| hit(h, ""))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    let outgoing = links(w, &e.references).await;
-    let incoming = links(w, &e.cited_by).await;
-    w.render(json!({"View":"detail","Entry":entry(&e),"Error":error,"Back":local_back(f),"Saved":get_field(f,"saved")=="1","LinkQuery":find,"Incoming":incoming,"Outgoing":outgoing,"Choices":options}))
-}
-async fn links(w: &Web, input: &[Reference]) -> Vec<Value> {
-    let mut result = vec![];
-    for r in input {
-        if let Ok(e) = w.store.read(&r.id).await {
-            result.push(
-                json!({"ID":r.id,"Reason":r.reason,"Date":e.occurred,"Text":snippet(&e.text,100)}),
-            );
-        }
-    }
-    result
+    let history: Vec<Value> = d
+        .entry
+        .history
+        .iter()
+        .rev()
+        .map(|h| json!({"Revision":h.revision,"Text":h.text,"Context":h.context,"Occurred":h.occurred,"At":h.replaced_at,"By":h.replaced_by}))
+        .collect();
+    let trail: Vec<Value> = d
+        .trail
+        .iter()
+        .map(|t| json!({"Label":trail_label(t.relation),"Relation":t.relation,"ID":t.id,"Source":t.source,"Recorded":t.recorded,"Reason":t.reason,"Text":t.text}))
+        .collect();
+    let mentions: Vec<Value> = d
+        .mentions
+        .iter()
+        .map(|m| json!({"Name":m.name,"Entity":m.entity,"EntityName":m.entity_name,"Hint":m.hint}))
+        .collect();
+    let files: Vec<Value> = d.attachments.iter().map(file_view).collect();
+    w.render(json!({"View":"detail","Entry":entry(&d.entry),"Error":error,"Back":local_back(f),"Saved":get_field(f,"saved")=="1",
+        "Incoming":links(&d.links_in),"Outgoing":links(&d.links_out),"Mentions":mentions,"Files":files,"History":history,"Trail":trail}))
 }
 async fn create(State(w): State<Web>, Form(f): Form<Fields>) -> Response {
     let d = draft(&f);
-    match w.store.remember(d.clone(),"web","Web").await {
-        Ok(e)=>Redirect::to(&mem_location(&e.id,&f,true)).into_response(),
-        Err(err)=>w.render(json!({"View":"detail","Error":public_error(&err),"Back":local_back(&f),"Entry":entry(&Entry{text:d.text,context:d.context,occurred:d.occurred,..Default::default()})})),
+    match w.store.remember(d.clone(), "web", "Web").await {
+        Ok(saved) => Redirect::to(&mem_location(&saved.entry.id, &f, true, "")).into_response(),
+        Err(err) => w.render(json!({"View":"detail","Error":public_error(&err),"Back":local_back(&f),"Entry":entry(&Entry{text:d.text,context:d.context,occurred:d.occurred,..Default::default()})})),
     }
 }
 async fn edit(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields>) -> Response {
@@ -496,10 +587,11 @@ async fn edit(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields
             &id,
             get_field(&f, "revision").parse().unwrap_or(0),
             d.clone(),
+            "Web",
         )
         .await
     {
-        Ok(()) => Redirect::to(&mem_location(&id, &f, true)).into_response(),
+        Ok(()) => Redirect::to(&mem_location(&id, &f, true, "")).into_response(),
         Err(e) => detail_view(&w, &id, &f, &public_error(&e), Some(d)).await,
     }
 }
@@ -517,142 +609,211 @@ async fn link(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields
     let r = Reference {
         id: get_field(&f, "target"),
         reason: get_field(&f, "reason"),
+        kind: kind_of(&get_field(&f, "kind")),
     };
     match w
         .store
         .link(&id, r, get_field(&f, "action") == "remove")
         .await
     {
-        Ok(()) => {
-            Redirect::to(&format!("{}#relations", mem_location(&id, &f, false))).into_response()
-        }
+        Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#relations")).into_response(),
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+    }
+}
+async fn memory_entities(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Form(f): Form<Fields>,
+) -> Response {
+    let result = if get_field(&f, "action") == "remove" {
+        w.store.unbind_entity(&id, &get_field(&f, "key")).await
+    } else {
+        w.store
+            .bind_entity(
+                &id,
+                EntityInput {
+                    name: get_field(&f, "name"),
+                    id: get_field(&f, "entity"),
+                    hint: get_field(&f, "hint"),
+                    new: get_field(&f, "new") == "1",
+                    ..Default::default()
+                },
+                "Web",
+            )
+            .await
+            .map(|_| ())
+    };
+    match result {
+        Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#entities")).into_response(),
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+    }
+}
+async fn memory_attachments(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Form(f): Form<Fields>,
+) -> Response {
+    match w.store.unlink_attachment(&id, &get_field(&f, "hash")).await {
+        Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#files")).into_response(),
         Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
     }
 }
 
-fn index_display(s: &IndexStatus) -> Value {
-    fn lane(l: &store::Lane) -> Value {
-        json!({"State":l.state,"CheckedAt":l.checked_at,"RepairedAt":l.repaired_at,"Problem":l.problem})
-    }
-    json!({"Keyword":lane(&s.keyword),"Semantic":lane(&s.semantic),"Model":s.model,"Total":s.total,"Indexed":s.indexed,"Skipped":s.skipped,"Dimensions":s.dimensions,"Ann":s.ann,"AnnIndexed":s.ann_indexed,"KeywordIndexed":s.keyword_indexed})
+// ---- entities
+
+fn entity_json(e: &crate::entities::EntityView) -> Value {
+    json!({"ID":e.id,"Name":e.name,"Aliases":e.aliases,"Hint":e.hint,"Mentions":e.mentions,"Last":e.last,"Source":e.source})
 }
-fn configs(s: &IndexStatus) -> Value {
-    let row =
-        |label: &str, v: String, meaning: &str| json!({"Label":label,"Value":v,"Meaning":meaning});
-    json!([
-        {"Title":"关键词候选","Rows":[row("索引与分词","LanceDB BM25 · Jieba + 双字".into(),"原文精确匹配优先；路径搜索保留原文。"),row("查询分词上限","36".into(),"限制关键词查询的候选词数量。")]},
-        {"Title":"语义编码与检索","Rows":[row("模型",s.model.into(),"官方 Granite 97M Multilingual R2，FP32，CLS 池化与 L2 归一化。"),row("推理",format!("{} tokens / {} 线程 / {} 维",crate::embedding::TOKENS,crate::embedding::THREADS,s.dimensions),"按整条和片段分别编码。"),row("切片",format!("整条 + 最多 {} 段；片段 ≥ {} 字",store::MAX_PASSAGES-1,store::MIN_PASSAGE),"使用最相关的片段相似度作为记忆得分。"),row("候选与建议门槛",format!("{:.2} / {:.2}",store::SEMANTIC,store::GRAPH),"余弦相似度；不是置信度或两路占比。"),row("向量索引",format!("IVF-HNSW-Flat · ≥ {} 条",store::ANN_MIN),"数据较少时精确扫描；ANN 保持浮点向量，不量化。"),row("探测分区 / 重排倍数",format!("{} / 3",store::ANN_PROBES),"日期约束在候选召回前应用。") ]},
-        {"Title":"混合排序","Rows":[row("排名融合",format!("偏移 {} / 关键词 {} / 语义 {}",store::RRF,store::LEXICAL_WEIGHT,store::SEMANTIC_WEIGHT),"关键词与语义独立入选，同一条记忆两路命中时分数相加。"),row("候选上限",format!("每路 {} 条",store::CANDIDATES),"候选去重后返回；MCP 默认 8 条、最多 30 条。") ]},
-        {"Title":"自动维护","Rows":[row("检查频率","60 秒".into(),"补齐缺失向量并维护派生索引，不修改正文与引用。") ]}
-    ])
-}
-async fn data(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
-    let notice = match get_field(&f, "done").as_str() {
-        "index" => "已提交索引重建。",
-        "restore" => "备份已恢复。",
-        _ => "",
-    };
-    data_view(&w, "", notice).await
-}
-async fn data_view(w: &Web, error: &str, notice: &str) -> Response {
-    let s = w.store.status.read().await.clone();
-    w.render(json!({"View":"data","Error":error,"Notice":notice,"Recovery":if w.store.recovery().is_file(){"recovery.recallport.json"}else{""}, "Index":index_display(&s),"SearchConfig":configs(&s)}))
-}
-fn download(bytes: Vec<u8>, name: &str) -> Response {
-    (
-        [
-            (header::CONTENT_TYPE, "application/json".to_owned()),
-            (
-                header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{name}\""),
-            ),
-        ],
-        bytes,
-    )
-        .into_response()
-}
-async fn backup(State(w): State<Web>) -> Response {
-    match w
-        .store
-        .backup()
-        .await
-        .and_then(|b| Ok(serde_json::to_vec(&b)?))
-    {
-        Ok(bytes) => download(
-            bytes,
-            &format!(
-                "recallport-{}.recallport.json",
-                chrono::Local::now().format("%Y%m%d-%H%M%S")
-            ),
-        ),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, public_error(&e)).into_response(),
-    }
-}
-async fn restore(State(w): State<Web>, mut multipart: Multipart) -> Response {
-    let work = async {
-        let (mut confirmation, mut bytes) = (false, None);
-        while let Some(field) = multipart.next_field().await? {
-            match field.name() {
-                Some("confirm") => confirmation = field.text().await? == "yes",
-                Some("backup") => bytes = Some(field.bytes().await?),
-                _ => {}
+async fn entities_page(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
+    let q = get_field(&f, "q");
+    let sort = get_field(&f, "sort");
+    let n = number(&f, "page").clamp(1, 10000);
+    let per = 40;
+    let mut p = json!({"View":"entities","Q":q,"Sort":if sort.is_empty(){"mentions".to_owned()}else{sort.clone()},"Back":"/entities"});
+    match w.store.entity_page(&q, &sort, (n - 1) * per, per).await {
+        Ok((list, total)) => {
+            p["Total"] = json!(total);
+            p["Entities"] = json!(list.iter().map(entity_json).collect::<Vec<_>>());
+            let args = |page: usize| {
+                let mut a = BTreeMap::new();
+                if !q.is_empty() {
+                    a.insert("q".to_owned(), q.clone());
+                }
+                if !sort.is_empty() {
+                    a.insert("sort".to_owned(), sort.clone());
+                }
+                a.insert("page".into(), page.to_string());
+                uri("/entities", &a)
+            };
+            if n > 1 {
+                p["Prev"] = json!(args(n - 1));
+            }
+            if n * per < total {
+                p["Next"] = json!(args(n + 1));
             }
         }
-        anyhow::ensure!(confirmation, "请确认替换当前记忆");
-        let b = Backup::parse(&bytes.ok_or_else(|| anyhow::anyhow!("请选择备份文件"))?)?;
-        w.store.replace(b, true).await?;
-        w.store.maintain(Some(LaneKind::All)).await?;
-        Ok::<_, anyhow::Error>(())
+        Err(e) => p["Error"] = json!(public_error(&e)),
     }
-    .await;
-    match work {
-        Ok(()) => Redirect::to("/data?done=restore").into_response(),
-        Err(e) => data_view(&w, &public_error(&e), "").await,
-    }
-}
-async fn recovery(State(w): State<Web>) -> Response {
-    match std::fs::read(w.store.recovery()) {
-        Ok(bytes) => download(bytes, "recovery.recallport.json"),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
-    }
-}
-async fn rollback(State(w): State<Web>, Form(f): Form<Fields>) -> Response {
-    let work = async {
-        anyhow::ensure!(
-            get_field(&f, "confirm") == "yes"
-                && get_field(&f, "snapshot") == "recovery.recallport.json",
-            "请确认回退"
-        );
-        let backup = Backup::parse(&std::fs::read(w.store.recovery())?)?;
-        w.store.replace(backup, true).await?;
-        w.store.maintain(Some(LaneKind::All)).await?;
-        Ok::<_, anyhow::Error>(())
-    }
-    .await;
-    match work {
-        Ok(()) => Redirect::to("/data?done=restore").into_response(),
-        Err(e) => data_view(&w, &public_error(&e), "").await,
-    }
-}
-async fn reindex(State(w): State<Web>, headers: HeaderMap, Form(f): Form<Fields>) -> Response {
-    let kind = match get_field(&f, "kind").as_str() {
-        "" | "all" => LaneKind::All,
-        "keyword" => LaneKind::Keyword,
-        "semantic" => LaneKind::Semantic,
-        _ => return StatusCode::BAD_REQUEST.into_response(),
-    };
-    if kind == LaneKind::Semantic && !w.store.uses_vectors() {
-        return StatusCode::CONFLICT.into_response();
-    }
-    if !w.store.queue_rebuild(kind).await {
-        return StatusCode::CONFLICT.into_response();
-    }
-    if headers
-        .get(header::ACCEPT)
-        .is_some_and(|v| v == "application/json")
+    if q.is_empty()
+        && n == 1
+        && let Ok(waiting) = w.store.unresolved().await
     {
-        StatusCode::ACCEPTED.into_response()
-    } else {
-        Redirect::to("/data?done=index").into_response()
+        p["Unresolved"] = json!(
+            waiting
+                .into_iter()
+                .take(30)
+                .map(|(name, ids)| json!({"Name":name,"Count":ids.len(),"Example":ids.first()}))
+                .collect::<Vec<_>>()
+        );
+    }
+    w.render(p)
+}
+async fn entity_view(w: &Web, id: &str, f: &Fields, error: &str) -> Response {
+    let d = match w.store.entity_detail(id, 120).await {
+        Ok(d) => d,
+        Err(e) => return (StatusCode::NOT_FOUND, public_error(&e)).into_response(),
+    };
+    let mut previous = String::new();
+    let rows: Vec<Value> = d
+        .memories
+        .iter()
+        .map(|e| {
+            let date = if e.occurred.is_empty() {
+                "日期未记"
+            } else {
+                e.occurred.get(..7).unwrap_or(&e.occurred)
+            };
+            let mut period = String::new();
+            if date != previous {
+                previous = date.to_owned();
+                period = date.into();
+            }
+            row(e, &[], &[], &period)
+        })
+        .collect();
+    let back = uri(&format!("/entity/{}", d.entity.id), &BTreeMap::new());
+    w.render(json!({"View":"entity","Error":error,"Entity":entity_json(&d.entity),"Merged":d.merged,
+        "Rows":rows,"Related":d.related.iter().map(|(e,n)| json!({"ID":e.id,"Name":e.name,"Hint":e.hint,"Count":n})).collect::<Vec<_>>(),
+        "Back":back,"Notice":get_field(f,"done")}))
+}
+async fn entity_page(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Params(f): Params<Fields>,
+) -> Response {
+    entity_view(&w, &id, &f, "").await
+}
+fn lines(text: &str) -> Vec<String> {
+    text.split(['\n', ',', '，', '、'])
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+async fn entity_update(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Form(f): Form<Fields>,
+) -> Response {
+    let name = get_field(&f, "name");
+    // The form submits the whole alias list; work out what to add and what to drop.
+    let wanted = lines(&get_field(&f, "aliases"));
+    let current = match w.store.entity_detail(&id, 0).await {
+        Ok(d) => d.entity.aliases,
+        Err(e) => return entity_view(&w, &id, &f, &public_error(&e)).await,
+    };
+    let norm = |s: &str| crate::entities::norm(s);
+    let add: Vec<String> = wanted
+        .iter()
+        .filter(|a| !current.iter().any(|c| norm(c) == norm(a)))
+        .cloned()
+        .collect();
+    let remove: Vec<String> = current
+        .iter()
+        .filter(|c| !wanted.iter().any(|a| norm(a) == norm(c)))
+        .cloned()
+        .collect();
+    let result = w
+        .store
+        .entity_update(
+            &id,
+            (!name.is_empty()).then_some(name),
+            add,
+            remove,
+            f.get("hint").map(|h| h.trim().to_owned()),
+        )
+        .await;
+    match result {
+        Ok(_) => Redirect::to(&format!("/entity/{id}?done=saved")).into_response(),
+        Err(e) => entity_view(&w, &id, &f, &public_error(&e)).await,
+    }
+}
+async fn entity_merge(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Form(f): Form<Fields>,
+) -> Response {
+    let into = get_field(&f, "into");
+    match w.store.entity_merge(&id, &into).await {
+        Ok(v) => Redirect::to(&format!("/entity/{}?done=merged", v.id)).into_response(),
+        Err(e) => entity_view(&w, &id, &f, &public_error(&e)).await,
+    }
+}
+async fn entity_unmerge(State(w): State<Web>, Path(id): Path<String>) -> Response {
+    match w.store.entity_unmerge(&id).await {
+        Ok(()) => Redirect::to(&format!("/entity/{id}?done=unmerged")).into_response(),
+        Err(e) => entity_view(&w, &id, &Fields::new(), &public_error(&e)).await,
+    }
+}
+async fn entity_delete(State(w): State<Web>, Path(id): Path<String>) -> Response {
+    match w.store.entity_delete(&id).await {
+        Ok(()) => Redirect::to("/entities?done=deleted").into_response(),
+        Err(e) => entity_view(&w, &id, &Fields::new(), &public_error(&e)).await,
+    }
+}
+async fn entity_search(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
+    match w.store.entity_search(&get_field(&f, "q"), 20).await {
+        Ok(list) => Json(json!({"entities":list.iter().map(entity_json).collect::<Vec<_>>()}))
+            .into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, public_error(&e)).into_response(),
     }
 }

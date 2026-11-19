@@ -1,4 +1,5 @@
-{% set filtered = Query.Text or Query.From or Query.Through or Period or Undated %}
+{% from "rows.html" import entry_row %}
+{% set filtered = Query.Text or Query.From or Query.Through or Period or Undated or EntityID %}
 <header class="page-head">
   <div><h1>时间线</h1><p class="sub">按发生时间浏览，或用关键词与语义混合召回</p></div>
   <a class="btn btn-primary" href="/memory/new?back={{ Back | urlencode }}" data-shortcut-new><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>新建记忆 <kbd>N</kbd></a>
@@ -6,6 +7,7 @@
 
 <form method="get" action="/" class="searchform" data-search-form>
   {% if Chronological %}<input type="hidden" name="order" value="date">{% endif %}
+  {% if EntityID %}<input type="hidden" name="entity" value="{{ EntityID }}">{% endif %}
   {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
   <div class="searchrow">
     <div class="searchfield">
@@ -33,6 +35,7 @@
       </div>
     </details>
     <div class="filter-chips">
+      {% if EntityID %}<button type="button" class="chip chip-x" data-remove-filter="entity" title="移除此筛选">实体 {% if EntityName %}{{ EntityName }}{% else %}…{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Period %}<button type="button" class="chip chip-x" data-remove-filter="period" title="移除此筛选">时段 {{ Period }}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Undated %}<button type="button" class="chip chip-x" data-remove-filter="undated" title="移除此筛选">日期未记<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Query.From or Query.Through %}<button type="button" class="chip chip-x" data-remove-filter="range" title="移除此筛选">{% if Query.From %}{{ Query.From }}{% else %}最早{% endif %} → {% if Query.Through %}{{ Query.Through }}{% else %}至今{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
@@ -53,20 +56,7 @@
 </div>
 {% endif %}
 <section class="stream" aria-label="记忆列表" data-highlight="{{ Query.Text }}">
-  {% for r1 in Rows %}
-    {% if r1.Period %}<h2 class="period">{{ r1.Period }}</h2>{% endif %}
-    <article class="entry">
-      <div class="entry-date {% if not r1.Occurred %}is-unknown{% endif %}">{% if r1.Occurred %}<time>{{ r1.Occurred }}</time>{% else %}日期未记{% endif %}</div>
-      <div>
-        <a class="entry-link" href="/memory/{{ r1.ID }}?back={{ Back | urlencode }}"><span class="entry-text" data-hl>{{ r1.Text }}</span></a>
-        {% if r1.Context %}<p class="entry-context" data-hl>{{ r1.Context }}</p>{% endif %}
-        <div class="entry-meta">
-          <span class="chip">{{ r1.Source }}</span>
-          {% if r1.Accounts %}<details class="accounts"><summary>同一经历的其他记录 · {{ (r1.Accounts|length) }}</summary><ul>{% for r3 in r1.Accounts %}<li><a href="/memory/{{ r3.ID }}?back={{ Back | urlencode }}">{{ r3.Text }}</a> <span class="muted">· {{ r3.Source }}</span></li>{% endfor %}</ul></details>{% endif %}
-        </div>
-      </div>
-      <svg class="icon entry-go" aria-hidden="true"><use href="#right"/></svg>
-    </article>
+  {% for r1 in Rows %}{{ entry_row(r1, Back) }}
   {% else %}
     {% if filtered %}
     <div class="empty"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><h3>没有匹配的记忆</h3><p>换个说法试试，或放宽日期范围。{% if Query.Text %}也可以切换到「语义」检索，按含义查找。{% endif %}</p><div class="actions"><a class="btn" href="/">清除筛选</a></div></div>

@@ -2,13 +2,14 @@
   <div><h1>关系图</h1><p class="sub">查看记忆之间的引用。点击节点看原文，「展开邻居」逐步探索。</p></div>
   <a class="btn" href="/overview"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>时间概览</a>
 </header>
-<form class="graph-filters" method="get" action="/graph">
+<div class="toolrow graph-views"><nav class="segmented" aria-label="视图"><a href="/graph" {% if not Overview %}aria-current="page"{% endif %}>记忆</a><a href="/graph?view=entities" {% if Overview %}aria-current="page"{% endif %}>实体概览</a></nav>{% if Overview %}<span class="muted">按提及次数取前 40 个实体；连线表示它们出现在同一条记忆里。点击实体查看，双击展开它的记忆。</span>{% endif %}</div>
+{% if not Overview %}<form class="graph-filters" method="get" action="/graph">
   <label class="graph-query">话题<input type="search" name="q" value="{{ Query.Text }}" maxlength="600" placeholder="按话题筛选，留空显示全部" autocomplete="off"></label>
   <div class="field" data-date-field><label for="g-from" class="sr-only">起始日期</label><span class="graph-label">从</span><div class="datefield"><input id="g-from" type="text" name="from" value="{{ Query.From }}" placeholder="YYYY-MM-DD" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择起始日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
   <div class="field" data-date-field><label for="g-through" class="sr-only">结束日期</label><span class="graph-label">至</span><div class="datefield"><input id="g-through" type="text" name="through" value="{{ Query.Through }}" placeholder="YYYY-MM-DD" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择结束日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
   <button class="btn btn-primary"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>筛选</button>
   {% if Query.Strategy %}<input type="hidden" name="strategy" value="{{ Query.Strategy }}">{% endif %}
   {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
-</form>
+</form>{% endif %}
 {% if Query.Text or Query.From or Query.Through or Period or Undated %}<div class="filter-note">{% if Period %}<span class="chip">时段 {{ Period }}</span>{% endif %}{% if Undated %}<span class="chip">日期未记</span>{% endif %}<a href="/graph">清除筛选</a></div>{% endif %}
 {% include "graph-canvas.html" %}

@@ -1,0 +1,20 @@
+{% macro entry_row(r1, Back) %}
+{% if r1.Period %}<h2 class="period">{{ r1.Period }}</h2>{% endif %}
+<article class="entry">
+  <div class="entry-date {% if not r1.Occurred %}is-unknown{% endif %}">{% if r1.Occurred %}<time>{{ r1.Occurred }}</time>{% else %}日期未记{% endif %}</div>
+  <div>
+    <a class="entry-link" href="/memory/{{ r1.ID }}?back={{ Back | urlencode }}"><span class="entry-text" data-hl>{{ r1.Text }}</span></a>
+    {% if r1.Context %}<p class="entry-context" data-hl>{{ r1.Context }}</p>{% endif %}
+    <div class="entry-meta">
+      <span class="chip">{{ r1.Source }}</span>
+      {% for t in r1.Trail %}<a class="chip chip-trail" href="/memory/{{ t.ID }}?back={{ Back | urlencode }}" title="查看相关记录">{{ t.Label }}</a>{% endfor %}
+      {% if r1.Edited %}<span class="chip chip-soft" title="正文被修改过，旧版本保留在详情页">已编辑</span>{% endif %}
+      {% if r1.Files %}<span class="chip chip-soft"><svg class="icon icon-xs" aria-hidden="true"><use href="#paperclip"/></svg>{{ r1.Files }}</span>{% endif %}
+      {% for m in r1.Mentions %}{% if m.ID %}<a class="chip chip-entity" href="/entity/{{ m.ID }}">{{ m.Name }}</a>{% else %}<a class="chip chip-entity is-open" href="/entities#unresolved" title="待确认：还没有指向具体实体">{{ m.Name }}</a>{% endif %}{% endfor %}
+      {% if r1.MoreMentions %}<span class="chip chip-soft">+{{ r1.MoreMentions }}</span>{% endif %}
+      {% if r1.Accounts %}<details class="accounts"><summary>同一经历的其他记录 · {{ (r1.Accounts|length) }}</summary><ul>{% for r3 in r1.Accounts %}<li><a href="/memory/{{ r3.ID }}?back={{ Back | urlencode }}">{{ r3.Text }}</a> <span class="muted">· {{ r3.Source }}</span></li>{% endfor %}</ul></details>{% endif %}
+    </div>
+  </div>
+  <svg class="icon entry-go" aria-hidden="true"><use href="#right"/></svg>
+</article>
+{% endmacro %}
