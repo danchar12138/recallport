@@ -306,6 +306,19 @@ impl Store {
                 found
             };
             candidates.sort_by(|a, b| a.id.cmp(&b.id));
+            // `new: true` with the very same name and description as an existing entity is a repeat of
+            // the same request, not a second thing: reuse it so retries and parallel writers stay idempotent.
+            if input.new
+                && let Some(same) = candidates.iter().find(|c| {
+                    norm(&c.name) == norm(&input.name) && norm(&c.hint) == norm(&input.hint)
+                })
+            {
+                mentions.push(Mention {
+                    name: input.name.clone(),
+                    entity: Some(same.id.clone()),
+                });
+                continue;
+            }
             if input.new || candidates.is_empty() {
                 let stamp = now();
                 let entity = Entity {

@@ -51,9 +51,9 @@ RecallPort is a memory service that runs on your machine and connects to AI clie
 
 **1. Download and run**
 
-Download `RecallPort-*-windows-x64.zip` from [Releases](https://github.com/danchar12138/recallport/releases/latest), unzip it and double-click `recallport.exe`. A tray icon appears and your browser opens <http://127.0.0.1:3765/>.
+Download `RecallPort-*-windows-x64.zip` from [Releases](https://github.com/danchar12138/recallport/releases/latest), unzip it and double-click `RecallPort.exe`. A tray icon appears and your browser opens <http://127.0.0.1:3765/>.
 
-> Keep `recallport.exe` next to the `model` folder. The executable is not code-signed, so Windows SmartScreen may warn you: choose "More info → Run anyway".
+> Keep `RecallPort.exe` next to the `model` folder. The executable is not code-signed, so Windows SmartScreen may warn you: choose "More info → Run anyway".
 
 **2. Connect your AI client**
 
@@ -80,7 +80,7 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 
 **3. Make the AI use it proactively (recommended)**
 
-The server already ships usage instructions, but some clients ignore them. Add this to the client's rules file (for example `AGENTS.md` or `CLAUDE.md`):
+The server already ships usage instructions, but some clients ignore them. One-click connect on the Connect page therefore also writes the block below into the global rules file of Codex / Claude Code (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), wrapped in markers, backed up first, and removed again when you disconnect. For other clients paste it into their rules file yourself:
 
 ```markdown
 ## Long-term memory (RecallPort)
@@ -204,7 +204,7 @@ Report security problems as described in [SECURITY.md](SECURITY.md).
 <details>
 <summary>My AI does not call the memory tools on its own</summary>
 
-Whether it does depends on the client and the model; RecallPort does not listen to whole conversations. Add the rules from step 3 above to the client's rules file. That usually makes a clear difference. The "Verify" button on the Connect page tells you whether a client has really connected.
+Whether it does depends on the client and the model; RecallPort does not listen to whole conversations. Check that the Connect page says the usage rules are written (for other clients, paste the rules from step 3 yourself). That usually makes a clear difference. The "Verify" button on the Connect page tells you whether a client has really connected.
 </details>
 
 <details>

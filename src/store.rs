@@ -19,7 +19,7 @@ use lancedb::{
     DistanceType, Table,
     index::{Index, scalar::FtsIndexBuilder, vector::IvfHnswFlatIndexBuilder},
     query::{ExecutableQuery, QueryBase, Select},
-    table::AddDataMode,
+    table::{AddDataMode, OptimizeAction},
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -94,6 +94,7 @@ pub struct Store {
     pub status: RwLock<IndexStatus>,
     pub(crate) writes: Mutex<()>,
     maintenance: Arc<Mutex<()>>,
+    compacted: AtomicU64,
     pub(crate) idx: RwLock<EntityIndex>,
     snapshot: RwLock<Option<Arc<Vec<Entry>>>>,
     generation: AtomicU64,
@@ -330,6 +331,7 @@ impl Store {
             }),
             writes: Mutex::new(()),
             maintenance: Arc::new(Mutex::new(())),
+            compacted: AtomicU64::new(0),
             idx: RwLock::new(EntityIndex::default()),
             snapshot: RwLock::new(None),
             generation: AtomicU64::new(0),
@@ -963,6 +965,31 @@ impl Store {
         }
         out.truncate(8);
         out
+    }
+
+    /// Every write leaves a small file and a new table version behind. After enough of them, merge
+    /// the small files and drop versions older than ten minutes so the data folder stays small.
+    /// Returns whether anything was done.
+    pub async fn compact(&self) -> Result<bool> {
+        const EVERY: u64 = 60;
+        let version = self.table.version().await?;
+        if version < self.compacted.load(Ordering::Relaxed) + EVERY {
+            return Ok(false);
+        }
+        let _writing = self.writes.lock().await;
+        for table in [&self.table, &self.etable, &self.atable] {
+            table.optimize(OptimizeAction::All).await?;
+            table
+                .optimize(OptimizeAction::Prune {
+                    older_than: Some(chrono::Duration::minutes(10)),
+                    delete_unverified: None,
+                    error_if_tagged_old_versions: None,
+                })
+                .await?;
+        }
+        self.compacted
+            .store(self.table.version().await?, Ordering::Relaxed);
+        Ok(true)
     }
 
     pub async fn maintain(&self, selected: Option<LaneKind>) -> Result<()> {

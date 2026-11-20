@@ -107,7 +107,7 @@ fn open_library(model: &std::path::Path) -> Result<Arc<dyn embedding::Embed>> {
     Ok(Arc::new(embedding::Granite::open(model).with_context(
         || {
             format!(
-                "无法加载本地语义模型：{}。请确认 model 文件夹与 recallport.exe 在一起。",
+                "无法加载本地语义模型：{}。请确认 model 文件夹与 RecallPort.exe 在一起。",
                 model.display()
             )
         },
@@ -157,7 +157,7 @@ fn run(args: Args) -> Result<()> {
     let listener = bind(want, explicit)?;
     let addr = listener.local_addr()?;
     let url = format!("http://{addr}/");
-    let app = App::new(shell::SUPPORTED && !args.no_tray);
+    let app = App::new(shell::SUPPORTED && !args.no_tray, Some(dir.clone()));
 
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
     let server = {
@@ -242,6 +242,11 @@ fn serve(
                     tokio::time::sleep(Duration::from_secs(60)).await;
                     if let Err(error) = store.maintain(None).await {
                         log!("Index maintenance: {error:#}");
+                    }
+                    match store.compact().await {
+                        Ok(true) => log!("Compacted the library files"),
+                        Ok(false) => {}
+                        Err(error) => log!("Compaction: {error:#}"),
                     }
                 }
             });

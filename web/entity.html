@@ -24,6 +24,7 @@
       <div class="empty"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><h3>还没有记忆提及它</h3><p>在记忆详情页给记忆添加这个实体，或让接入的 AI 来整理。</p></div>
       {% endfor %}
     </div>
+    {% if MoreCount %}<p class="more-row"><a class="btn" href="{{ MoreURL }}">显示更多（还有 {{ MoreCount }} 条）</a></p>{% endif %}
   </section>
   <aside class="relations" aria-label="同时出现的实体">
     <div class="relations-head"><h2>同时出现</h2></div>

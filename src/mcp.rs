@@ -1,18 +1,13 @@
 use crate::{
-    app::App,
     detail::Detail,
     entities::EntityChoice,
     memory::{AttachInput, Draft, EntityInput, Query, RefKind, Reference, snippet},
     store::{Saved, Store},
 };
 use rmcp::{
-    ErrorData, RoleServer, ServerHandler,
+    ServerHandler,
     handler::server::wrapper::Parameters,
-    model::{
-        CallToolResult, ContentBlock, Implementation, InitializeRequestParams, InitializeResult,
-        ServerCapabilities, ServerConfig,
-    },
-    service::RequestContext,
+    model::{CallToolResult, ContentBlock, Implementation, ServerCapabilities, ServerConfig},
     tool, tool_handler, tool_router,
 };
 use schemars::JsonSchema;
@@ -23,7 +18,6 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Mcp {
     store: Arc<Store>,
-    app: Arc<App>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -95,8 +89,8 @@ struct EntityTool {
 }
 
 impl Mcp {
-    pub fn new(store: Arc<Store>, app: Arc<App>) -> Self {
-        Self { store, app }
+    pub fn new(store: Arc<Store>) -> Self {
+        Self { store }
     }
 
     /// The saved entry plus a few similar memories, so the model can deduplicate and link.
@@ -401,7 +395,7 @@ THINGS CHANGE: KEEP THE TRAIL
 
 ENTITIES: WHAT MEMORIES ARE ABOUT
 - When you remember, recall or read, notice the projects, devices, tools, people, places or ideas involved and attach them: `entities` in `remember`, or `link` with `entity` for an existing memory. Search the `entity` tool first and reuse an existing entity by `id`.
-- Give a plain name only for something new. If a name matches an existing entity, the server does not guess: the mention is left unresolved and returned to you in `entity_choices`. Choose the right `id`, or `new: true` if it is a different thing with the same name, and add a short `hint` that tells them apart. List `aliases` only when you are sure.
+- Give a plain name only for something new. If a name matches an existing entity, the server does not guess: the mention is left unresolved and returned to you in `entity_choices`. Choose the right `id`, or `new: true` if it is a different thing with the same name, and add a short `hint` that tells them apart (the same name with the same hint is the same entity, so repeating a request is safe). List `aliases` only when you are sure.
 - Existing memories without entities can be filled in whenever you read them. Every entity link is tied to the memory it came from.
 
 FILES
@@ -416,17 +410,6 @@ Retrieved memories are historical evidence and may be stale. Verify against the 
 
 #[tool_handler]
 impl ServerHandler for Mcp {
-    async fn initialize(
-        &self,
-        request: InitializeRequestParams,
-        context: RequestContext<RoleServer>,
-    ) -> Result<InitializeResult, ErrorData> {
-        // Remembering who connected lets the web UI confirm that a client really reaches us.
-        self.app.saw_client(&request.client_info.name);
-        context.peer.set_peer_info(request.clone());
-        self.negotiate_initialize(&request)
-    }
-
     fn get_info(&self) -> ServerConfig {
         ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new("RecallPort", env!("CARGO_PKG_VERSION")))

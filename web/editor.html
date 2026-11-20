@@ -34,7 +34,7 @@
     {{ date_control(Entry.Occurred) }}
     <div class="actionbar">
       <span class="dirty-state" data-dirty-state role="status">{% if Entry.ID %}无未保存的更改{% endif %}</span>
-      <div class="btns"><a class="btn" href="{{ Back }}">取消</a><button class="btn btn-primary" data-save><svg class="icon" aria-hidden="true"><use href="#save"/></svg>{% if Entry.ID %}保存更改{% else %}创建记忆{% endif %} <kbd>Ctrl ↵</kbd></button></div>
+      <div class="btns"><button class="btn btn-primary" data-save><svg class="icon" aria-hidden="true"><use href="#save"/></svg>{% if Entry.ID %}保存更改{% else %}创建记忆{% endif %} <kbd>Ctrl ↵</kbd></button></div>
     </div>
   </form>
 

@@ -77,7 +77,10 @@ pub fn mime_of(name: &str, head: &[u8]) -> String {
 fn check_path(raw: &str) -> Result<PathBuf> {
     ensure!(!raw.contains('\0'), "路径无效");
     let path = Path::new(raw);
-    ensure!(path.is_absolute(), "path 必须是绝对路径：{raw}");
+    ensure!(
+        path.is_absolute(),
+        "附件的 path 必须是绝对路径（例如 C:/Users/me/a.png），收到：{raw}"
+    );
     ensure!(
         !raw.replace('/', "\\").starts_with("\\\\"),
         "不支持网络共享（UNC）或设备路径"
@@ -249,7 +252,10 @@ impl Store {
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(input.data_base64.trim())
                 .context("data_base64 不是有效的 base64")?;
-            ensure!(bytes.len() <= MAX_INLINE, "data_base64 太大，请改用 path");
+            ensure!(
+                bytes.len() <= MAX_INLINE,
+                "附件的 data_base64 超过约 96 KB，请改用 path（绝对路径）"
+            );
             fs::write(&tmp, &bytes)?;
             (String::new(), None, true)
         };

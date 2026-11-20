@@ -559,3 +559,46 @@ async fn restore_can_be_rolled_back_and_a_crashed_restore_heals_itself() -> Resu
     drop(live);
     Ok(())
 }
+
+#[tokio::test]
+async fn repeating_the_same_new_entity_is_idempotent_but_a_different_hint_is_a_new_thing()
+-> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let named = |hint: &str| EntityInput {
+        name: "Mercury".into(),
+        hint: hint.into(),
+        new: true,
+        ..Default::default()
+    };
+    let write = |text: &'static str, hint: &str| {
+        let draft = Draft {
+            entities: vec![named(hint)],
+            ..say(text)
+        };
+        let s = s.clone();
+        async move { s.remember(draft, "t", "T").await }
+    };
+    let a = write("水星探测", "行星").await?;
+    let b = write("水星凌日", "行星").await?; // same name + same hint: the same entity
+    let c = write("汞中毒", "化学元素").await?; // same name, different hint: another thing
+    let id = |s: &crate::store::Saved| s.entry.mentions[0].entity.clone().unwrap();
+    assert_eq!(id(&a), id(&b));
+    assert_ne!(id(&a), id(&c));
+    Ok(())
+}
+
+#[tokio::test]
+async fn compaction_runs_after_many_writes_and_keeps_every_memory() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    assert!(!s.compact().await?, "nothing to do on a fresh library");
+    for n in 0..70 {
+        s.remember(say(&format!("第 {n} 条经历")), "t", "T").await?;
+    }
+    assert!(s.compact().await?);
+    assert!(!s.compact().await?, "not again right away");
+    assert_eq!(s.all().await?.len(), 70);
+    assert!(!s.recall(&lexical("经历")).await?.memories.is_empty());
+    Ok(())
+}

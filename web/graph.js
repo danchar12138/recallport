@@ -14,7 +14,7 @@ function mountGraph(root) {
   filters.delete('node');
   filters.delete('focus');
   filters.delete('suggested');
-  let snapshot, active = '', epoch = 0, busy = false, page = pageNumber;
+  let snapshot, active = '', epoch = 0, busy = false, page = pageNumber, retries = 0;
   const maxNodes = 120;
   if (typeof window.cytoscape !== 'function') { message.classList.remove('is-loading'); message.textContent='关系图组件未加载'; return; }
 
@@ -52,12 +52,23 @@ function mountGraph(root) {
     const grid = cy.edges().length===0;
     cy.layout(grid ? {name:'grid', fit:false, avoidOverlap:true, spacingFactor:1.6}
       : {name:'cose', fit:false, animate:false, randomize:true, nodeRepulsion:4200, idealEdgeLength:88, componentSpacing:48, nodeDimensionsIncludeLabels:true, numIter:600}).run();
+    if (!grid) {
+      // cose tends to build tall, narrow clusters; stretch them to the canvas shape so a wide screen is used.
+      const box = cy.elements().boundingBox(), ratio = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+      const k = Math.min(2.4, (ratio * box.h * 0.85) / Math.max(1, box.w));
+      if (k > 1.15) cy.nodes().positions(n => ({x: (n.position('x') - box.x1) * k + box.x1, y: n.position('y')}));
+    }
     fit();
   };
   const fit = () => {
     if (!cy.nodes().length) return;
-    cy.fit(cy.elements(), canvas.clientWidth<500 ? 25 : 32);
-    if (cy.zoom()>1.35) {cy.zoom(1.35);cy.center(cy.elements());}
+    // In immersive mode the inspector floats over the canvas: fit into the part that stays visible.
+    const covered = root.classList.contains('is-immersive') && !root.classList.contains('no-panel') ? Math.min(352, canvas.clientWidth * 0.4) : 0;
+    const pad = canvas.clientWidth < 500 ? 25 : 40, width = Math.max(120, canvas.clientWidth - covered), height = canvas.clientHeight;
+    const box = cy.elements().boundingBox();
+    const zoom = Math.max(0.14, Math.min(1.6, (width - pad * 2) / Math.max(1, box.w), (height - pad * 2) / Math.max(1, box.h)));
+    cy.zoom(zoom);
+    cy.pan({x: width / 2 - zoom * (box.x1 + box.w / 2), y: height / 2 - zoom * (box.y1 + box.h / 2)});
   };
   function updateSelect() {
     select.replaceChildren(new Option('选择节点',''));
@@ -148,6 +159,7 @@ function mountGraph(root) {
       const response=await fetch(`/graph-data?${query}`,{signal:AbortSignal.timeout(8000)});
       if (!response.ok) throw new Error('graph request failed');
       const data=await response.json();
+      retries=0;
       if (mark!==epoch) return;
       const keep=active;
       if (mode==='base') {cy.elements().remove();snapshot=data;page=data.page;}
@@ -164,7 +176,8 @@ function mountGraph(root) {
     } catch {
       if (mark!==epoch) return;
       if (cy.nodes().length) announce('未能加载关系');
-      else say('未能加载关系图，请点击右上角的刷新重试');
+      else if (retries++<2) {say('未能加载关系图，正在重试…',true);setTimeout(()=>{if (mark===epoch && !cy.nodes().length) load(mode,id);},1500);}
+      else say('未能加载关系图，请刷新页面重试');
     } finally {
       if (mark===epoch) {busy=false;expand.classList.remove('is-busy');controls();}
     }
@@ -193,13 +206,42 @@ function mountGraph(root) {
   for (const btn of root.querySelectorAll('[data-graph-action]')) btn.addEventListener('click',()=>{
     switch(btn.dataset.graphAction) {
       case 'fit':fit();break;
-      case 'reset':load('base',initial);break;
+      case 'panel':togglePanel();break;
+      case 'full':toggleFull();break;
       default:cy.zoom({level:cy.zoom()*(btn.dataset.graphAction==='in' ? 1.25 : 0.8),renderedPosition:{x:canvas.clientWidth/2,y:canvas.clientHeight/2}});
     }
   });
   prev?.addEventListener('click',()=>{if (page>1){page--;load('base',initial);}});
   next?.addEventListener('click',()=>{if (snapshot?.next){page++;load('base',initial);}});
-  new ResizeObserver(()=>cy.resize()).observe(canvas);
+  // The first layout can run before the canvas has its final size: keep fitting until the user pans or zooms.
+  let touched=false;
+  for (const type of ['wheel','pointerdown','touchstart']) canvas.addEventListener(type,()=>{touched=true;},{passive:true});
+  new ResizeObserver(()=>{cy.resize();if (!touched) fit();}).observe(canvas);
+  const panelButton=root.querySelector('[data-graph-action=panel]'), fullButton=root.querySelector('[data-graph-action=full]');
+  const togglePanel=()=>{const hidden=root.classList.toggle('no-panel');panelButton?.setAttribute('aria-pressed',String(!hidden));requestAnimationFrame(()=>{cy.resize();if (!touched) fit();});};
+  const setImmersive=on=>{
+    root.classList.toggle('is-immersive',on);
+    document.body.classList.toggle('graph-immersive',on);
+    fullButton?.querySelector('[data-full-label]')&&(fullButton.querySelector('[data-full-label]').textContent=on ? '退出全屏' : '全屏');
+    fullButton?.querySelector('use')?.setAttribute('href',on ? '#shrink' : '#expand');
+    requestAnimationFrame(()=>{cy.resize();touched=false;fit();});
+  };
+  const toggleFull=()=>{
+    if (root.classList.contains('is-immersive')) {
+      if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+      setImmersive(false);
+    } else {
+      setImmersive(true);
+      root.requestFullscreen?.().catch(()=>{});
+    }
+  };
+  document.addEventListener('fullscreenchange',()=>{if (!document.fullscreenElement && root.classList.contains('is-immersive')) setImmersive(false);});
+  document.addEventListener('keydown',event=>{
+    if (event.ctrlKey||event.metaKey||event.altKey||event.target.closest('input,textarea,select,[contenteditable]')) return;
+    if (event.key==='f'||event.key==='F') {event.preventDefault();toggleFull();}
+    else if (event.key==='Escape' && root.classList.contains('is-immersive')) {if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});setImmersive(false);}
+  });
+  panelButton?.setAttribute('aria-pressed','true');
   let restoreNode=initialSelection || '';
   load('base',initial);
 }

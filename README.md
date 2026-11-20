@@ -49,9 +49,9 @@ RecallPort 是一个跑在本机的记忆服务，通过 [MCP](https://modelcont
 
 **1. 下载并运行**
 
-从 [Releases](https://github.com/danchar12138/recallport/releases/latest) 下载 `RecallPort-*-windows-x64.zip`，解压后双击 `recallport.exe`。托盘出现图标，浏览器自动打开 <http://127.0.0.1:3765/>。
+从 [Releases](https://github.com/danchar12138/recallport/releases/latest) 下载 `RecallPort-*-windows-x64.zip`，解压后双击 `RecallPort.exe`。托盘出现图标，浏览器自动打开 <http://127.0.0.1:3765/>。
 
-> 请保持 `recallport.exe` 与 `model` 文件夹在一起。程序未做代码签名，Windows SmartScreen 可能提示，点“更多信息 → 仍要运行”即可。
+> 请保持 `RecallPort.exe` 与 `model` 文件夹在一起。程序未做代码签名，Windows SmartScreen 可能提示，点“更多信息 → 仍要运行”即可。
 
 **2. 接入你的 AI 客户端**
 
@@ -78,7 +78,7 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 
 **3. 让 AI 主动用起来（推荐）**
 
-服务端已内置使用指引，但有些客户端会忽略它。把下面这段加入客户端的规则文件（如 `AGENTS.md`、`CLAUDE.md`）：
+服务端已内置使用指引，但有些客户端会忽略它。「接入」页的一键接入会**自动**把下面这段规则写进 Codex / Claude Code 的全局规则文件（`~/.codex/AGENTS.md`、`~/.claude/CLAUDE.md`，用标记包住，改前备份，取消接入时一并移除）。其他客户端请自己粘贴到它的规则文件里：
 
 ```markdown
 ## 长期记忆（RecallPort）
@@ -202,7 +202,7 @@ flowchart LR
 <details>
 <summary>AI 不主动调用记忆工具怎么办？</summary>
 
-是否主动调用取决于客户端和模型，RecallPort 不监听完整对话。请把上面“让 AI 主动用起来”的规则加入客户端的规则文件，效果通常明显更好。接入页的「验证」会告诉你客户端是否真的连上过。
+是否主动调用取决于客户端和模型，RecallPort 不监听完整对话。请确认「接入」页显示“使用规则已写入”（其他客户端请手动粘贴上面的规则），效果通常明显更好。接入页的「验证」会告诉你客户端是否真的连上过。
 </details>
 
 <details>

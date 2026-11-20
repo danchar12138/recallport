@@ -340,9 +340,6 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .section { margin-top: 36px; }
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .section-head p { margin-top: 2px; color: var(--text-3); font-size: 13px; }
-.subnav { display: flex; gap: 4px; margin-block: -6px 22px; padding-bottom: 12px; border-bottom: 1px solid var(--border); overflow-x: auto; }
-.subnav a { padding: 5px 12px; border-radius: 999px; color: var(--text-2); font-size: 13px; text-decoration: none; white-space: nowrap; }
-.subnav a:hover { background: var(--hover); color: var(--text); text-decoration: none; }
 
 /* 空状态 */
 .empty { display: grid; justify-items: center; gap: 8px; padding: 56px 20px; text-align: center; color: var(--text-3); }
@@ -552,7 +549,7 @@ textarea[data-autosize] { resize: none; max-height: 60vh; overflow-y: auto; }
 .graph-legend label { cursor: pointer; }
 .graph-legend i { display: inline-block; width: 18px; border-top: 2px solid var(--g-edge); }
 .graph-legend i.dashed { border-top: 2px dashed var(--g-suggest); }
-.graph-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 440px; }
+.graph-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 440px; }
 .graph-stage { position: relative; min-width: 0; min-height: 440px; background-color: var(--surface-2); background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 20px 20px; }
 .graph-canvas { position: absolute; inset: 0; touch-action: none; }
 .graph-message { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; pointer-events: none; color: var(--text-3); text-align: center; padding: 20px; }
@@ -663,6 +660,10 @@ textarea[data-autosize] { resize: none; max-height: 60vh; overflow-y: auto; }
 .tool-flow { display: flex; gap: 8px; flex-wrap: wrap; }
 .tool-flow a { display: inline-flex; gap: 8px; align-items: center; padding: 5px 12px; font-size: 13px; color: var(--text); text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; }
 .tool-flow a:hover { border-color: var(--accent); text-decoration: none; }
+.tool-flow a[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.tool-flow a[aria-selected="true"] code { color: var(--accent-text); }
+.tool-list .tool-doc > summary { cursor: default; pointer-events: none; }
+.tool-list .tool-doc > summary::before { display: none; }
 .tool-flow a span { color: var(--text-3); }
 .tool-doc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); scroll-margin-top: 16px; }
 .tool-doc + .tool-doc, .tool-flow + .tool-doc { margin-top: 8px; }
@@ -803,14 +804,6 @@ a.chip-entity:hover { text-decoration: underline; }
 .switch input:checked + .switch-ui { background: var(--accent); }
 .switch input:checked + .switch-ui::after { transform: translateX(18px); }
 .switch input:focus-visible + .switch-ui { outline: 2px solid var(--accent); outline-offset: 2px; }
-.diagnostics { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-.diagnostics > summary { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; list-style: none; font-weight: 650; font-size: 16px; }
-.diagnostics > summary::-webkit-details-marker { display: none; }
-.diagnostics > summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3); rotate: -45deg; transition: rotate .15s; }
-.diagnostics[open] > summary::before { rotate: 45deg; }
-.summary-note { flex: 1; min-width: 0; font-weight: 400; font-size: 13px; color: var(--text-3); }
-.diagnostics > .section-head, .diagnostics > .lanes { margin: 0 18px 14px; }
-.diagnostics .section-head { margin-bottom: 8px; }
 .job-detail { color: var(--text-2); font-size: 13px; }
 .job-detail ul { margin: 6px 0 0; padding-left: 18px; list-style: disc; }
 .client-list { display: grid; gap: 10px; }
@@ -824,3 +817,39 @@ a.chip-entity:hover { text-decoration: underline; }
 .manual > summary { cursor: pointer; color: var(--text-2); font-size: 13px; padding: 4px 0; }
 .manual[open] > summary { margin-bottom: 8px; }
 .dialog-body pre.quote { white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
+
+/* 最近访问的客户端 */
+.recent-clients { margin-top: 4px; font-size: 13px; color: var(--text-2); }
+.recent-clients summary { cursor: pointer; padding: 4px 0; }
+.recent-clients ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* 关系图：宽版面、铺满视口、沉浸式 */
+.shell-graph { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 20px; }
+.shell-graph > * { max-width: none; }
+.shell-graph .graph-workspace { flex: 1; display: flex; flex-direction: column; min-height: 520px; }
+.shell-graph .graph-body { flex: 1; min-height: 0; }
+.shell-graph .graph-stage { min-height: 0; }
+.graph-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.graph-bar .graph-search { flex: 1 1 260px; min-width: 200px; max-width: 520px; }
+.graph-bar .filter-chips { flex-basis: 100%; }
+.graph-bar .graph-note { font-size: 13px; }
+.graph-workspace.no-panel .graph-body { grid-template-columns: minmax(0, 1fr); }
+.graph-workspace.no-panel .graph-inspector { display: none; }
+.graph-actions [data-graph-action="panel"][aria-pressed="false"] { color: var(--text-3); }
+body.graph-immersive { overflow: hidden; }
+.graph-workspace.is-immersive { position: fixed; inset: 0; z-index: 60; margin: 0; max-width: none; border: 0; border-radius: 0; display: flex; flex-direction: column; background: var(--surface); }
+.is-immersive .graph-body { flex: 1; min-height: 0; position: relative; grid-template-columns: minmax(0, 1fr); }
+.is-immersive .graph-stage { min-height: 0; }
+.is-immersive .graph-inspector { position: absolute; z-index: 3; top: 12px; right: 12px; bottom: 12px; width: min(340px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0, 0, 0, .28); overflow: auto; }
+.is-immersive.no-panel .graph-inspector { display: none; }
+.is-immersive .graph-text { max-height: 40vh; }
+@media (max-width: 760px) { .graph-bar .graph-search { max-width: none; } .shell-graph .graph-workspace { min-height: 480px; } }
+
+.config-all { margin-top: 12px; }
+.config-all > summary { cursor: pointer; padding: 6px 2px; color: var(--text-2); font-size: 13px; }
+.config-all[open] > summary { margin-bottom: 8px; }
+
+.endpoint-status { margin-top: 8px; font-size: 13px; color: var(--text-3); }
+.endpoint-status[data-state="ok"] { color: var(--ok); }
+.endpoint-status[data-state="fail"] { color: var(--danger); }
+.more-row { display: flex; justify-content: center; padding: 14px 0 4px; }

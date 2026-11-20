@@ -483,7 +483,14 @@ async fn clients_status(State(w): State<Web>) -> Response {
             v
         })
         .collect();
-    Json(json!({"url": url, "clients": list})).into_response()
+    let recent: Vec<Value> = w
+        .app
+        .all_seen()
+        .into_iter()
+        .take(8)
+        .map(|(name, s)| json!({"name": name, "at": s.at, "calls": s.calls, "agent": s.agent}))
+        .collect();
+    Json(json!({"url": url, "clients": list, "recent": recent})).into_response()
 }
 
 async fn client_connect(
@@ -494,11 +501,31 @@ async fn client_connect(
     let Some(c) = Client::parse(&id) else {
         return StatusCode::NOT_FOUND.into_response();
     };
+    // The usage rules go in with the connection unless the caller opts out (rules=0).
+    let rules = |ok: bool| -> Value {
+        if !ok || get_field(&f, "rules") == "0" {
+            return json!({"rules": false});
+        }
+        match clients::write_rules(c) {
+            Ok(_) => json!({"rules": true}),
+            Err(e) => json!({"rules": false, "rules_error": public_error(&e)}),
+        }
+    };
     match clients::connect(c, &mcp_url(&w), get_field(&f, "replace") == "1") {
         Ok(Outcome::Connected { backup }) => {
-            Json(json!({"ok": true, "backup": backup})).into_response()
+            let mut v = json!({"ok": true, "backup": backup});
+            v["rules"] = rules(true)["rules"].clone();
+            Json(v).into_response()
         }
-        Ok(Outcome::Already) => Json(json!({"ok": true, "already": true})).into_response(),
+        Ok(Outcome::Already) => {
+            let mut v = json!({"ok": true, "already": true});
+            let r = rules(true);
+            v["rules"] = r["rules"].clone();
+            if clients::rules_present(c) {
+                v["already"] = json!(true);
+            }
+            Json(v).into_response()
+        }
         Ok(Outcome::Conflict { existing }) => (
             StatusCode::CONFLICT,
             Json(json!({"conflict": true, "existing": existing})),
@@ -518,7 +545,8 @@ async fn client_disconnect(Path(id): Path<String>) -> Response {
     };
     match clients::disconnect(c) {
         Ok((removed, backup)) => {
-            Json(json!({"ok": true, "removed": removed, "backup": backup})).into_response()
+            let rules_removed = clients::remove_rules(c).unwrap_or(false);
+            Json(json!({"ok": true, "removed": removed || rules_removed, "backup": backup, "rules_removed": rules_removed})).into_response()
         }
         Err(e) => (
             StatusCode::BAD_REQUEST,

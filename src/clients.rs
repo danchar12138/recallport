@@ -135,6 +135,9 @@ pub struct Status {
     pub error: String,
     pub preview: String,
     pub command: String,
+    /// Whether the usage rules block is in the client's global instruction file.
+    pub rules: bool,
+    pub rules_path: String,
 }
 
 pub fn status(c: Client, url: &str) -> Status {
@@ -153,6 +156,10 @@ pub fn status(c: Client, url: &str) -> Status {
         existing: String::new(),
         error: String::new(),
         preview: preview(c, url),
+        rules: rules_present(c),
+        rules_path: rules_path(c)
+            .map(|p| p.display().to_string())
+            .unwrap_or_default(),
         command: match c {
             Client::Claude => format!("claude mcp add --transport http --scope user {ENTRY} {url}"),
             Client::Codex => String::new(),
@@ -180,6 +187,112 @@ pub enum Outcome {
     Connected { backup: Option<String> },
     Already,
     Conflict { existing: String },
+}
+
+/// The usage rules the models are asked to follow, kept in the client's global instruction file
+/// between two markers so they can be updated or removed without touching anything else in it.
+pub const RULES: &str = include_str!("rules.md");
+const BEGIN: &str = "<!-- recallport:begin -->";
+const END: &str = "<!-- recallport:end -->";
+
+pub fn rules_path(c: Client) -> Option<PathBuf> {
+    match c {
+        Client::Codex => Some(
+            std::env::var_os("CODEX_HOME")
+                .map(PathBuf::from)
+                .or_else(|| home().map(|h| h.join(".codex")))?
+                .join("AGENTS.md"),
+        ),
+        Client::Claude => Some(
+            std::env::var_os("CLAUDE_CONFIG_DIR")
+                .map(PathBuf::from)
+                .or_else(|| home().map(|h| h.join(".claude")))?
+                .join("CLAUDE.md"),
+        ),
+    }
+}
+
+fn block() -> String {
+    format!(
+        "{BEGIN}
+{}
+{END}
+",
+        RULES.trim_end()
+    )
+}
+
+pub fn rules_present(c: Client) -> bool {
+    rules_path(c)
+        .and_then(|p| fs::read_to_string(p).ok())
+        .is_some_and(|t| t.contains(BEGIN) && t.contains(END))
+}
+
+/// Add or refresh the rules block. Everything outside the markers is kept; the file is backed up
+/// first. Returns the backup path when the file changed and existed before.
+pub fn write_rules(c: Client) -> Result<Option<String>> {
+    let path = rules_path(c).context("找不到用户目录")?;
+    let text = if path.is_file() {
+        fs::read_to_string(&path)?
+    } else {
+        String::new()
+    };
+    let updated = match (text.find(BEGIN), text.find(END)) {
+        (Some(a), Some(b)) if a < b => {
+            let tail = b + END.len();
+            let tail = if text[tail..].starts_with('\n') {
+                tail + 1
+            } else {
+                tail
+            };
+            format!("{}{}{}", &text[..a], block(), &text[tail..])
+        }
+        _ if text.trim().is_empty() => block(),
+        _ => format!(
+            "{}
+
+{}",
+            text.trim_end(),
+            block()
+        ),
+    };
+    if updated == text {
+        return Ok(None);
+    }
+    let saved = backup(&path)?;
+    write_atomic(&path, &updated)?;
+    Ok(saved)
+}
+
+/// Remove only the rules block. Returns whether there was one.
+pub fn remove_rules(c: Client) -> Result<bool> {
+    let path = rules_path(c).context("找不到用户目录")?;
+    let Ok(text) = fs::read_to_string(&path) else {
+        return Ok(false);
+    };
+    let (Some(a), Some(b)) = (text.find(BEGIN), text.find(END)) else {
+        return Ok(false);
+    };
+    if a >= b {
+        return Ok(false);
+    }
+    let tail = b + END.len();
+    let tail = if text[tail..].starts_with('\n') {
+        tail + 1
+    } else {
+        tail
+    };
+    let mut updated = format!("{}{}", text[..a].trim_end(), &text[tail..]);
+    if !updated.trim().is_empty() && !updated.ends_with('\n') {
+        updated.push('\n');
+    }
+    backup(&path)?;
+    if updated.trim().is_empty() {
+        fs::remove_file(&path)?;
+    } else {
+        write_atomic(&path, &updated)?;
+    }
+    Ok(true)
 }
 
 fn write_atomic(path: &Path, text: &str) -> Result<()> {
@@ -319,6 +432,37 @@ mod tests {
         unsafe { std::env::set_var("CODEX_HOME", dir.path()) };
         let url = "http://127.0.0.1:3765/mcp";
         assert_eq!(status(Client::Codex, url).state, "none");
+        // Rules: appended after the user's own text, refreshed in place, removed without a trace.
+        let agents = dir.path().join("AGENTS.md");
+        fs::write(
+            &agents,
+            "# My rules
+Be brief.
+",
+        )?;
+        assert!(!rules_present(Client::Codex));
+        assert!(write_rules(Client::Codex)?.is_some());
+        let with = fs::read_to_string(&agents)?;
+        assert!(
+            with.starts_with(
+                "# My rules
+Be brief."
+            ) && with.contains("recall")
+        );
+        assert!(rules_present(Client::Codex));
+        assert!(
+            write_rules(Client::Codex)?.is_none(),
+            "unchanged: no rewrite"
+        );
+        assert_eq!(fs::read_to_string(&agents)?, with);
+        assert!(remove_rules(Client::Codex)?);
+        assert_eq!(
+            fs::read_to_string(&agents)?,
+            "# My rules
+Be brief.
+"
+        );
+        assert!(!remove_rules(Client::Codex)?);
         assert!(matches!(
             connect(Client::Codex, url, false)?,
             Outcome::Connected { backup: Some(_) }

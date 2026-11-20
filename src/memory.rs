@@ -418,7 +418,7 @@ impl AttachInput {
         );
         ensure!(
             self.data_base64.len() <= MAX_INLINE * 4 / 3 + 8,
-            "data_base64 太大，请改用 path"
+            "附件的 data_base64 超过约 96 KB，请改用 path（绝对路径）"
         );
         ensure!(
             self.name.chars().count() <= 200 && self.caption.chars().count() <= 600,
@@ -431,9 +431,10 @@ impl AttachInput {
 impl Query {
     pub fn filter(&self) -> Result<String> {
         ensure!(
-            self.text.chars().count() <= 600 && self.limit <= 30,
-            "查询超出长度或条数限制"
+            self.text.chars().count() <= 600,
+            "query 最多 600 个字符，请缩短（只保留关键词或一句话）"
         );
+        ensure!(self.limit <= 30, "limit 最大为 30（默认 8），请调小");
         ensure!(
             matches!(
                 self.strategy.as_str(),

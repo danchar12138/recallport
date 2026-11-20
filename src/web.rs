@@ -1,6 +1,6 @@
 use crate::{
-    app::App, detail::Link, files::AttachmentView, jobs::Jobs, mcp::Mcp, memory::*, store::Store,
-    web_admin,
+    app::App, clients, detail::Link, files::AttachmentView, jobs::Jobs, mcp::Mcp, memory::*,
+    store::Store, web_admin,
 };
 use anyhow::Result;
 use axum::{
@@ -82,7 +82,7 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
         .with_allowed_hosts([web.host.clone(), web.alternate.clone()])
         .with_allowed_origins([web.base.clone(), format!("http://{}", web.alternate)]);
     let mcp = StreamableHttpService::new(
-        move || Ok(Mcp::new(store.clone(), app.clone())),
+        move || Ok(Mcp::new(store.clone())),
         Arc::new(LocalSessionManager::default()),
         config,
     );
@@ -107,7 +107,9 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
         .route("/entity-search", get(entity_search))
         .route(
             "/clients",
-            get(|State(w): State<Web>| async move { w.render(json!({"View":"clients"})) }),
+            get(|State(w): State<Web>| async move {
+                w.render(json!({"View":"clients","Rules":clients::RULES.trim_end()}))
+            }),
         )
         .merge(web_admin::routes());
     macro_rules! asset {
@@ -167,8 +169,33 @@ async fn local_only(State(w): State<Web>, req: Request, next: Next) -> Response 
     if req.uri().path() == "/mcp" && req.method() == axum::http::Method::POST {
         let (parts, body) = req.into_parts();
         let Ok(body) = axum::body::to_bytes(body, 128 * 1024).await else {
-            return StatusCode::PAYLOAD_TOO_LARGE.into_response();
+            // A readable JSON-RPC error: the calling model sees it and can retry with a path.
+            let reason = "请求体超过 128 KB。附件的 data_base64 请控制在约 96 KB 以内；更大的文件请改用 path（绝对路径），服务会自己读取。";
+            return (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                [(header::CONTENT_TYPE, "application/json")],
+                json!({"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":reason}})
+                    .to_string(),
+            )
+                .into_response();
         };
+        // Who is knocking: the handshake carries the client's name, other requests only the
+        // User-Agent. This is what lets the connection page confirm a client really arrived.
+        let agent = parts
+            .headers
+            .get(header::USER_AGENT)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_default();
+        let name = serde_json::from_slice::<Value>(&body)
+            .ok()
+            .filter(|v| v["method"] == "initialize")
+            .and_then(|v| {
+                v["params"]["clientInfo"]["name"]
+                    .as_str()
+                    .map(str::to_owned)
+            })
+            .unwrap_or_default();
+        w.app.saw_client(&name, agent);
         return headers(next.run(Request::from_parts(parts, Body::from(body))).await);
     }
     headers(next.run(req).await)
@@ -310,10 +337,26 @@ fn row(e: &Entry, trail: &[Trail], others: &[Entry], period: &str) -> Value {
             .collect::<Vec<_>>()
     );
     view["MoreMentions"] = json!(e.mentions.len().saturating_sub(6));
+    // Several records of the same kind (say, three summaries) read as one chip with a count.
+    let mut chips: Vec<(&str, &str, usize)> = Vec::new();
+    for t in trail {
+        match chips.iter_mut().find(|c| c.0 == t.relation) {
+            Some(chip) => chip.2 += 1,
+            None => chips.push((t.relation, t.id.as_str(), 1)),
+        }
+    }
     view["Trail"] = json!(
-        trail
+        chips
             .iter()
-            .map(|t| json!({"Label":trail_label(t.relation),"ID":t.id,"Relation":t.relation}))
+            .map(|(relation, id, count)| {
+                let label = trail_label(relation);
+                let label = if *count > 1 {
+                    format!("{label} ×{count}")
+                } else {
+                    label.to_owned()
+                };
+                json!({"Label":label,"ID":id,"Relation":relation})
+            })
             .collect::<Vec<_>>()
     );
     view["Files"] = json!(e.attachments.len());
@@ -709,7 +752,9 @@ async fn entities_page(State(w): State<Web>, Params(f): Params<Fields>) -> Respo
     w.render(p)
 }
 async fn entity_view(w: &Web, id: &str, f: &Fields, error: &str) -> Response {
-    let d = match w.store.entity_detail(id, 120).await {
+    // Thirty memories at a time; "show more" widens the same page instead of rendering thousands.
+    let page = number(f, "page").clamp(1, 200);
+    let d = match w.store.entity_detail(id, page * 30).await {
         Ok(d) => d,
         Err(e) => return (StatusCode::NOT_FOUND, public_error(&e)).into_response(),
     };
@@ -734,7 +779,8 @@ async fn entity_view(w: &Web, id: &str, f: &Fields, error: &str) -> Response {
     let back = uri(&format!("/entity/{}", d.entity.id), &BTreeMap::new());
     w.render(json!({"View":"entity","Error":error,"Entity":entity_json(&d.entity),"Merged":d.merged,
         "Rows":rows,"Related":d.related.iter().map(|(e,n)| json!({"ID":e.id,"Name":e.name,"Hint":e.hint,"Count":n})).collect::<Vec<_>>(),
-        "Back":back,"Notice":get_field(f,"done")}))
+        "Back":back,"Notice":get_field(f,"done"),
+        "MoreCount":d.entity.mentions.saturating_sub(page * 30),"MoreURL":format!("/entity/{}?page={}",d.entity.id,page + 1)}))
 }
 async fn entity_page(
     State(w): State<Web>,

@@ -251,6 +251,49 @@
     void panels;
   }
 
+  /* ---------- 页内标签：一次只显示一个面板，网址里的 #锚点可直达 ---------- */
+  for (const nav of $$('[data-pagetabs]')) {
+    const links = $$('a[href^="#"]', nav), optional = nav.hasAttribute('data-pagetabs-none');
+    const idOf = a => a.getAttribute('href').slice(1), panelOf = a => document.getElementById(idOf(a));
+    nav.setAttribute('role', 'tablist');
+    for (const a of links) { a.setAttribute('role', 'tab'); a.setAttribute('aria-controls', idOf(a)); }
+    const select = (link, write = true) => {
+      for (const a of links) {
+        const on = a === link, panel = panelOf(a);
+        a.setAttribute('aria-selected', String(on));
+        a.tabIndex = on || (!link && a === links[0]) ? 0 : -1;
+        if (panel) { panel.hidden = !on; if (panel.matches('details')) panel.open = on; }
+      }
+      if (write) history.replaceState(null, '', link ? `#${idOf(link)}` : location.pathname + location.search);
+    };
+    const fromHash = () => {
+      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (!target) return null;
+      const link = links.find(a => { const p = panelOf(a); return p && (p === target || p.contains(target)); });
+      return link ? {link, target} : null;
+    };
+    const apply = () => {
+      const hit = fromHash();
+      select(hit ? hit.link : (optional ? null : links[0]), false);
+      if (hit && hit.target !== panelOf(hit.link)) hit.target.scrollIntoView();
+    };
+    for (const a of links) {
+      a.addEventListener('click', event => {
+        event.preventDefault();
+        select(optional && a.getAttribute('aria-selected') === 'true' ? null : a);
+      });
+      a.addEventListener('keydown', event => {
+        const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+        if (!step) return;
+        event.preventDefault();
+        const next = links[(links.indexOf(a) + step + links.length) % links.length];
+        select(next); next.focus();
+      });
+    }
+    apply();
+    window.addEventListener('hashchange', apply);
+  }
+
   /* ---------- 接入：检测、接入、取消、验证 ---------- */
   const clientList = $('[data-clients]');
   if (clientList) {
@@ -267,20 +310,29 @@
       const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams(body)});
       return {status: response.status, json: await response.json().catch(() => ({}))};
     };
-    const detail = c => [
+    const detail = c => withRulesPath(c, [
       h('p', {text: `范围：${c.scope}`}), h('p', {class: 'muted', text: `配置文件：${c.path}`}),
       h('p', {text: '将写入这一项（其余内容保持不变）：'}), h('pre', {class: 'quote', text: c.preview}),
-    ];
+      h('p', {html: `同时在 <code></code> 里加入一段使用规则（用标记包住，其余内容不动，可随时移除），让 AI 在该查的时候主动查、该记的时候主动记。`}),
+    ]);
+    const withRulesPath = (c, parts) => { const code = parts[parts.length - 1].querySelector('code'); if (code) code.textContent = c.rules_path; return parts; };
     const refresh = async () => {
       try {
         const response = await fetch('/clients-status');
         if (!response.ok) throw new Error('status');
         latest = await response.json();
-        clientList.replaceChildren(...latest.clients.map(card));
+        const wasOpen = clientList.querySelector('.recent-clients')?.open;
+        const recent = (latest.recent || []).length ? h('details', {class: 'recent-clients', open: wasOpen ? '' : null},
+          h('summary', {text: `最近访问过 MCP 的客户端（${latest.recent.length}）`}),
+          h('ul', {}, ...latest.recent.map(r => h('li', {}, h('b', {text: r.name}), h('span', {class: 'muted', text: ` · ${ago(r.at)} · ${r.calls} 次请求${r.agent && r.agent !== r.name ? ` · ${r.agent}` : ''}`}))))) : null;
+        clientList.replaceChildren(...latest.clients.map(card), ...(recent ? [recent] : []));
       } catch { /* 下次再试 */ }
     };
     const act = async (c, kind) => {
-      if (kind === 'connect' || kind === 'replace') {
+      if (kind === 'rules') {
+        const result = await post(`/clients/${c.id}/connect`, {replace: '0'});
+        toast(result.json.rules ? `已写入 ${c.rules_path}，请重启 ${c.name} 使其生效。` : (result.json.rules_error || '规则未能写入'), {tone: result.json.rules ? 'success' : 'error', timeout: 6000});
+      } else if (kind === 'connect' || kind === 'replace') {
         const conflict = kind === 'replace';
         const ok = await confirmDialog({
           title: conflict ? `替换 ${c.name} 里的同名配置？` : `接入 ${c.name}？`,
@@ -290,10 +342,10 @@
         if (!ok) return;
         const result = await post(`/clients/${c.id}/connect`, {replace: conflict ? '1' : '0'});
         if (result.status === 409) { toast(`${c.name} 里已有同名配置（指向 ${result.json.existing}），请在卡片上选择「替换」`, {tone: 'info', timeout: 8000}); }
-        else if (result.json.ok) toast(result.json.already ? `${c.name} 已经接入` : `已接入 ${c.name}。请重启 ${c.name} 使其生效。`, {timeout: 6000});
+        else if (result.json.ok) toast(result.json.already && !result.json.rules ? `${c.name} 已经接入` : `已接入 ${c.name}${result.json.rules ? '，并写入使用规则' : ''}。请重启 ${c.name} 使其生效。`, {timeout: 6000});
         else toast(result.json.error || '接入未完成', {tone: 'error', timeout: 9000});
       } else if (kind === 'disconnect') {
-        const ok = await confirmDialog({title: `取消接入 ${c.name}？`, body: [`只会从 ${c.name} 的配置里移除 recallport 这一项（原文件先备份）。你的记忆不会被删除，随时可以重新接入。`, h('p', {class: 'muted', text: `配置文件：${c.path}`})], ok: '取消接入', tone: 'danger'});
+        const ok = await confirmDialog({title: `取消接入 ${c.name}？`, body: [`只会从 ${c.name} 的配置里移除 recallport 这一项，并移除规则文件里 RecallPort 的那一段（原文件先备份）。你的记忆不会被删除，随时可以重新接入。`, h('p', {class: 'muted', text: `配置文件：${c.path}`})], ok: '取消接入', tone: 'danger'});
         if (!ok) return;
         const result = await post(`/clients/${c.id}/disconnect`, {});
         if (result.json.ok) toast(result.json.removed ? `已取消接入 ${c.name}` : `${c.name} 本来就没有接入`, {tone: result.json.removed ? 'success' : 'info'});
@@ -314,9 +366,9 @@
       const button = (text, kind, primary) => { const b = h('button', {type: 'button', class: `btn btn-sm${primary ? ' btn-primary' : ''}`, text}); b.addEventListener('click', () => { b.classList.add('is-busy'); act(c, kind).finally(() => b.classList.remove('is-busy')); }); return b; };
       if (c.state === 'none') buttons.push(button('接入', 'connect', true));
       if (c.state === 'conflict') buttons.push(button('替换为当前地址…', 'replace', true));
-      if (c.state === 'connected') buttons.push(button('验证', 'verify', true), button('取消接入', 'disconnect'));
+      if (c.state === 'connected') buttons.push(button('验证', 'verify', true), ...(c.rules ? [] : [button('写入规则', 'rules')]), button('取消接入', 'disconnect'));
       const note = c.state === 'error' ? c.error : c.state === 'conflict' ? `配置里已有同名项，指向 ${c.existing}。` : c.state === 'connected'
-        ? (c.last_seen ? `最近连接：${c.last_seen.client} · ${ago(c.last_seen.at)}` : `还没有收到它的连接。重启 ${c.name} 后点「验证」。`) : '';
+        ? ((c.last_seen ? `最近连接：${c.last_seen.client} · ${ago(c.last_seen.at)}` : `还没有收到它的连接，重启 ${c.name} 后点「验证」`) + (c.rules ? ' · 使用规则已写入' : ' · 使用规则未写入')) : '';
       return h('div', {class: 'client-card'},
         h('div', {class: 'client-head'}, h('b', {text: c.name}), h('span', {class: 'badge', 'data-state': tone, text: label}), c.installed ? null : h('span', {class: 'muted', text: '未检测到安装，仍可接入'})),
         h('p', {class: 'muted client-path', text: `${c.scope} · ${c.path}`}), note ? h('p', {class: 'client-note', text: note}) : null,
@@ -328,12 +380,10 @@
 
   const testMCP = $('#test-mcp');
   if (testMCP) {
-    const status = $('#mcp-status'), list = $('#mcp-checks'), step = $('#verify');
+    const status = $('#mcp-status'), list = $('#mcp-checks'), step = $('#verify') || document.createElement('i');
     const mark = (name, value) => { $(`[data-check=${name}]`, list).dataset.state = value; };
-    testMCP.hidden = false;
     testMCP.addEventListener('click', async () => {
       testMCP.disabled = true;
-      list.hidden = false;
       step.classList.remove('is-done');
       status.textContent = '';
       for (const item of $$('[data-check]', list)) item.dataset.state = 'idle';
@@ -360,23 +410,17 @@
         const names = new Set(result.tools.map(tool => tool.name));
         if (!['recall', 'read', 'remember', 'link', 'entity'].every(name => names.has(name))) throw new Error('Missing tools');
         mark('tools', 'ok');
-        status.textContent = '连接正常，5 个工具可用。现在可以去客户端里添加这个地址了。';
-        step.classList.add('is-done');
-        toast('MCP 连接正常');
+        status.textContent = '✓ 本机服务正常，5 个工具可用';
+        status.dataset.state = 'ok';
       } catch {
         mark(current, 'fail');
         status.textContent = current === 'health' ? '本机服务没有响应，请确认 RecallPort 仍在运行。' : current === 'init' ? 'MCP 握手失败，请重启 RecallPort 后再试。' : '没有读取到完整的工具列表。';
-        toast('连接测试未通过', {tone: 'error'});
+        status.dataset.state = 'fail';
       } finally {
         testMCP.disabled = false;
       }
     });
-    const openTool = () => {
-      const tool = document.getElementById(location.hash.slice(1));
-      if (tool?.matches('.tool-doc')) tool.open = true;
-    };
-    openTool();
-    window.addEventListener('hashchange', openTool);
+    testMCP.click();
   }
 
   /* ---------- 数据：索引状态、重建、备份、恢复 ---------- */
@@ -409,7 +453,8 @@
           $('[data-index-repaired]', lane).textContent = stamp(health.repaired_at, '无');
           $('[data-index-problem]', lane).hidden = !health.problem;
           const working = health.state === 'working' || health.state === 'queued';
-          $('[data-index-rebuild]', lane).disabled = working || health.state === 'disabled' || pending.has(kind) || pending.has('all');
+          const laneRebuild = $('[data-index-rebuild]', lane);
+          if (laneRebuild) laneRebuild.disabled = working || health.state === 'disabled' || pending.has(kind) || pending.has('all');
           const bar = $('[data-index-bar]', lane);
           if (bar) bar.hidden = !working;
           if (working) watching.add(kind);
@@ -421,7 +466,8 @@
           }
           busy ||= working;
         }
-        $('[data-index-rebuild="all"]', indexPanel).disabled = busy || pending.size > 0;
+        const all = $('[data-index-rebuild="all"]', indexPanel);
+        all.disabled = busy || pending.size > 0;
         const rank = {error: 4, degraded: 3, working: 2, queued: 2, ready: 1};
         const overall = $('[data-index-overall]', indexPanel);
         if (overall) setState(overall, ['keyword', 'semantic'].map(k => s[k].state).sort((a, b) => (rank[b] || 0) - (rank[a] || 0))[0]);
@@ -547,44 +593,44 @@
   const restoreForm = $('#restore-form');
   if (restoreForm) {
     const file = restoreForm.elements.backup, zone = $('[data-dropzone]', restoreForm);
-    const nameEl = $('[data-file-name]', restoreForm), metaEl = $('[data-file-meta]', restoreForm), submit = $('[data-restore-submit]', restoreForm);
+    const nameEl = $('[data-file-name]', restoreForm), metaEl = $('[data-file-meta]', restoreForm);
     const show = () => {
       const chosen = file.files[0];
       zone.classList.toggle('has-file', Boolean(chosen));
       nameEl.textContent = chosen ? chosen.name : '选择或拖入备份文件';
       metaEl.textContent = chosen ? formatBytes(chosen.size) : '.recallport.zip';
-      submit.disabled = !chosen;
     };
-    file.addEventListener('change', show);
     for (const type of ['dragenter', 'dragover']) zone.addEventListener(type, event => { event.preventDefault(); zone.classList.add('is-over'); });
     for (const type of ['dragleave', 'drop']) zone.addEventListener(type, () => zone.classList.remove('is-over'));
-    zone.addEventListener('drop', event => {
-      event.preventDefault();
-      if (event.dataTransfer.files.length) { file.files = event.dataTransfer.files; show(); }
-    });
-    submit.addEventListener('click', async () => {
+    const begin = async () => {
       const chosen = file.files[0];
       if (!chosen) return;
-      const merge = restoreForm.elements.mode.value === 'merge';
       const total = Number(restoreForm.dataset.total) || 0;
-      const ok = await confirmDialog({
-        title: merge ? '把此备份合并进当前记忆库？' : '用此备份替换当前记忆库？',
-        body: merge
-          ? [`文件：${chosen.name}（${formatBytes(chosen.size)}）`, '备份里的记忆会并入现在的库，两边都保留。同名实体不会被自动合并，相同的附件按内容去重。合并前会自动保留回退快照。']
-          : [`文件：${chosen.name}（${formatBytes(chosen.size)}）`, `当前的 ${total} 条记忆将被替换，不会合并。替换前会自动保留一份回退快照，之后仍可回退。`],
-        ok: merge ? '开始合并' : '确认替换', tone: merge ? undefined : 'danger',
+      const choice = await openDialog({
+        title: `导入 ${chosen.name}`, icon: 'info',
+        body: [`${formatBytes(chosen.size)}。导入前会完整校验，并自动保留一份回退快照。`,
+          h('p', {html: '<b>合并</b>：把备份里的记忆并入现在的库，两边都保留；同名实体不会被自动合并。'}),
+          h('p', {html: `<b>替换</b>：用备份完全替换现在的 ${total} 条记忆，不是合并。`})],
+        actions: [{label: '取消', value: 'cancel'}, {label: '合并到当前库', value: 'merge', primary: true}, {label: '替换当前库', value: 'restore', tone: 'danger'}],
       });
-      if (!ok) return;
+      if (choice !== 'merge' && choice !== 'restore') { file.value = ''; show(); return; }
+      const merge = choice === 'merge';
       const dialog = progressDialog({title: merge ? '正在合并备份' : '正在导入备份', message: '正在上传…'});
       try {
-        const id = await uploadBackup(chosen, merge ? 'merge' : 'restore', dialog);
+        const id = await uploadBackup(chosen, choice, dialog);
         const state = await pollJob(id, dialog);
         dialog.close();
         if (merge) showMerge(state.result.report); else finishRestored(state);
       } catch (error) {
         dialog.close();
+        file.value = ''; show();
         toast(error.message, {tone: 'error', timeout: 12000});
       }
+    };
+    file.addEventListener('change', begin);
+    zone.addEventListener('drop', event => {
+      event.preventDefault();
+      if (event.dataTransfer.files.length) { file.files = event.dataTransfer.files; begin(); }
     });
   }
 
@@ -635,7 +681,7 @@
   if (quit) quit.addEventListener('click', async () => {
     if (!(await ask(quit))) return;
     try { await fetch('/settings/quit', {method: 'POST'}); } catch { /* 服务已退出 */ }
-    document.body.replaceChildren(h('main', {class: 'shell'}, h('div', {class: 'empty'}, h('h3', {text: 'RecallPort 已退出'}), h('p', {text: '需要时再双击 recallport.exe 启动。'}))));
+    document.body.replaceChildren(h('main', {class: 'shell'}, h('div', {class: 'empty'}, h('h3', {text: 'RecallPort 已退出'}), h('p', {text: '需要时再双击 RecallPort.exe 启动。'}))));
   });
 
   /* ---------- 通用：对话框、自动提交 ---------- */
