@@ -101,28 +101,38 @@ The server already ships usage instructions, but some clients ignore them. One-c
       <p align="center"><sub><b>Detail</b>: correction trail, entities, attachments, history, graph</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="Entity graph"></picture>
-      <p align="center"><sub><b>Entity overview</b>: what appears together; click through to the memories</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="Memory graph"></picture>
+      <p align="center"><sub><b>Graph</b>: references between memories, <kbd>F</kbd> for full-screen</sub></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entities-dark.png"><img src="docs/images/entities-light.png" alt="Entities"></picture>
-      <p align="center"><sub><b>Entities</b>: directory, aliases, disambiguation hints</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entities-dark.png"><img src="docs/images/entities-light.png" alt="Entity directory"></picture>
+      <p align="center"><sub><b>Entities</b>: directory, aliases, disambiguating hints</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="Semantic search"></picture>
-      <p align="center"><sub><b>Semantic search</b>: finds it even when you word it differently</sub></p>
+      <p align="center"><sub><b>Semantic search</b>: rephrasings still match, each hit says how well</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png"><img src="docs/images/overview-light.png" alt="Overview"></picture>
+      <p align="center"><sub><b>Overview</b>: the last year at a glance, what changed, tidy-up suggestions</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entity-graph-dark.png"><img src="docs/images/entity-graph-light.png" alt="Entity overview"></picture>
+      <p align="center"><sub><b>Entity overview</b>: entities that appear together share a colour; a slider hides weak links</sub></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/clients-dark.png"><img src="docs/images/clients-light.png" alt="Connect"></picture>
-      <p align="center"><sub><b>Connect</b>: one click, then verify it really connected</sub></p>
+      <p align="center"><sub><b>Connect</b>: one-click setup, verify it really connected</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/data-dark.png"><img src="docs/images/data-light.png" alt="Data"></picture>
-      <p align="center"><sub><b>Data</b>: backup and restore first, index diagnostics folded away</sub></p>
+      <p align="center"><sub><b>Data</b>: backup and restore first, with automatic backups; index diagnostics tucked away</sub></p>
     </td>
   </tr>
 </table>

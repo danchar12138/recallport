@@ -99,8 +99,8 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
       <p align="center"><sub><b>详情</b>：更正轨迹、实体、附件、历史版本、关系图</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="实体关系图"></picture>
-      <p align="center"><sub><b>实体概览</b>：谁和谁经常一起出现，点开回到原记忆</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="记忆关系图"></picture>
+      <p align="center"><sub><b>关系图</b>：记忆之间的引用，按 <kbd>F</kbd> 全屏沉浸</sub></p>
     </td>
   </tr>
   <tr>
@@ -110,7 +110,17 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="语义检索"></picture>
-      <p align="center"><sub><b>语义检索</b>：换种说法也能找到</sub></p>
+      <p align="center"><sub><b>语义检索</b>：换种说法也能找到，每条标明匹配程度</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png"><img src="docs/images/overview-light.png" alt="概览"></picture>
+      <p align="center"><sub><b>概览</b>：最近一年的活跃度、记忆的变化、整理建议</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entity-graph-dark.png"><img src="docs/images/entity-graph-light.png" alt="实体概览图"></picture>
+      <p align="center"><sub><b>实体概览</b>：经常一起出现的实体同色成组，滑块过滤弱连线</sub></p>
     </td>
   </tr>
   <tr>
@@ -120,7 +130,7 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/data-dark.png"><img src="docs/images/data-light.png" alt="数据"></picture>
-      <p align="center"><sub><b>数据</b>：备份与恢复放在最前，索引诊断收起</sub></p>
+      <p align="center"><sub><b>数据</b>：备份与恢复放在最前，带自动备份，索引诊断收起</sub></p>
     </td>
   </tr>
 </table>
