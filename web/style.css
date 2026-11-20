@@ -925,3 +925,13 @@ body.graph-immersive { overflow: hidden; }
 .graph-groups .dot.g0 { background: var(--g-c0); } .graph-groups .dot.g1 { background: var(--g-c1); }
 .graph-groups .dot.g2 { background: var(--g-c2); } .graph-groups .dot.g3 { background: var(--g-c3); }
 .graph-groups .dot.g4 { background: var(--g-c4); } .graph-groups .dot.g5 { background: var(--g-c5); }
+
+/* ---------- 接入页：手动配置不要挤成一团 ---------- */
+.manual-rules { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+.manual-rules > summary { cursor: pointer; color: var(--text-2); font-size: 13px; padding: 4px 0; }
+.manual-rules[open] > summary { margin-bottom: 10px; }
+.manual-rules > .path { margin-bottom: 10px; line-height: 1.7; }
+.code-block pre.rules-text { font-family: var(--font); font-size: 13.5px; line-height: 1.9; padding: 8px 4px; }
+.rules-text code { font-family: var(--mono); }
+.manual .path { margin: 14px 0 8px; }
+.manual .code-block + .path { margin-top: 16px; }

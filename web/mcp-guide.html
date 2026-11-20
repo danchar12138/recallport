@@ -42,10 +42,11 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
 }</pre>{{ copy_button("claude-config") }}</div>
         </div>
       </div>
-      <div class="manual-rules">
-        <p class="path">接入时会自动写进客户端的规则文件。其他客户端请把下面这段粘贴到它的规则文件（如 <code>AGENTS.md</code>、<code>CLAUDE.md</code>），模型就会主动使用记忆。</p>
-        <div class="code-block"><pre id="agent-rules">{{ Rules }}</pre>{{ copy_button("agent-rules") }}</div>
-      </div>
+      <details class="manual-rules">
+        <summary>使用规则（一键接入时已自动写入，其他客户端才需要手动粘贴）</summary>
+        <p class="path">把下面这段粘贴到客户端的规则文件里（如 <code>AGENTS.md</code>、<code>CLAUDE.md</code>），模型就会主动使用记忆。</p>
+        <div class="code-block"><pre class="rules-text" id="agent-rules">{{ Rules }}</pre>{{ copy_button("agent-rules") }}</div>
+      </details>
       </details>
     </div>
   </li>

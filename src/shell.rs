@@ -48,9 +48,9 @@ mod win {
             Console::{AttachConsole, STD_ERROR_HANDLE, STD_OUTPUT_HANDLE, SetStdHandle},
             LibraryLoader::GetModuleHandleW,
             Registry::{
-                HKEY, HKEY_CURRENT_USER, KEY_QUERY_VALUE, KEY_SET_VALUE, REG_OPTION_NON_VOLATILE,
-                REG_SZ, RegCloseKey, RegCreateKeyExW, RegDeleteValueW, RegQueryValueExW,
-                RegSetValueExW,
+                HKEY, HKEY_CURRENT_USER, KEY_QUERY_VALUE, KEY_SET_VALUE, REG_BINARY,
+                REG_OPTION_NON_VOLATILE, REG_SZ, RegCloseKey, RegCreateKeyExW, RegDeleteValueW,
+                RegQueryValueExW, RegSetValueExW,
             },
         },
         UI::{
@@ -77,6 +77,10 @@ mod win {
     const ID_AUTOSTART: usize = 2;
     const ID_QUIT: usize = 3;
     const RUN_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    /// Windows 10/11 keep a second, separate on/off switch for every startup entry (the toggle in
+    /// Settings → Apps → Startup). Writing the Run value alone does not undo a "off" that is stored here.
+    const APPROVED_KEY: &str =
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
     const VALUE: &str = "RecallPort";
 
     struct Hooks {
@@ -141,11 +145,15 @@ mod win {
     }
 
     fn open_run_key(access: u32) -> Option<HKEY> {
+        open_key(RUN_KEY, access)
+    }
+
+    fn open_key(path: &str, access: u32) -> Option<HKEY> {
         unsafe {
             let mut key: HKEY = null_mut();
             let status = RegCreateKeyExW(
                 HKEY_CURRENT_USER,
-                wide(RUN_KEY).as_ptr(),
+                wide(path).as_ptr(),
                 0,
                 null(),
                 REG_OPTION_NON_VOLATILE,
@@ -165,7 +173,32 @@ mod win {
         ))
     }
 
+    /// What Settings → Startup currently says about this entry: `Some(false)` when it was switched off
+    /// there (the first byte of the stored value is odd), `None` when Windows has no opinion yet.
+    fn approved() -> Option<bool> {
+        let key = open_key(APPROVED_KEY, KEY_QUERY_VALUE)?;
+        let name = wide(VALUE);
+        let mut data = [0u8; 12];
+        let mut size = data.len() as u32;
+        let status = unsafe {
+            RegQueryValueExW(
+                key,
+                name.as_ptr(),
+                null(),
+                null_mut(),
+                data.as_mut_ptr(),
+                &mut size,
+            )
+        };
+        unsafe { RegCloseKey(key) };
+        (status == ERROR_SUCCESS && size > 0).then(|| data[0] & 1 == 0)
+    }
+
     pub fn autostart_enabled() -> bool {
+        run_value_matches() && approved() != Some(false)
+    }
+
+    fn run_value_matches() -> bool {
         let Some(key) = open_run_key(KEY_QUERY_VALUE) else {
             return false;
         };
@@ -227,7 +260,34 @@ mod win {
         if status != ERROR_SUCCESS {
             bail!("系统拒绝了这项设置（错误码 {status}）");
         }
+        set_approved(on);
         Ok(())
+    }
+
+    /// Keep Settings → Startup in step: switching on also clears an earlier "off" there; switching off
+    /// removes our entry so nothing stale is left behind. Best effort: the Run value is what counts.
+    fn set_approved(on: bool) {
+        let Some(key) = open_key(APPROVED_KEY, KEY_SET_VALUE) else {
+            return;
+        };
+        let name = wide(VALUE);
+        unsafe {
+            if on {
+                // 02 00 00 00 + eight zero bytes: enabled, the form Windows itself writes.
+                let enabled = [2u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                RegSetValueExW(
+                    key,
+                    name.as_ptr(),
+                    0,
+                    REG_BINARY,
+                    enabled.as_ptr(),
+                    enabled.len() as u32,
+                );
+            } else {
+                RegDeleteValueW(key, name.as_ptr());
+            }
+            RegCloseKey(key);
+        }
     }
 
     /// The icon embedded in the executable (resource id 1, see `build.rs`); falls back to a drawn one.
