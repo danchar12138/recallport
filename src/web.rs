@@ -81,8 +81,10 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
         .with_json_response(true)
         .with_allowed_hosts([web.host.clone(), web.alternate.clone()])
         .with_allowed_origins([web.base.clone(), format!("http://{}", web.alternate)]);
+    let shared = Arc::new(crate::mcp::Shared::default());
+    shared.keep_fresh(store.clone());
     let mcp = StreamableHttpService::new(
-        move || Ok(Mcp::new(store.clone())),
+        move || Ok(Mcp::new(store.clone(), shared.clone())),
         Arc::new(LocalSessionManager::default()),
         config,
     );
@@ -245,6 +247,7 @@ fn query(f: &Fields, limit: usize) -> Query {
         period: get_field(f, "period"),
         undated: get_field(f, "undated") == "1",
         limit,
+        ..Default::default()
     }
 }
 fn draft(f: &Fields) -> Draft {
@@ -364,7 +367,18 @@ fn row(e: &Entry, trail: &[Trail], others: &[Entry], period: &str) -> Value {
     view
 }
 fn hit(h: Hit, period: &str) -> Value {
-    row(&h.entry, &h.trail, &h.other_accounts, period)
+    let mut view = row(&h.entry, &h.trail, &h.other_accounts, period);
+    view["Match"] = json!(match h.match_kind {
+        "exact" => "字面匹配",
+        "strong" => "高度相关",
+        "weak" => "弱相关",
+        "keyword" => "仅关键词",
+        _ => "",
+    });
+    view["MatchKind"] = json!(h.match_kind);
+    view["Relevance"] = json!(h.relevance.map(|r| format!("{r:.2}")));
+    view["Replaces"] = json!(h.replaces.len());
+    view
 }
 fn local_back(f: &Fields) -> String {
     let back = get_field(f, "back");
@@ -448,6 +462,8 @@ async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
             }
             p["More"] = json!(res.more);
             p["Degraded"] = json!(res.degraded);
+            p["NoStrong"] =
+                json!(!q.text.is_empty() && res.no_strong_match && !res.memories.is_empty());
             if q.text.is_empty() {
                 if n > 1 {
                     p["Prev"] = json!(nav(n - 1));
@@ -513,7 +529,98 @@ async fn overview(State(w): State<Web>) -> Response {
         .await
         .map(|p| p.1)
         .unwrap_or(0);
-    w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown,"Entities":entities}))
+    let issues: Vec<Value> = w
+        .store
+        .health()
+        .await
+        .map(|h| h.issues)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|i| {
+            let first = i.examples.first().cloned().unwrap_or_default();
+            let link = match i.kind {
+                "unresolved_names" => "/entities#unresolved".to_owned(),
+                "duplicate_entities" if !first.is_empty() => format!("/entity/{first}"),
+                "missing_files" | "index_gap" => "/data".to_owned(),
+                _ if !first.is_empty() => format!("/memory/{first}"),
+                _ => String::new(),
+            };
+            json!({"Detail":i.detail,"Count":i.count,"URL":link,"Kind":i.kind})
+        })
+        .collect();
+    w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown,"Entities":entities,
+        "Calendar":calendar(&list),"Changes":changes(&list),"Issues":issues}))
+}
+
+/// The last year, one square per day, shaded by how many memories happened that day.
+fn calendar(list: &[Entry]) -> Value {
+    use chrono::{Datelike, Duration, NaiveDate};
+    let today = chrono::Local::now().date_naive();
+    let start = today
+        - Duration::days(i64::from(today.weekday().num_days_from_monday()))
+        - Duration::weeks(52);
+    let mut counts = BTreeMap::<NaiveDate, usize>::new();
+    for e in list {
+        if e.occurred.len() == 10
+            && let Ok(day) = NaiveDate::parse_from_str(&e.occurred, "%Y-%m-%d")
+            && day >= start
+            && day <= today
+        {
+            *counts.entry(day).or_default() += 1;
+        }
+    }
+    let max = counts.values().copied().max().unwrap_or(0);
+    let total: usize = counts.values().sum();
+    let mut cells = vec![];
+    let mut months = vec![];
+    let mut last_month = 0;
+    for week in 0..53usize {
+        for weekday in 0..7usize {
+            let day = start + Duration::days((week * 7 + weekday) as i64);
+            if day > today {
+                break;
+            }
+            if weekday == 0 && day.month() != last_month && day.day() <= 7 {
+                last_month = day.month();
+                months.push(json!({"Label":format!("{} 月",day.month()),"X":30 + week * 14}));
+            }
+            let n = counts.get(&day).copied().unwrap_or(0);
+            let level = if n == 0 {
+                0
+            } else {
+                (n * 4).div_ceil(max.max(1)).clamp(1, 4)
+            };
+            cells.push(json!({"Date":day.to_string(),"Count":n,"Level":level,"X":30 + week * 14,"Y":20 + weekday * 14}));
+        }
+    }
+    json!({"Cells":cells,"Months":months,"Total":total,"Days":counts.len(),"Max":max})
+}
+
+/// What changed lately: corrections and summaries, newest first, with the old and the new text side by side.
+fn changes(list: &[Entry]) -> Value {
+    let by_id: HashMap<&str, &Entry> = list.iter().map(|e| (e.id.as_str(), e)).collect();
+    let mut events: Vec<(&Entry, &Entry, &Reference)> = vec![];
+    for e in list {
+        for r in &e.references {
+            if r.kind != RefKind::Relates
+                && let Some(old) = by_id.get(r.id.as_str())
+            {
+                events.push((e, old, r));
+            }
+        }
+    }
+    events.sort_by(|a, b| (&b.0.recorded, &b.0.id).cmp(&(&a.0.recorded, &a.0.id)));
+    let total = events.len();
+    let items: Vec<Value> = events
+        .into_iter()
+        .take(12)
+        .map(|(new, old, r)| {
+            json!({"Kind":if r.kind == RefKind::Corrects {"更正"} else {"汇总"},"Corrects":r.kind == RefKind::Corrects,
+                "When":new.recorded,"NewID":new.id,"New":snippet(&new.text,150),"OldID":old.id,"Old":snippet(&old.text,110),
+                "Reason":r.reason,"Source":new.source})
+        })
+        .collect();
+    json!({"Items":items,"Total":total})
 }
 
 async fn graph_page(State(w): State<Web>, Params(f): Params<Fields>) -> Response {

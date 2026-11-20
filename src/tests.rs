@@ -6,7 +6,14 @@ use crate::{
     store::Store,
 };
 use anyhow::Result;
-use std::{io::Write, path::Path, sync::Arc};
+use std::{
+    io::Write,
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 
 struct Fixed;
 impl Embed for Fixed {
@@ -14,6 +21,16 @@ impl Embed for Fixed {
         let mut v = vec![0.0; embedding::DIMENSIONS as usize];
         v[input.chars().count() % 7] = 1.0;
         Ok(v)
+    }
+}
+
+/// Counts how many passages the "model" had to encode.
+#[derive(Default)]
+struct Counting(AtomicUsize);
+impl Embed for Counting {
+    fn encode(&self, input: &str) -> Result<Vec<f32>> {
+        self.0.fetch_add(1, Ordering::SeqCst);
+        Fixed.encode(input)
     }
 }
 
@@ -165,15 +182,34 @@ async fn edits_keep_history_and_corrections_leave_a_trail() -> Result<()> {
     assert!(detail.trail.iter().any(|t| t.relation == "corrected_by"
         && t.id == newer.entry.id
         && t.source == "Claude Code"));
-    // The old memory is not demoted or hidden: it is still found, with its trail attached.
+    // A search shows the correction in place of the memory it corrected, and says so ...
     let found = s.recall(&lexical("方案")).await?;
+    assert!(!found.memories.iter().any(|h| h.entry.id == old.entry.id));
     let hit = found
+        .memories
+        .iter()
+        .find(|h| h.entry.id == newer.entry.id)
+        .unwrap();
+    assert_eq!(hit.replaces, vec![old.entry.id.clone()]);
+    assert!(
+        hit.trail
+            .iter()
+            .any(|t| t.relation == "corrects" && t.id == old.entry.id)
+    );
+    // ... but the old one is never hidden: ask for the history and both are there, with their trails.
+    let all = s
+        .recall(&Query {
+            history: true,
+            ..lexical("方案")
+        })
+        .await?;
+    let hit = all
         .memories
         .iter()
         .find(|h| h.entry.id == old.entry.id)
         .unwrap();
     assert!(!hit.trail.is_empty());
-    assert!(found.memories.iter().any(|h| h.entry.id == newer.entry.id));
+    assert!(all.memories.iter().any(|h| h.entry.id == newer.entry.id));
 
     // A summary keeps the originals.
     let summary = s
@@ -397,7 +433,19 @@ async fn archive_round_trip_into_an_empty_library() -> Result<()> {
         std::fs::read(source.blob(hash))?
     );
     // Search, entities and links work on the restored copy.
-    assert_eq!(target.recall(&lexical("机房")).await?.memories.len(), 2);
+    // The newer memory corrected the older one, so a search leads with the correction.
+    assert_eq!(target.recall(&lexical("机房")).await?.memories.len(), 1);
+    assert_eq!(
+        target
+            .recall(&Query {
+                history: true,
+                ..lexical("机房")
+            })
+            .await?
+            .memories
+            .len(),
+        2
+    );
     assert_eq!(target.entity_search("主服务器", 5).await?[0].mentions, 1);
     let newest = &b
         .memories
@@ -600,5 +648,322 @@ async fn compaction_runs_after_many_writes_and_keeps_every_memory() -> Result<()
     assert!(!s.compact().await?, "not again right away");
     assert_eq!(s.all().await?.len(), 70);
     assert!(!s.recall(&lexical("经历")).await?.memories.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn recall_says_how_well_each_hit_matches_and_when_nothing_matches_well() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    s.remember(say("缓存层使用 Redis 做会话存储"), "t", "T")
+        .await?;
+    s.remember(say("机房迁移计划已经取消"), "t", "T").await?;
+
+    let literal = s.recall(&lexical("Redis")).await?;
+    assert_eq!(literal.memories[0].match_kind, "exact");
+    assert_eq!(literal.memories[0].relevance, Some(1.0));
+    assert!(!literal.no_strong_match);
+
+    // The words are there but not as typed: only a keyword match, which is not a strong one.
+    let loose = s.recall(&lexical("迁移 机房")).await?;
+    assert_eq!(loose.memories[0].match_kind, "keyword");
+    assert!(loose.no_strong_match);
+
+    let nothing = s.recall(&lexical("完全无关的词汇")).await?;
+    assert!(nothing.memories.is_empty() && nothing.no_strong_match);
+    Ok(())
+}
+
+#[tokio::test]
+async fn several_phrasings_are_searched_in_one_call() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let a = s
+        .remember(say("数据库连接池耗尽导致超时"), "t", "T")
+        .await?;
+    let b = s.remember(say("配置文件路径写错了"), "t", "T").await?;
+    s.remember(say("与此无关的一条"), "t", "T").await?;
+    let found = s
+        .recall(&Query {
+            queries: vec!["配置文件".into(), "  ".into(), "超时".into()],
+            ..lexical("超时")
+        })
+        .await?;
+    let ids: Vec<&str> = found.memories.iter().map(|h| h.entry.id.as_str()).collect();
+    assert!(ids.contains(&a.entry.id.as_str()) && ids.contains(&b.entry.id.as_str()));
+    assert_eq!(found.memories.len(), 2);
+    let too_many = Query {
+        queries: (0..6).map(|i| format!("说法{i}")).collect(),
+        ..lexical("超时")
+    };
+    assert!(s.recall(&too_many).await.is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn health_reports_what_needs_tidying_and_correction_loops_are_refused() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let clean = s.health().await?;
+    assert!(clean.ok && clean.issues.is_empty());
+
+    let a = s.remember(say("同样的一句话"), "t", "T").await?;
+    s.remember(say("同样的一句话"), "t", "T").await?;
+    let with = |text: &str, target: &str| Draft {
+        references: vec![Reference {
+            id: target.into(),
+            kind: RefKind::Corrects,
+            reason: String::new(),
+        }],
+        ..say(text)
+    };
+    let first = s.remember(with("更正之一", &a.entry.id), "t", "T").await?;
+    s.remember(with("更正之二", &a.entry.id), "t", "T").await?;
+    s.remember(
+        Draft {
+            entities: vec![entity("X")],
+            ..say("提到了 X")
+        },
+        "t",
+        "T",
+    )
+    .await?;
+    s.remember(
+        Draft {
+            entities: vec![entity("x")],
+            ..say("再提到 x")
+        },
+        "t",
+        "T",
+    )
+    .await?;
+    let health = s.health().await?;
+    let kinds: Vec<&str> = health.issues.iter().map(|i| i.kind).collect();
+    for expected in [
+        "duplicate_memories",
+        "without_entities",
+        "correction_forks",
+        "unresolved_names",
+    ] {
+        assert!(
+            kinds.contains(&expected),
+            "{expected} missing from {kinds:?}"
+        );
+    }
+    assert!(!health.ok);
+
+    // `first` already corrects `a`; making `a` correct `first` would close a loop.
+    let loop_link = Reference {
+        id: first.entry.id.clone(),
+        kind: RefKind::Corrects,
+        reason: String::new(),
+    };
+    assert!(s.link(&a.entry.id, loop_link, false).await.is_err());
+    // A plain relation between the same two is fine.
+    let relates = Reference {
+        id: first.entry.id,
+        ..Default::default()
+    };
+    s.link(&a.entry.id, relates, false).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn backups_carry_vectors_so_restore_and_rollback_do_not_encode_again() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let source = library(&dir.path().join("a"), "甲").await?;
+    let zip = dir.path().join("backup.zip");
+    source.export_to(zip.clone(), Job::detached()).await?;
+    let names: Vec<String> = zip::ZipArchive::new(std::fs::File::open(&zip)?)?
+        .file_names()
+        .filter_map(|n| n.ok().map(|n| n.into_owned()))
+        .collect();
+    assert!(names.iter().any(|n| n == "vectors.bin"));
+
+    let counter = Arc::new(Counting::default());
+    let target = Arc::new(Store::open(&dir.path().join("b"), Some(counter.clone())).await?);
+    target.remember(say("目标库里原有的记忆"), "t", "T").await?;
+    let before = counter.0.load(Ordering::SeqCst);
+    assert!(before > 0);
+
+    target.restore_zip(zip, Job::detached()).await?;
+    assert_eq!(
+        counter.0.load(Ordering::SeqCst),
+        before,
+        "restore reused the saved vectors"
+    );
+    target.rollback(Job::detached()).await?;
+    assert_eq!(
+        counter.0.load(Ordering::SeqCst),
+        before,
+        "rollback reused them too"
+    );
+    assert_eq!(target.all().await?.len(), 1);
+
+    // The restored vectors really work for search: the same words as a memory find it by meaning.
+    target
+        .restore_zip(dir.path().join("backup.zip"), Job::detached())
+        .await?;
+    let found = target
+        .recall(&Query {
+            text: "甲：服务器迁移到新机房".into(),
+            strategy: "semantic".into(),
+            history: true,
+            ..Default::default()
+        })
+        .await?;
+    assert!(!found.memories.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn automatic_backups_are_daily_only_when_changed_and_keep_the_newest() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = library(&dir.path().join("a"), "甲").await?;
+    let first = s.auto_backup().await?.expect("the first backup is made");
+    assert!(crate::autobackup::valid_name(&first));
+    assert!(s.auto_backup().await?.is_none(), "not due again so soon");
+
+    let state = s.backup_dir().join("state.json");
+    let backdate = || -> Result<()> {
+        let mut v: serde_json::Value = serde_json::from_slice(&std::fs::read(&state)?)?;
+        v["at"] = "2020-01-01T00:00:00Z".into();
+        std::fs::write(&state, serde_json::to_vec(&v)?)?;
+        Ok(())
+    };
+    backdate()?;
+    assert!(
+        s.auto_backup().await?.is_none(),
+        "nothing changed since the last one"
+    );
+
+    for day in 1..=8 {
+        std::fs::write(
+            s.backup_dir()
+                .join(format!("RecallPort-auto-2020010{day}-0300.zip")),
+            b"old",
+        )?;
+    }
+    s.remember(say("之后发生的新变化"), "t", "T").await?;
+    let made = s.auto_backup().await?.expect("changed, so it is backed up");
+    let info = s.auto_backup_info();
+    assert_eq!(info.files.len(), crate::autobackup::KEEP);
+    assert_eq!(info.files[0].name, made);
+    assert!(!info.files.iter().any(|f| f.name.contains("20200101")));
+
+    // It carries no attachment files (they stay in the data folder) ...
+    let names: Vec<String> =
+        zip::ZipArchive::new(std::fs::File::open(s.backup_path(&made).unwrap())?)?
+            .file_names()
+            .filter_map(|n| n.ok().map(|n| n.into_owned()))
+            .collect();
+    assert!(
+        names.iter().any(|n| n == "manifest.json")
+            && !names.iter().any(|n| n.starts_with("files/"))
+    );
+    // ... and is a real backup that restores, even on a computer that does not have them.
+    let copy = open(&dir.path().join("b")).await?;
+    copy.restore_zip(s.backup_path(&made).unwrap(), Job::detached())
+        .await?;
+    assert_eq!(copy.all().await?.len(), s.all().await?.len());
+
+    // Switched off, nothing more is made.
+    s.set_auto_backup(false)?;
+    assert!(!s.auto_backup_info().enabled);
+    backdate()?;
+    s.remember(say("关闭之后的变化"), "t", "T").await?;
+    assert!(s.auto_backup().await?.is_none());
+    assert!(s.backup_path("../x.zip").is_none());
+    Ok(())
+}
+
+#[tokio::test]
+async fn entity_overview_groups_entities_that_appear_together() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let mut ids = std::collections::HashMap::new();
+    for name in ["甲", "乙", "丙", "丁", "戊", "己"] {
+        let saved = s
+            .remember(
+                Draft {
+                    entities: vec![entity(name)],
+                    ..say(&format!("关于{name}"))
+                },
+                "t",
+                "T",
+            )
+            .await?;
+        ids.insert(name, saved.entry.mentions[0].entity.clone().unwrap());
+    }
+    // 甲乙丙 appear together three times, 丁戊己 twice.
+    for (names, times) in [(["甲", "乙", "丙"], 3), (["丁", "戊", "己"], 2)] {
+        for i in 0..times {
+            s.remember(
+                Draft {
+                    entities: names
+                        .iter()
+                        .map(|n| EntityInput {
+                            id: ids[n].clone(),
+                            ..entity(n)
+                        })
+                        .collect(),
+                    ..say(&format!("{}一起出现 {i}", names.join("")))
+                },
+                "t",
+                "T",
+            )
+            .await?;
+        }
+    }
+    let graph = s.graph(&[], "", false, true).await?;
+    let group = |name: &str| {
+        graph["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|n| n["text"] == name)
+            .and_then(|n| n["group"].as_u64())
+    };
+    assert!(group("甲").is_some() && group("甲") == group("乙") && group("乙") == group("丙"));
+    assert!(group("丁").is_some() && group("丁") == group("戊") && group("戊") == group("己"));
+    assert_ne!(group("甲"), group("丁"));
+    assert_eq!(graph["groups"].as_array().unwrap().len(), 2);
+    assert!(graph["max_co"].as_u64().unwrap() >= 3);
+    assert!(graph["suggested_min"].as_u64().unwrap() >= 1);
+    Ok(())
+}
+
+/// Needs the real model: set RECALLPORT_MODEL to its folder. Checks that running passages as one padded
+/// batch gives the same vectors as one by one, and prints how similar paraphrases and strangers look.
+#[test]
+fn granite_batches_match_single_runs() -> Result<()> {
+    let Ok(dir) = std::env::var("RECALLPORT_MODEL") else {
+        return Ok(());
+    };
+    let model = embedding::Granite::open(Path::new(&dir))?;
+    let texts: Vec<String> = [
+        "服务器迁移到了新的机房",
+        "The cache layer uses Redis for session storage and it keeps timing out under load",
+        "短",
+        "我们把主机搬到了另一个数据中心",
+        "Redis timeouts under heavy load in the session cache",
+        "今天中午吃了面条",
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect();
+    let batch = model.encode_many(&texts)?;
+    for (text, got) in texts.iter().zip(&batch) {
+        let single = model.encode(text)?;
+        let cosine: f32 = single.iter().zip(got).map(|(a, b)| a * b).sum();
+        assert!(cosine > 0.9995, "{text}: batch vs single cosine {cosine}");
+    }
+    let cos =
+        |a: usize, b: usize| -> f32 { batch[a].iter().zip(&batch[b]).map(|(x, y)| x * y).sum() };
+    println!("paraphrase zh      {:.3}", cos(0, 3));
+    println!("paraphrase en/zh   {:.3}", cos(1, 4));
+    println!("cross-language     {:.3}", cos(0, 4));
+    println!("unrelated          {:.3}", cos(0, 5));
+    println!("unrelated 2        {:.3}", cos(1, 5));
     Ok(())
 }

@@ -2,11 +2,20 @@
   <div><h1>数据</h1><p class="sub">所有记忆只保存在这台电脑上（本地 LanceDB）</p></div>
 </header>
 <section id="backups" aria-labelledby="backup-title">
-  <div class="section-head"><div><h2 id="backup-title">备份与恢复</h2><p>备份是一个 ZIP：含全部记忆、实体、引用、来源和已入库的附件文件，不含模型和索引（恢复后自动重建）。内容是明文，请妥善保管，不要上传到公开位置。</p></div></div>
+  <div class="section-head"><div><h2 id="backup-title">备份与恢复</h2><p>备份是一个 ZIP：含全部记忆、实体、引用、来源、已入库的附件文件和语义向量，不含模型。内容是明文，请妥善保管，不要上传到公开位置。</p></div></div>
   <div class="panel-list">
     <div class="panel">
       <div><h3>导出备份</h3><p>生成一个可随身携带的 .zip，用于搬迁、换电脑或日常保护。</p></div>
       <button class="btn btn-primary" type="button" data-export><svg class="icon" aria-hidden="true"><use href="#download"/></svg>导出备份</button>
+    </div>
+    <div class="panel is-column">
+      <div class="panel-row">
+        <div><h3>自动备份</h3><p>每天最多一次，有改动才备份，保留最近 {{ Auto.Keep }} 份，存放在数据目录的 backups 文件夹里。带着语义向量，恢复时不用重新计算；不复制附件文件（它们本来就在数据目录里），换电脑请用上面的「导出备份」。</p></div>
+        <label class="switch"><input type="checkbox" data-auto-backup {% if Auto.Enabled %}checked{% endif %} aria-label="开启自动备份"><span class="switch-ui" aria-hidden="true"></span></label>
+      </div>
+      {% if Auto.Files %}<details class="config-all"><summary>最近 {{ (Auto.Files|length) }} 份自动备份</summary>
+        <ul class="auto-list">{% for f in Auto.Files %}<li><span><b>{{ f.Name }}</b><small>{{ f.Size }}{% if f.At %} · {{ local_time(f.At) }}{% endif %}</small></span><span class="auto-actions"><a class="btn btn-sm" href="/backups/{{ f.Name }}" download>下载</a><button class="btn btn-sm" type="button" data-auto-import="{{ f.Name }}" data-size="{{ f.Size }}">导入…</button></span></li>{% endfor %}</ul>
+      </details>{% endif %}
     </div>
     <div class="panel is-column">
       <div><h3>导入备份</h3><p>导入前会先完整校验，通过后才动用现有数据，并自动保留一份回退快照。</p></div>

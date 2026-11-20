@@ -78,7 +78,7 @@
 
   /* ---------- 时间线：筛选弹层、芯片、检索方式、清空 ---------- */
   const searchForm = $('[data-search-form]');
-  if (searchForm) {
+  if (searchForm && $('[data-search]', searchForm)) {
     const q = $('[data-search]', searchForm), clear = $('[data-clear-search]', searchForm);
     const sync = () => { clear.hidden = !q.value; };
     q.addEventListener('input', sync);
@@ -408,9 +408,9 @@
         mark('init', 'ok'); current = 'tools'; mark('tools', 'run');
         const result = await send({id: 2, method: 'tools/list', params: {}}, init.protocolVersion);
         const names = new Set(result.tools.map(tool => tool.name));
-        if (!['recall', 'read', 'remember', 'link', 'entity'].every(name => names.has(name))) throw new Error('Missing tools');
+        if (!['recall', 'read', 'remember', 'link', 'entity', 'health'].every(name => names.has(name))) throw new Error('Missing tools');
         mark('tools', 'ok');
-        status.textContent = '✓ 本机服务正常，5 个工具可用';
+        status.textContent = `✓ 本机服务正常，${names.size} 个工具可用`;
         status.dataset.state = 'ok';
       } catch {
         mark(current, 'fail');
@@ -590,6 +590,43 @@
     xhr.send(body);
   });
 
+  const askImportMode = (name, sizeText) => openDialog({
+    title: `导入 ${name}`, icon: 'info',
+    body: [`${sizeText}。导入前会完整校验，并自动保留一份回退快照。`,
+      h('p', {html: '<b>合并</b>：把备份里的记忆并入现在的库，两边都保留；同名实体不会被自动合并。'}),
+      h('p', {html: `<b>替换</b>：用备份完全替换现在的 ${Number($('#restore-form')?.dataset.total) || 0} 条记忆，不是合并。`})],
+    actions: [{label: '取消', value: 'cancel'}, {label: '合并到当前库', value: 'merge', primary: true}, {label: '替换当前库', value: 'restore', tone: 'danger'}],
+  });
+
+  const autoBackup = $('[data-auto-backup]');
+  if (autoBackup) autoBackup.addEventListener('change', async () => {
+    const want = autoBackup.checked;
+    try {
+      const response = await fetch('/settings/auto-backup', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({enabled: want ? '1' : '0'})});
+      if (!response.ok) throw new Error('设置未能保存');
+      toast(want ? '已开启自动备份' : '已关闭自动备份');
+    } catch (error) {
+      autoBackup.checked = !want;
+      toast(error.message, {tone: 'error'});
+    }
+  });
+  for (const button of $$('[data-auto-import]')) button.addEventListener('click', async () => {
+    const name = button.dataset.autoImport;
+    const choice = await askImportMode(name, button.dataset.size);
+    if (choice !== 'merge' && choice !== 'restore') return;
+    const merge = choice === 'merge';
+    const dialog = progressDialog({title: merge ? '正在合并备份' : '正在导入备份', message: '正在校验…'});
+    try {
+      const id = await startJob(`/backups/${encodeURIComponent(name)}/import`, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({mode: choice})});
+      const state = await pollJob(id, dialog);
+      dialog.close();
+      if (merge) showMerge(state.result.report); else finishRestored(state);
+    } catch (error) {
+      dialog.close();
+      toast(error.message, {tone: 'error', timeout: 12000});
+    }
+  });
+
   const restoreForm = $('#restore-form');
   if (restoreForm) {
     const file = restoreForm.elements.backup, zone = $('[data-dropzone]', restoreForm);
@@ -605,14 +642,7 @@
     const begin = async () => {
       const chosen = file.files[0];
       if (!chosen) return;
-      const total = Number(restoreForm.dataset.total) || 0;
-      const choice = await openDialog({
-        title: `导入 ${chosen.name}`, icon: 'info',
-        body: [`${formatBytes(chosen.size)}。导入前会完整校验，并自动保留一份回退快照。`,
-          h('p', {html: '<b>合并</b>：把备份里的记忆并入现在的库，两边都保留；同名实体不会被自动合并。'}),
-          h('p', {html: `<b>替换</b>：用备份完全替换现在的 ${total} 条记忆，不是合并。`})],
-        actions: [{label: '取消', value: 'cancel'}, {label: '合并到当前库', value: 'merge', primary: true}, {label: '替换当前库', value: 'restore', tone: 'danger'}],
-      });
+      const choice = await askImportMode(chosen.name, formatBytes(chosen.size));
       if (choice !== 'merge' && choice !== 'restore') { file.value = ''; show(); return; }
       const merge = choice === 'merge';
       const dialog = progressDialog({title: merge ? '正在合并备份' : '正在导入备份', message: '正在上传…'});

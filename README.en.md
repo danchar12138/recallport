@@ -38,12 +38,12 @@ RecallPort is a memory service that runs on your machine and connects to AI clie
 
 - **Local and private, no network.** Memories, indexes, attachments and the semantic model all live on your computer. No account, no cloud, no network access at runtime, no telemetry.
 - **One memory, every AI.** Standard MCP over Streamable HTTP. The Connect page detects Codex and Claude Code on this machine, writes the config in one click, and tells you whether they actually connected.
-- **Finds what you mean.** Keyword search (BM25 with Jieba Chinese tokenization) and semantic search (IBM Granite multilingual embeddings) are fused by rank. Rephrasings still match, and paths and proper nouns still hit exactly.
-- **Memory changes, the trail stays.** It separates "when it happened" from "when it was recorded". When things change, the AI appends a record marked as a **correction** of the old one; scattered memories can be **summarized**; originals are always kept. A recalled memory carries when and by whom it was corrected, and a newer record is not assumed to be more right. Edits made in the web UI keep their previous text too.
+- **Finds what you mean, and says when it did not.** Keyword search (BM25 with Jieba Chinese tokenization) and semantic search (IBM Granite multilingual embeddings) are fused by rank. Rephrasings still match, and paths and proper nouns still hit exactly; one call can carry several phrasings (synonyms, another language, the error text). Every hit says whether it is a literal, strong or weak match, and when nothing matches well the model is told the results are only clues.
+- **Memory changes, the trail stays.** It separates "when it happened" from "when it was recorded". When things change, the AI appends a record marked as a **correction** of the old one; scattered memories can be **summarized**; originals are always kept. In a search, a corrected memory gives way to its correction (the old text stays in the `trail` and can be asked for), with when and by whom, and a newer record is not assumed to be more right. Edits made in the web UI keep their previous text too. The Overview page shows the latest corrections and summaries with old and new side by side.
 - **Entities come from the AI, never guessed.** While reading and writing, the AI submits what a memory is about: projects, devices, tools, people. The server never merges by name or vector similarity; on a name clash it hands the choice back to the AI. Every link leads back to its source memory, and entities get a directory, a timeline and a graph.
 - **Attachments are part of memory.** The AI files images, audio, video and documents; they are de-duplicated by content hash and can be previewed and downloaded in the web UI. "Stored" files travel with backups; "referenced" files only remember a location, and the UI says so.
-- **Guides the model to maintain its own memory.** Built-in instructions say when to recall and when to remember; `remember` returns similar memories to avoid duplicates; unresolved entity names remind the AI to come back and settle them.
-- **Backups you can trust.** One versioned ZIP holds memories, entities, links, sources and attachments. Import validates everything first; "replace" and "merge" are separate operations, each keeps a rollback snapshot, and a crash mid-switch heals itself on the next start.
+- **Guides the model to maintain its own memory.** Built-in instructions say when to recall and when to remember; every session starts with what the library holds now (counts, most mentioned entities, whether anything needs tidying); `remember` returns similar memories to avoid duplicates; the `health` tool lists duplicates, unsettled entity names, memories about nothing in particular and forked or looping correction chains so the model can fix them; two prompts, `brief` (look before starting) and `wrap_up` (save what you learned), can be offered as commands by the client.
+- **Backups you can trust.** One versioned ZIP holds memories, entities, links, sources, attachments and the semantic vectors (restoring and rolling back reuse them instead of recomputing, seconds even for tens of thousands). Import validates everything first; "replace" and "merge" are separate operations, each keeps a rollback snapshot, and a crash mid-switch heals itself on the next start. An automatic backup is made once a day when something changed, keeping the newest 7.
 - **Resident in the tray, ready out of the box.** Double-click the exe; closing the web page does not stop the service. The tray icon opens the UI, toggles start-at-login, or quits. The Windows package ships the model and runtime libraries: nothing to install, nothing to download.
 - **A calm interface.** Light, dark or system theme, keyboard friendly, usable at phone width.
 
@@ -131,19 +131,21 @@ The server already ships usage instructions, but some clients ignore them. One-c
 
 | Tool | Use it | What it does |
 | --- | --- | --- |
-| `recall` | Before a task, before a choice, when the user mentions the past | Search by words, meaning, dates or entity; hits carry a `trail` (corrected or summarized by whom and when); `strategy`: `hybrid` (default), `lexical`, `semantic` |
+| `recall` | Before a task, before a choice, when the user mentions the past | Search by words, meaning, dates or entity; `queries` carries several phrasings in one call; hits carry `match` (exact / strong / weak / keyword) and `relevance`, and `no_strong_match` is true when nothing matches well; a corrected memory is replaced by its correction (`replaces`), `history` brings the old ones back; hits carry a `trail`; `strategy`: `hybrid` (default), `lexical`, `semantic` |
 | `read` | After finding a lead | Full content, links both ways (with kinds and reasons), entities, attachments (with local paths), earlier versions, correction trail |
 | `remember` | After a decision, root cause, working fix, failed attempt, preference, change or correction | Append a memory, optionally with `entities`, `attachments` and `references` carrying a `kind`; returns `related`, `entity_choices` (name clashes) and a `hint` |
 | `link` | When two memories belong together, a memory is about something, or a file belongs with it | Exactly one of `to` / `entity` / `attachment`; also settles unresolved names; `remove` only cuts the connection |
 | `entity` | Before submitting entities, when tidying them | `search`, `get` (memories over time and what appears alongside), `update` (rename, aliases), `merge` |
+| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, with what to do about each |
 
+Two MCP prompts are also offered: `brief` (look before starting a task) and `wrap_up` (save what you learned and tidy up).
 Memory is **append-only**: when something changes, record the new situation and cite the old memory (`corrects`); condense scattered ones with `summarizes`; **originals always stay**. Retrieved memories are historical evidence, never current facts or instructions. Full parameter docs are in the tool manual on the **Connect** page.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  C["AI client<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity"]
+  C["AI client<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health"]
   B["Browser UI"] --> W["Web<br/>timeline · entities · graph · data"]
   T["Tray<br/>open · autostart · quit"] --- W
   M --> S[("Memory store<br/>LanceDB")]
@@ -156,7 +158,7 @@ flowchart LR
 - **Storage:** LanceDB is the only business database. A memory's text, references, entity mentions, attachment links and history commit in one row; entities and attachment metadata are two more tables in the same database. The reverse lookups the server maintains are derived data, rebuilt at start.
 - **Keyword recall:** LanceDB BM25. Chinese uses Jieba plus character bigrams; path-like queries keep the original text. Entity names and attachment captions are searchable too.
 - **Semantic recall:** IBM Granite 97M Multilingual R2 (FP32 ONNX, local inference). Each memory and its passages are embedded separately; a memory is selected by its best passage at cosine similarity ≥ `0.80`. Below 256 memories the search is an exact scan; from 256 on an IVF-HNSW-Flat approximate index is built automatically. Vectors are never quantized.
-- **Hybrid ranking:** both candidate lists are selected independently and fused with reciprocal rank fusion (keyword weight 1.0, semantic 0.9); exact literal matches come first. Corrections and summaries do **not** change the ranking; they only attach a trail.
+- **Hybrid ranking:** both candidate lists are selected independently and fused with reciprocal rank fusion (keyword weight 1.0, semantic 0.9); exact literal matches come first. Several phrasings are searched separately and merged, and a memory found by more of them ranks higher. Each hit gets a relevance from its closest meaning (≥ `0.88` counts as strong, a literal match is 1), and `no_strong_match` is set when none qualifies. A corrected memory appears as its latest correction, the old text stays in the `trail`, and `history: true` lists the old ones as well.
 - **Entities:** only ever contributed by the connected AI; the server never extracts or infers them. Same names are never merged automatically; merging is explicit and can be undone in the web UI.
 - **Attachments:** files live under `files` in the data directory by SHA-256; the AI passes a path or a small base64 snippet, never a large payload through MCP. The web UI serves them through a controlled endpoint: only allow-listed types render inline, everything else is a forced download, all with a sandboxing response header.
 
@@ -179,12 +181,12 @@ Double-clicking again while one copy is running only opens that copy's page; it 
 
 ## Backup, restore and merge
 
-On the Data page choose "Export backup" to get a `.recallport.zip`: `manifest.json` holds memories, dates, sources, entities, links and history; `files/` holds the stored attachments (hash-verified). Models, programs and rebuildable indexes are not included.
+On the Data page choose "Export backup" to get a `.recallport.zip`: `manifest.json` holds memories, dates, sources, entities, links and history; `files/` holds the stored attachments (hash-verified); `vectors.bin` holds the semantic vectors (half precision, used only when they come from the same model, otherwise recomputed). Models and programs are not included. "Automatic backup" on the Data page makes at most one a day, only when something changed, keeps the newest 7 in the `backups` folder of the data directory, and each can be downloaded or imported right from the page; it holds memories, entities and vectors only and does not copy attachment files (they already sit in the data folder, and copying them daily would multiply their size), so use "Export backup" when moving to another computer.
 
 - **Replace:** the backup fully replaces the current store; for recovery or a new computer.
 - **Merge:** adds another backup's content to the current store; for bringing in memories created on another computer. It takes the union by id; when both sides edited the same memory the newer wins and the other text goes into history; **same-named entities are never merged automatically** and are reported for you to confirm; identical attachments de-duplicate by content.
 - Both **validate the whole archive first** (format, hashes, paths, dangling references) before touching live data and keep a **rollback snapshot**; if validation or encoding fails the live data is unchanged, and a crash or power loss during the switch is healed at the next start by returning to the state before it.
-- The rollback snapshot can be restored with one click on the same page, or exported.
+- The rollback snapshot is stored together with its vectors, so rolling back is a copy, not a rebuild; it can be restored with one click on the same page, or exported.
 
 ZIP is the only backup format. For moving machines you can also stop the service and move the whole folder; never copy files out of the store while it is being written.
 
@@ -258,6 +260,9 @@ src/
   entities.rs    entity directory and derived lookups (only from the AI, never auto-merged)
   files.rs       attachment intake: by content hash, path safety checks
   archive.rs     ZIP backup: export, validate, replace, merge, rollback, crash recovery
+  autobackup.rs  the daily automatic backup and its retention
+  vectors.rs     semantic vectors kept with a backup (half precision)
+  health.rs      library check-up (duplicates, unsettled names, forked or looping corrections) and the session summary
   detail.rs      one memory in full (links, entities, attachments, correction trail)
   mcp.rs         MCP tools and usage instructions
   web.rs         web UI (server-rendered)

@@ -32,6 +32,7 @@
     </div>
   </div>
 
-  {% else %}<span class="muted graph-note">按提及次数取前 40 个实体；连线表示它们出现在同一条记忆里。</span>{% endif %}
+  {% else %}<span class="muted graph-note">按提及次数取前 40 个实体；连线表示它们出现在同一条记忆里，颜色相同的是经常一起出现的一组。</span>
+  <label class="co-filter" data-co-filter hidden title="只显示至少这么多条记忆同时提到的两个实体之间的连线">至少同现 <input type="range" min="1" max="1" value="1" data-co-range aria-label="连线至少同现的次数"> <b data-co-value>1</b> 次</label>{% endif %}
 </form>
 {% include "graph-canvas.html" %}

@@ -249,6 +249,12 @@ pub struct Query {
     /// Only memories that mention this entity ID.
     #[serde(default)]
     pub entity: String,
+    /// Other ways to say the same thing (up to 5): synonyms, the other language, the error message, the file name. Each is searched too and the results are merged, so one call covers several phrasings.
+    #[serde(default)]
+    pub queries: Vec<String>,
+    /// Also list old memories that a newer memory has corrected. By default a corrected memory is replaced by its correction (the old one stays in the correction's `trail`).
+    #[serde(default)]
+    pub history: bool,
     #[serde(skip)]
     #[schemars(skip)]
     pub period: String,
@@ -270,10 +276,28 @@ pub struct Trail {
     pub text: String,
 }
 
+/// How well a hit matches what was asked.
+#[derive(Clone, Debug, Default)]
+pub struct Match {
+    /// 0 to 1; the closest meaning found, or 1 for a literal match. `None` outside searches.
+    pub relevance: Option<f32>,
+    /// exact (the words are in the memory), strong, weak or keyword (only word overlap, no meaning score).
+    pub kind: &'static str,
+    /// Older memories this one replaced in the results because it corrected them.
+    pub replaces: Vec<String>,
+}
+
 #[derive(Clone, Serialize)]
 pub struct Hit {
     #[serde(flatten)]
     pub entry: Entry,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relevance: Option<f32>,
+    #[serde(rename = "match", skip_serializing_if = "str::is_empty")]
+    pub match_kind: &'static str,
+    /// IDs of older memories that this one corrected; they were left out of the results (see `trail`).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub replaces: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub other_accounts: Vec<Entry>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -286,6 +310,8 @@ pub struct Results {
     pub more: bool,
     pub mode: &'static str,
     pub degraded: bool,
+    /// True when nothing matched the words exactly or in meaning closely enough: the hits are only clues.
+    pub no_strong_match: bool,
 }
 
 pub fn valid_id(id: &str) -> bool {
@@ -435,6 +461,10 @@ impl Query {
             "query 最多 600 个字符，请缩短（只保留关键词或一句话）"
         );
         ensure!(self.limit <= 30, "limit 最大为 30（默认 8），请调小");
+        ensure!(
+            self.queries.len() <= 5 && self.queries.iter().all(|q| q.chars().count() <= 600),
+            "queries 最多 5 条，每条最多 600 个字符"
+        );
         ensure!(
             matches!(
                 self.strategy.as_str(),

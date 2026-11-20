@@ -5,11 +5,13 @@
 mod log;
 mod app;
 mod archive;
+mod autobackup;
 mod clients;
 mod detail;
 mod embedding;
 mod entities;
 mod files;
+mod health;
 mod jobs;
 mod kv;
 mod mcp;
@@ -18,6 +20,7 @@ mod shell;
 mod store;
 #[cfg(test)]
 mod tests;
+mod vectors;
 mod web;
 mod web_admin;
 
@@ -247,6 +250,11 @@ fn serve(
                         Ok(true) => log!("Compacted the library files"),
                         Ok(false) => {}
                         Err(error) => log!("Compaction: {error:#}"),
+                    }
+                    match store.auto_backup().await {
+                        Ok(Some(name)) => log!("Automatic backup: {name}"),
+                        Ok(None) => {}
+                        Err(error) => log!("Automatic backup: {error:#}"),
                     }
                 }
             });

@@ -48,6 +48,7 @@
 
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% else %}
 {% if Degraded %}<div class="banner banner-warn" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>部分搜索索引暂不可用，已改用可用的检索方式。可在「数据」页查看并重建索引。</p></div>{% endif %}
+{% if NoStrong %}<div class="banner banner-info" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>没有高度相关的记忆，下面只是弱相关的线索。换个说法，或在「筛选」里选「语义」，按含义再找一次。</p></div>{% endif %}
 {% if Query.Text %}
 <div class="result-bar">
   <h2>找到 <b>{{ (Rows|length) }}{% if More %}+{% endif %}</b> 条相关记忆</h2>

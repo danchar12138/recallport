@@ -4,10 +4,12 @@ use crate::{
     entities::{EntityChoice, Index as EntityIndex},
     kv,
     memory::*,
+    vectors::{VectorCache, embed_text},
 };
 use anyhow::{Context, Result, ensure};
 use arrow_array::{
-    Array, BooleanArray, Float32Array, RecordBatch, RecordBatchIterator, StringArray,
+    Array, BooleanArray, FixedSizeListArray, Float32Array, ListArray, RecordBatch,
+    RecordBatchIterator, StringArray,
     builder::{FixedSizeListBuilder, Float32Builder, ListBuilder},
 };
 use arrow_schema::{DataType, Field, Schema};
@@ -36,6 +38,8 @@ use tokio::sync::{Mutex, RwLock};
 
 pub const CANDIDATES: usize = 120;
 pub const SEMANTIC: f32 = 0.80;
+/// Closest-meaning score from which a hit counts as a strong match.
+pub const STRONG: f32 = 0.88;
 pub const GRAPH: f32 = 0.86;
 pub const ANN_MIN: usize = 256;
 pub const ANN_PROBES: usize = 20;
@@ -47,7 +51,7 @@ pub const SEMANTIC_WEIGHT: f64 = 0.9;
 const TABLE: &str = "memories_v1";
 const FTS: &str = "search_text_idx";
 const ANN: &str = "vector_idx";
-const EMBEDDING_VERSION: &str =
+pub(crate) const EMBEDDING_VERSION: &str =
     "granite-embedding-97m-multilingual-r2/835ad140/fp32/cls-v1/passages-v1";
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -83,6 +87,16 @@ pub enum LaneKind {
 pub struct Saved {
     pub entry: Entry,
     pub choices: Vec<EntityChoice>,
+}
+
+/// What one phrasing found: rank scores, literal matches and the closest meaning per memory.
+#[derive(Default)]
+struct Probe {
+    rank: HashMap<String, f64>,
+    exact: HashSet<String>,
+    cosine: HashMap<String, f32>,
+    mode: &'static str,
+    degraded: bool,
 }
 
 pub struct Store {
@@ -357,32 +371,46 @@ impl Store {
         Ok(Some(vector))
     }
 
-    pub(crate) async fn row(&self, record: Record) -> Result<Row> {
-        let text = if record.entry.context.is_empty() {
-            record.entry.text.clone()
-        } else {
-            format!("{}\n{}", record.entry.text, record.entry.context)
-        };
-        let mut encoded = Vec::new();
-        if let Some(vector) = self.embedding(text.clone()).await? {
-            encoded.push(vector);
-            let mut seen = HashSet::from([text.trim()]);
-            let fragments = text
-                .split(['\n', '。', '！', '？', '；', '，', '.', '!', '?', ';', ','])
+    /// The passages a memory is searched by: the whole text, then its sentences and clauses.
+    fn passages(text: &str) -> Vec<String> {
+        let mut seen = HashSet::from([text.trim()]);
+        let mut out = vec![text.to_owned()];
+        out.extend(
+            text.split(['\n', '。', '！', '？', '；', '，', '.', '!', '?', ';', ','])
                 .map(str::trim)
                 .filter(|s| s.chars().count() >= MIN_PASSAGE && seen.insert(*s))
-                .take(MAX_PASSAGES - 1);
-            for fragment in fragments {
-                if let Some(vector) = self.embedding(fragment.into()).await? {
-                    encoded.push(vector);
-                }
-            }
+                .take(MAX_PASSAGES - 1)
+                .map(str::to_owned),
+        );
+        out
+    }
+
+    /// Encode many passages in as few model runs as possible.
+    async fn encode_batch(&self, texts: Vec<String>) -> Result<Vec<Vec<f32>>> {
+        let Some(model) = self.embedder.clone() else {
+            return Ok(vec![]);
+        };
+        if texts.is_empty() {
+            return Ok(vec![]);
         }
-        Ok(Row {
-            vector: (!encoded.is_empty()).then_some(encoded),
-            record,
-            deleted: false,
-        })
+        let vectors = tokio::task::spawn_blocking(move || model.encode_many(&texts)).await??;
+        ensure!(
+            vectors
+                .iter()
+                .all(|v| v.len() == embedding::DIMENSIONS as usize
+                    && v.iter().all(|x| x.is_finite())),
+            "Invalid embedding"
+        );
+        Ok(vectors)
+    }
+
+    /// The passage vectors for a text, or none when there is no model. Needs no lock.
+    pub(crate) async fn vectors_for(&self, text: &str) -> Result<Option<Vec<Vec<f32>>>> {
+        if self.embedder.is_none() {
+            return Ok(None);
+        }
+        let vectors = self.encode_batch(Self::passages(text)).await?;
+        Ok((!vectors.is_empty()).then_some(vectors))
     }
 
     pub(crate) async fn records(&self, filter: &str) -> Result<Vec<Record>> {
@@ -427,18 +455,111 @@ impl Store {
         self.upsert(rows).await
     }
 
-    /// Encode vectors for records one by one, reporting how many are done.
+    /// Encode vectors for records a few at a time, reporting how many are done. Vectors found in `cache`
+    /// (same memory, same text, same model) are reused instead of run through the model again.
     pub(crate) async fn embed_records(
         &self,
         records: Vec<Record>,
+        cache: Option<&VectorCache>,
         mut step: impl FnMut(usize),
     ) -> Result<Vec<Row>> {
+        const GROUP: usize = 6;
         let mut rows = Vec::with_capacity(records.len());
-        for (i, record) in records.into_iter().enumerate() {
-            rows.push(self.row(record).await?);
-            step(i + 1);
+        let mut done = 0;
+        let mut records = records.into_iter().peekable();
+        while records.peek().is_some() {
+            let group: Vec<Record> = records.by_ref().take(GROUP).collect();
+            let texts: Vec<String> = group
+                .iter()
+                .map(|r| embed_text(&r.entry.text, &r.entry.context))
+                .collect();
+            let mut vectors: Vec<Option<Vec<Vec<f32>>>> = texts
+                .iter()
+                .zip(&group)
+                .map(|(text, r)| cache.and_then(|c| c.get(&r.entry.id, text)))
+                .collect();
+            if self.embedder.is_some() {
+                let mut wanted = vec![];
+                let mut owners = vec![];
+                for (i, text) in texts.iter().enumerate() {
+                    if vectors[i].is_none() {
+                        for passage in Self::passages(text) {
+                            wanted.push(passage);
+                            owners.push(i);
+                        }
+                    }
+                }
+                let encoded = self.encode_batch(wanted).await?;
+                for (owner, vector) in owners.into_iter().zip(encoded) {
+                    vectors[owner].get_or_insert_with(Vec::new).push(vector);
+                }
+            } else {
+                vectors.iter_mut().for_each(|v| *v = None);
+            }
+            for (record, vector) in group.into_iter().zip(vectors) {
+                rows.push(Row {
+                    vector: vector.filter(|v| !v.is_empty()),
+                    record,
+                    deleted: false,
+                });
+            }
+            done += rows.len() - done;
+            step(done);
         }
         Ok(rows)
+    }
+
+    /// The vectors the library holds right now for these memories, to keep next to a backup.
+    pub(crate) async fn vector_cache(&self, records: &[Record]) -> Result<VectorCache> {
+        let mut cache = VectorCache::default();
+        if !self.uses_vectors() {
+            return Ok(cache);
+        }
+        let wanted: HashMap<&str, String> = records
+            .iter()
+            .map(|r| {
+                (
+                    r.entry.id.as_str(),
+                    embed_text(&r.entry.text, &r.entry.context),
+                )
+            })
+            .collect();
+        let mut stream = self
+            .table
+            .query()
+            .only_if(format!(
+                "NOT deleted AND embedding_id = {}",
+                sql(EMBEDDING_VERSION)
+            ))
+            .select(Select::columns(&["id", "vector"]))
+            .execute()
+            .await?;
+        while let Some(batch) = stream.try_next().await? {
+            let ids = col::<StringArray>(&batch, "id")?;
+            let lists = col::<ListArray>(&batch, "vector")?;
+            for i in 0..batch.num_rows() {
+                if lists.is_null(i) || ids.is_null(i) {
+                    continue;
+                }
+                let id = ids.value(i);
+                let Some(text) = wanted.get(id) else { continue };
+                let inner = lists.value(i);
+                let Some(group) = inner.as_any().downcast_ref::<FixedSizeListArray>() else {
+                    continue;
+                };
+                let mut passages = Vec::with_capacity(group.len());
+                for j in 0..group.len() {
+                    let item = group.value(j);
+                    if let Some(values) = item.as_any().downcast_ref::<Float32Array>() {
+                        passages.push(values.values().to_vec());
+                    }
+                }
+                if !passages.is_empty() {
+                    cache.insert(id, text, &passages);
+                }
+            }
+        }
+        Ok(cache)
     }
 
     pub(crate) async fn overwrite_memories(&self, rows: &[Row]) -> Result<()> {
@@ -528,8 +649,11 @@ impl Store {
                 choices: vec![],
             });
         }
-        // Files are content-addressed, so they can be copied in before the write lock is taken.
+        // Files are content-addressed and the model needs no lock, so both happen before it is taken.
         let attachments = self.ingest(&draft.attachments, source).await?;
+        let vector = self
+            .vectors_for(&embed_text(&draft.text, &draft.context))
+            .await?;
         let _guard = self.writes.lock().await;
         if let Some(entry) = self.replay(actor, &draft.request_id, &hash).await? {
             return Ok(Saved {
@@ -565,7 +689,11 @@ impl Store {
                 fingerprint: hash,
             }),
         };
-        let row = self.row(record).await?;
+        let row = Row {
+            vector,
+            record,
+            deleted: false,
+        };
         self.table
             .add(batch(std::slice::from_ref(&row))?)
             .execute()
@@ -581,6 +709,9 @@ impl Store {
     /// Edit by a person. The previous text is kept in the memory's history, never overwritten silently.
     pub async fn edit(&self, id: &str, revision: u32, draft: Draft, by: &str) -> Result<()> {
         let draft = draft.clean()?;
+        let vector = self
+            .vectors_for(&embed_text(&draft.text, &draft.context))
+            .await?;
         let _guard = self.writes.lock().await;
         let mut row = self.find(id).await?;
         ensure!(row.entry.revision == revision, "记忆已被修改，请刷新后重试");
@@ -605,7 +736,12 @@ impl Store {
         row.entry.updated = stamp;
         row.entry.revision = revision.checked_add(1).context("版本超出范围")?;
         let entry = row.entry.clone();
-        self.upsert(&[self.row(row).await?]).await?;
+        self.upsert(&[Row {
+            vector,
+            record: row,
+            deleted: false,
+        }])
+        .await?;
         self.idx.write().await.put_memory(&entry);
         self.invalidate().await;
         Ok(())
@@ -638,6 +774,10 @@ impl Store {
         ensure!(id != link.id && link.reason.len() <= 800, "引用无效");
         let _guard = self.writes.lock().await;
         self.find(&link.id).await?;
+        ensure!(
+            remove || link.kind != RefKind::Corrects || !self.correction_loop(id, &link.id).await?,
+            "这条更正会形成循环：被更正的记忆本身（经过一连串更正）已经更正过它"
+        );
         let mut record = self.find(id).await?;
         {
             let idx = self.idx.read().await;
@@ -732,7 +872,7 @@ impl Store {
 
     async fn result_page(
         &self,
-        entries: Vec<Entry>,
+        entries: Vec<(Entry, Match)>,
         offset: usize,
         limit: usize,
         mode: &'static str,
@@ -740,19 +880,19 @@ impl Store {
     ) -> Result<Results> {
         let mut found = Vec::new();
         let mut seen = HashSet::new();
-        for entry in entries {
+        for (entry, how) in entries {
             if !entry.origin.is_empty()
                 && !seen.insert((entry.origin.clone(), entry.occurred.clone()))
             {
                 continue;
             }
-            found.push(entry);
+            found.push((entry, how));
         }
         let more = found.len() > offset.saturating_add(limit);
         let mut memories = vec![];
         let snapshot = self.all().await?;
         let by_id: HashMap<&str, &Entry> = snapshot.iter().map(|e| (e.id.as_str(), e)).collect();
-        for entry in found.into_iter().skip(offset).take(limit) {
+        for (entry, how) in found.into_iter().skip(offset).take(limit) {
             let trail = self.trail(&entry, &by_id).await;
             let mut other_accounts = vec![];
             if !entry.origin.is_empty() {
@@ -772,15 +912,22 @@ impl Store {
             }
             memories.push(Hit {
                 entry: excerpt(entry),
+                relevance: how.relevance,
+                match_kind: how.kind,
+                replaces: how.replaces,
                 other_accounts,
                 trail,
             });
         }
+        let no_strong_match = !memories
+            .iter()
+            .any(|h| matches!(h.match_kind, "exact" | "strong"));
         Ok(Results {
             memories,
             mode,
             more,
             degraded,
+            no_strong_match,
         })
     }
 
@@ -794,8 +941,94 @@ impl Store {
         entries.sort_by(|a, b| {
             (&b.occurred, &b.recorded, &b.id).cmp(&(&a.occurred, &a.recorded, &a.id))
         });
+        let entries = entries.into_iter().map(|e| (e, Match::default())).collect();
         self.result_page(entries, offset, q.limit.max(1), "timeline", false)
             .await
+    }
+
+    /// Search for one phrase: which memories match, how closely, and by which routes.
+    async fn probe(&self, filter: &str, text: &str, strategy: &str) -> Result<Probe> {
+        let path = text.starts_with('/')
+            || text.starts_with("\\\\")
+            || text
+                .as_bytes()
+                .get(1..3)
+                .is_some_and(|v| v == b":\\" || v == b":/");
+        let mut found = Probe {
+            mode: "lexical",
+            ..Default::default()
+        };
+        if !path && strategy != "lexical" {
+            match self.embedding(text.into()).await {
+                Ok(Some(v)) => match self.neighbors(filter, v, SEMANTIC, CANDIDATES).await {
+                    Ok(neighbors) => {
+                        found.mode = if strategy == "semantic" {
+                            "semantic"
+                        } else {
+                            "hybrid"
+                        };
+                        for (i, (id, cosine)) in neighbors.into_iter().enumerate() {
+                            *found.rank.entry(id.clone()).or_default() +=
+                                SEMANTIC_WEIGHT / (RRF + i as f64);
+                            found.cosine.insert(id, cosine);
+                        }
+                    }
+                    Err(error) => {
+                        crate::log!("Vector query: {error:#}");
+                        found.degraded = true;
+                    }
+                },
+                Ok(None) => {
+                    found.degraded = strategy == "semantic";
+                }
+                Err(error) => {
+                    crate::log!("Embedding: {error:#}");
+                    found.degraded = true;
+                }
+            }
+        }
+        if found.mode != "semantic" {
+            for id in self.exact_search(filter, text).await? {
+                found.exact.insert(id);
+            }
+            if !path {
+                match self.text_search(filter, text).await {
+                    Ok(hits) => {
+                        for (i, id) in hits.into_iter().enumerate() {
+                            *found.rank.entry(id).or_default() += LEXICAL_WEIGHT / (RRF + i as f64);
+                        }
+                    }
+                    Err(error) => {
+                        crate::log!("Full-text query: {error:#}");
+                        found.degraded = true;
+                    }
+                }
+            }
+        }
+        Ok(found)
+    }
+
+    /// The memory that finally replaced `id` by correction (the newest correction, followed along the chain).
+    async fn latest_correction(&self, id: &str, by_id: &HashMap<&str, &Entry>) -> String {
+        let idx = self.idx.read().await;
+        let mut current = id.to_owned();
+        let mut seen = HashSet::from([current.clone()]);
+        for _ in 0..8 {
+            let next = idx
+                .cites
+                .get(&current)
+                .into_iter()
+                .flatten()
+                .filter(|(source, r)| r.kind == RefKind::Corrects && idx.live.contains(source))
+                .filter_map(|(source, _)| by_id.get(source.as_str()))
+                .max_by(|a, b| (&a.recorded, &a.id).cmp(&(&b.recorded, &b.id)))
+                .map(|e| e.id.clone());
+            match next {
+                Some(next) if seen.insert(next.clone()) => current = next,
+                _ => break,
+            }
+        }
+        current
     }
 
     pub async fn recall(&self, q: &Query) -> Result<Results> {
@@ -813,84 +1046,121 @@ impl Store {
                 more: false,
                 mode: "lexical",
                 degraded: false,
+                no_strong_match: true,
             });
         }
-        let path = text.starts_with('/')
-            || text.starts_with("\\\\")
-            || text
-                .as_bytes()
-                .get(1..3)
-                .is_some_and(|v| v == b":\\" || v == b":/");
-        let mut score = HashMap::<String, (bool, f64)>::new();
-        let mut mode = "lexical";
-        let mut degraded = false;
-        if !path && q.strategy != "lexical" {
-            match self.embedding(text.into()).await {
-                Ok(Some(v)) => match self.neighbors(&filter, v, SEMANTIC, CANDIDATES).await {
-                    Ok(neighbors) => {
-                        mode = if q.strategy == "semantic" {
-                            "semantic"
-                        } else {
-                            "hybrid"
-                        };
-                        for (i, (id, _)) in neighbors.into_iter().enumerate() {
-                            score.entry(id).or_default().1 += SEMANTIC_WEIGHT / (RRF + i as f64);
-                        }
-                    }
-                    Err(error) => {
-                        crate::log!("Vector query: {error:#}");
-                        degraded = true;
-                    }
-                },
-                Ok(None) => {
-                    degraded = q.strategy == "semantic";
-                }
-                Err(error) => {
-                    crate::log!("Embedding: {error:#}");
-                    degraded = true;
-                }
+        let mut phrases = vec![text.to_owned()];
+        for other in &q.queries {
+            let other = other.trim();
+            if !other.is_empty() && !phrases.iter().any(|p| p == other) {
+                phrases.push(other.to_owned());
             }
         }
-        if mode != "semantic" {
-            for id in self.exact_search(&filter, text).await? {
-                score.entry(id).or_default().0 = true;
-            }
-            if !path {
-                match self.text_search(&filter, text).await {
-                    Ok(hits) => {
-                        for (i, id) in hits.into_iter().enumerate() {
-                            score.entry(id).or_default().1 += LEXICAL_WEIGHT / (RRF + i as f64);
-                        }
-                    }
-                    Err(error) => {
-                        crate::log!("Full-text query: {error:#}");
-                        degraded = true;
-                    }
+        // Each phrasing is searched; a memory that several phrasings find ranks higher.
+        let mut all = Probe {
+            mode: "lexical",
+            ..Default::default()
+        };
+        for (i, phrase) in phrases.iter().enumerate() {
+            let one = match self.probe(&filter, phrase, &q.strategy).await {
+                Ok(one) => one,
+                Err(error) if i > 0 => {
+                    crate::log!("Extra phrasing: {error:#}");
+                    continue;
                 }
+                Err(error) => return Err(error),
+            };
+            if one.mode != "lexical" {
+                all.mode = one.mode;
+            }
+            all.degraded |= one.degraded;
+            all.exact.extend(one.exact);
+            for (id, rank) in one.rank {
+                *all.rank.entry(id).or_default() += rank;
+            }
+            for (id, cosine) in one.cosine {
+                let best = all.cosine.entry(id).or_insert(cosine);
+                *best = best.max(cosine);
             }
         }
-        let mut ranked: Vec<_> = score.into_iter().collect();
-        ranked.sort_by(|(a, x), (b, y)| {
-            y.0.cmp(&x.0)
-                .then_with(|| y.1.total_cmp(&x.1))
+        let mut ranked: Vec<(String, bool, f64)> = all
+            .rank
+            .keys()
+            .chain(all.exact.iter())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .map(|id| {
+                (
+                    id.clone(),
+                    all.exact.contains(id),
+                    all.rank.get(id).copied().unwrap_or_default(),
+                )
+            })
+            .collect();
+        ranked.sort_by(|(a, ax, ar), (b, bx, br)| {
+            bx.cmp(ax)
+                .then_with(|| br.total_cmp(ar))
                 .then_with(|| a.cmp(b))
         });
+        let how = |id: &str, exact: bool| -> Match {
+            let cosine = all.cosine.get(id).copied();
+            let (relevance, kind) = match (exact, cosine) {
+                (true, _) => (Some(1.0), "exact"),
+                (false, Some(c)) if c >= STRONG => (Some(c), "strong"),
+                (false, Some(c)) => (Some(c), "weak"),
+                (false, None) => (None, "keyword"),
+            };
+            Match {
+                relevance: relevance.map(|r: f32| (r * 100.0).round() / 100.0),
+                kind,
+                replaces: vec![],
+            }
+        };
+        // A memory that a newer one corrected gives way to the correction; the old text stays in its trail.
+        let snapshot = self.all().await?;
+        let by_id: HashMap<&str, &Entry> = snapshot.iter().map(|e| (e.id.as_str(), e)).collect();
+        let mut order: Vec<String> = vec![];
+        let mut found: HashMap<String, Match> = HashMap::new();
+        for (id, exact, _) in ranked {
+            let mut m = how(&id, exact);
+            let target = if q.history {
+                id.clone()
+            } else {
+                self.latest_correction(&id, &by_id).await
+            };
+            if target != id {
+                m.replaces.push(id);
+            }
+            match found.get_mut(&target) {
+                Some(have) => {
+                    have.replaces.extend(m.replaces);
+                    if m.relevance > have.relevance {
+                        have.relevance = m.relevance;
+                        have.kind = m.kind;
+                    }
+                }
+                None => {
+                    order.push(target.clone());
+                    found.insert(target, m);
+                }
+            }
+        }
         let mut entries = vec![];
-        if !ranked.is_empty() {
-            let ids = ranked
-                .iter()
-                .map(|(s, _)| sql(s))
-                .collect::<Vec<_>>()
-                .join(",");
+        if !order.is_empty() {
+            let ids = order.iter().map(|s| sql(s)).collect::<Vec<_>>().join(",");
             let mut rows: HashMap<_, _> = self
                 .records(&format!("NOT deleted AND id IN ({ids})"))
                 .await?
                 .into_iter()
                 .map(|r| (r.entry.id.clone(), r.entry))
                 .collect();
-            entries.extend(ranked.into_iter().filter_map(|(id, _)| rows.remove(&id)));
+            entries.extend(order.into_iter().filter_map(|id| {
+                let m = found.remove(&id)?;
+                rows.remove(&id).map(|e| (e, m))
+            }));
         }
-        self.result_page(entries, 0, limit, mode, degraded).await
+        self.result_page(entries, 0, limit, all.mode, all.degraded)
+            .await
     }
 
     /// Every live memory, cached until the next write.
@@ -1121,10 +1391,7 @@ impl Store {
         let missing = self.records(&filter).await?;
         let mut repaired = !missing.is_empty();
         for records in missing.chunks(64) {
-            let mut rows = Vec::with_capacity(records.len());
-            for record in records {
-                rows.push(self.row(record.clone()).await?);
-            }
+            let rows = self.embed_records(records.to_vec(), None, |_| {}).await?;
             self.upsert(&rows).await?;
         }
         let count = self
@@ -1184,6 +1451,7 @@ impl Store {
         let mut nodes: Vec<serde_json::Value> = vec![];
         let mut edges: Vec<serde_json::Value> = vec![];
         let more: bool;
+        let mut extra = json!({});
 
         if overview {
             let mut ranked: Vec<(String, usize)> = idx
@@ -1216,6 +1484,31 @@ impl Store {
                 }
             }
             nodes.extend(ranked.iter().filter_map(|(id, n)| entity_node(id, *n)));
+            // Entities that keep appearing together get one colour; the slider hides weak links.
+            let names: HashMap<&str, &str> = idx
+                .entities
+                .values()
+                .map(|e| (e.id.as_str(), e.name.as_str()))
+                .collect();
+            let order: Vec<String> = ranked.iter().map(|r| r.0.clone()).collect();
+            let max_co = pairs.values().copied().max().unwrap_or(1);
+            let room = (order.len() * 3 / 2).max(24);
+            let suggested_min = (1..=max_co)
+                .find(|m| pairs.values().filter(|n| **n >= *m).count() <= room)
+                .unwrap_or(max_co);
+            // Group by the links that are shown by default; weaker ones would glue everything together.
+            let strong: HashMap<(String, String), usize> = pairs
+                .iter()
+                .filter(|(_, n)| **n >= suggested_min)
+                .map(|(k, n)| (k.clone(), *n))
+                .collect();
+            let (group_of, legend) = communities(&order, &strong, &names);
+            for node in &mut nodes {
+                if let Some(g) = node["id"].as_str().and_then(|id| group_of.get(id)) {
+                    node["group"] = json!(g);
+                }
+            }
+            extra = json!({"groups": legend, "max_co": max_co, "suggested_min": suggested_min});
             for ((a, b), n) in pairs {
                 edges.push(
                     json!({"from": a, "to": b, "co": n, "reason": format!("{n} 条记忆同时提及")}),
@@ -1314,8 +1607,93 @@ impl Store {
             );
             edges.dedup_by(|a, b| a == b);
         }
-        Ok(json!({"nodes": nodes, "edges": edges, "more": more}))
+        let mut graph = json!({"nodes": nodes, "edges": edges, "more": more});
+        if let (Some(target), Some(source)) = (graph.as_object_mut(), extra.as_object()) {
+            target.extend(source.clone());
+        }
+        Ok(graph)
     }
+}
+
+/// How many colours the entity map uses; further groups share the last one.
+const GROUP_COLOURS: usize = 6;
+
+/// Group entities that often appear together (label propagation on the co-occurrence counts). Returns each
+/// grouped entity's colour number and a legend naming the biggest groups after their best-connected entity.
+/// Entities with no partner stay ungrouped.
+fn communities(
+    ids: &[String],
+    pairs: &HashMap<(String, String), usize>,
+    names: &HashMap<&str, &str>,
+) -> (HashMap<String, usize>, Vec<serde_json::Value>) {
+    let at: HashMap<&str, usize> = ids
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (id.as_str(), i))
+        .collect();
+    let mut adjacent: Vec<Vec<(usize, usize)>> = vec![vec![]; ids.len()];
+    for ((a, b), n) in pairs {
+        if let (Some(&i), Some(&j)) = (at.get(a.as_str()), at.get(b.as_str())) {
+            adjacent[i].push((j, *n));
+            adjacent[j].push((i, *n));
+        }
+    }
+    let mut label: Vec<usize> = (0..ids.len()).collect();
+    for _ in 0..20 {
+        let mut changed = false;
+        for i in 0..ids.len() {
+            let mut tally: std::collections::BTreeMap<usize, usize> = Default::default();
+            for (j, n) in &adjacent[i] {
+                *tally.entry(label[*j]).or_default() += n;
+            }
+            // The heaviest label wins; a tie goes to the smaller one so the result is stable.
+            if let Some((&best, _)) = tally
+                .iter()
+                .max_by(|a, b| a.1.cmp(b.1).then_with(|| b.0.cmp(a.0)))
+                && best != label[i]
+            {
+                label[i] = best;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let mut members: std::collections::BTreeMap<usize, Vec<usize>> = Default::default();
+    for (i, l) in label.iter().enumerate() {
+        if !adjacent[i].is_empty() {
+            members.entry(*l).or_default().push(i);
+        }
+    }
+    let mut groups: Vec<Vec<usize>> = members.into_values().filter(|m| m.len() > 1).collect();
+    groups.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a[0].cmp(&b[0])));
+    let mut group_of = HashMap::new();
+    let mut legend = vec![];
+    for (rank, group) in groups.iter().enumerate() {
+        let colour = rank.min(GROUP_COLOURS - 1);
+        for &i in group {
+            group_of.insert(ids[i].clone(), colour);
+        }
+        if rank < GROUP_COLOURS - 1 || (rank == GROUP_COLOURS - 1 && groups.len() == GROUP_COLOURS)
+        {
+            let head = group
+                .iter()
+                .max_by_key(|i| adjacent[**i].iter().map(|a| a.1).sum::<usize>())
+                .copied()
+                .unwrap_or(group[0]);
+            legend.push(serde_json::json!({
+                "group": colour,
+                "size": group.len(),
+                "name": names.get(ids[head].as_str()).copied().unwrap_or(""),
+            }));
+        }
+    }
+    if groups.len() > GROUP_COLOURS {
+        let rest: usize = groups[GROUP_COLOURS - 1..].iter().map(Vec::len).sum();
+        legend.push(serde_json::json!({"group": GROUP_COLOURS - 1, "size": rest, "name": "其他"}));
+    }
+    (group_of, legend)
 }
 
 fn update_lane(lane: &mut Lane, state: &'static str, repair: bool, problem: Option<String>) {
@@ -1352,4 +1730,35 @@ pub fn now() -> String {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    #[test]
+    fn entities_that_appear_together_share_a_group_and_loners_have_none() {
+        let ids: Vec<String> = ["a", "b", "c", "d", "e", "f", "z"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let mut pairs = HashMap::new();
+        for (x, y, n) in [
+            ("a", "b", 5),
+            ("b", "c", 4),
+            ("a", "c", 3),
+            ("d", "e", 6),
+            ("e", "f", 5),
+            ("d", "f", 4),
+            ("c", "d", 1),
+        ] {
+            pairs.insert((x.to_string(), y.to_string()), n);
+        }
+        let names: HashMap<&str, &str> = ids.iter().map(|i| (i.as_str(), i.as_str())).collect();
+        let (group, legend) = communities(&ids, &pairs, &names);
+        assert_eq!(group["a"], group["b"]);
+        assert_eq!(group["b"], group["c"]);
+        assert_eq!(group["d"], group["e"]);
+        assert_eq!(group["e"], group["f"]);
+        assert_ne!(group["a"], group["d"]);
+        assert!(!group.contains_key("z"));
+        assert_eq!(legend.len(), 2);
+    }
+}

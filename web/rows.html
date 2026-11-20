@@ -7,6 +7,8 @@
     {% if r1.Context %}<p class="entry-context" data-hl>{{ r1.Context }}</p>{% endif %}
     <div class="entry-meta">
       <span class="chip">{{ r1.Source }}</span>
+      {% if r1.Match %}<span class="chip chip-match is-{{ r1.MatchKind }}" title="{% if r1.Relevance %}含义相近度 {{ r1.Relevance }}{% else %}只按词语匹配，没有含义得分{% endif %}">{{ r1.Match }}</span>{% endif %}
+      {% if r1.Replaces %}<span class="chip chip-soft" title="这是更正后的新记录；被它更正的旧记录没有单独列出，点「更正了旧记录」查看">替换了 {{ r1.Replaces }} 条旧记录</span>{% endif %}
       {% for t in r1.Trail %}<a class="chip chip-trail" href="/memory/{{ t.ID }}?back={{ Back | urlencode }}" title="查看相关记录">{{ t.Label }}</a>{% endfor %}
       {% if r1.Edited %}<span class="chip chip-soft" title="正文被修改过，旧版本保留在详情页">已编辑</span>{% endif %}
       {% if r1.Files %}<span class="chip chip-soft"><svg class="icon icon-xs" aria-hidden="true"><use href="#paperclip"/></svg>{{ r1.Files }}</span>{% endif %}

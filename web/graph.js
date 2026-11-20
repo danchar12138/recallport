@@ -14,7 +14,10 @@ function mountGraph(root) {
   filters.delete('node');
   filters.delete('focus');
   filters.delete('suggested');
-  let snapshot, active = '', epoch = 0, busy = false, page = pageNumber, retries = 0;
+  let snapshot, active = '', epoch = 0, busy = false, page = pageNumber, retries = 0, minCo = 1;
+  const coFilter = root.closest('main,body').querySelector('[data-co-filter]');
+  const coRange = coFilter?.querySelector('[data-co-range]'), coValue = coFilter?.querySelector('[data-co-value]');
+  const legend = el('groups');
   const maxNodes = 120;
   if (typeof window.cytoscape !== 'function') { message.classList.remove('is-loading'); message.textContent='关系图组件未加载'; return; }
 
@@ -31,6 +34,7 @@ function mountGraph(root) {
       {selector:'edge.suggested',style:{width:1.6,'line-style':'dashed','line-dash-pattern':[5,4],'line-color':v('--g-suggest'),'target-arrow-shape':'none'}},
       {selector:'node.entity',style:{shape:'diamond',width:'mapData(count,1,20,28,54)',height:'mapData(count,1,20,28,54)','background-color':v('--g-suggest'),'border-color':v('--g-halo'),'font-weight':600}},
       {selector:'node.entity:selected',style:{'border-color':v('--g-anchor'),'border-width':5}},
+      ...[0,1,2,3,4,5].map(n=>({selector:`node.g${n}`,style:{'background-color':v(`--g-c${n}`)}})),
       {selector:'edge.mention',style:{width:1.6,'line-style':'dotted','line-color':v('--g-suggest'),'target-arrow-shape':'none'}},
       {selector:'edge.co',style:{width:'mapData(co,1,8,1.6,6)','line-color':v('--g-suggest'),'target-arrow-shape':'none',opacity:0.75}},
       {selector:'edge.corrects',style:{'line-color':v('--warn'),'target-arrow-color':v('--warn'),width:2.6}},
@@ -112,10 +116,11 @@ function mountGraph(root) {
     cy.batch(()=>{
       for (const d of data.nodes) {
         if (cy.getElementById(d.id).length || cy.nodes().length>=maxNodes) continue;
-        cy.add({group:'nodes',data:{...d,label:short(d.text,17)},classes:d.kind==='entity' ? 'entity' : d.id===initial ? 'anchor' : ''});
+        cy.add({group:'nodes',data:{...d,label:short(d.text,17)},classes:d.kind==='entity' ? `entity${Number.isInteger(d.group) ? ` g${d.group}` : ''}` : d.id===initial ? 'anchor' : ''});
       }
       for (const e of data.edges) {
         if (!cy.getElementById(e.from).length || !cy.getElementById(e.to).length) continue;
+        if (e.co && e.co<minCo) continue;
         const ends=e.suggested || e.co ? [e.from,e.to].sort() : [e.from,e.to];
         const tag=e.suggested ? 's' : e.mention ? 'm' : e.co ? 'c' : 'r';
         const id=`${tag}:${ends.join(':')}`;
@@ -125,6 +130,31 @@ function mountGraph(root) {
     });
     updateSelect();
   }
+  // Entity map: colour legend, and a slider that hides links between entities that rarely appear together.
+  function setupCo(data) {
+    minCo=data.suggested_min || 1;
+    if (coFilter && coRange) {
+      coRange.max=String(Math.max(1,data.max_co || 1));
+      coRange.value=String(minCo);
+      coValue.textContent=String(minCo);
+      coFilter.hidden=(data.max_co || 1)<2;
+    }
+    if (legend) {
+      legend.replaceChildren(...(data.groups || []).map(g=>{
+        const item=document.createElement('span'), dot=document.createElement('b');
+        dot.className=`dot g${g.group}`;
+        item.append(dot,`${g.name} 等 ${g.size} 个`);
+        return item;
+      }));
+    }
+  }
+  coRange?.addEventListener('input',()=>{
+    minCo=Number(coRange.value);
+    coValue.textContent=String(minCo);
+    cy.edges('.co').remove();
+    put({nodes:[],edges:snapshot?.edges ?? []});
+    layout();announce();
+  });
   function announce(extra='') {
     const edges=cy.edges();
     const soft=edges.filter('.suggested').length;
@@ -163,6 +193,7 @@ function mountGraph(root) {
       if (mark!==epoch) return;
       const keep=active;
       if (mode==='base') {cy.elements().remove();snapshot=data;page=data.page;}
+      if (overview && mode==='base') setupCo(data);
       put(data);
       layout();
       const focused=id || (cy.getElementById(initialSelection || '').length ? initialSelection : '') || (cy.getElementById(keep).length ? keep : '') || cy.nodes().first().id();

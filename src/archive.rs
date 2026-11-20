@@ -1,5 +1,6 @@
-//! Portable ZIP archive: `manifest.json` plus `files/<sha256>`. Everything needed to rebuild a library
-//! on an empty machine. Models, programs and rebuildable indexes are not included.
+//! Portable ZIP archive: `manifest.json`, `files/<sha256>` and, when the library has them, `vectors.bin`
+//! (the semantic vectors, so restoring does not have to run the model again). Everything needed to rebuild
+//! a library on an empty machine. Models and programs are not included.
 //!
 //! Restore replaces the library; merge adds another library's memories to this one. Both validate the
 //! whole archive before touching live data, keep a rollback snapshot, and survive a crash mid-switch.
@@ -8,7 +9,8 @@ use crate::{
     jobs::Job,
     kv,
     memory::*,
-    store::{Store, now},
+    store::{EMBEDDING_VERSION, Store, now},
+    vectors::VectorCache,
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use serde::{Deserialize, Serialize};
@@ -25,6 +27,8 @@ pub const FORMAT: &str = "recallport-archive";
 pub const VERSION: u32 = 1;
 const MAX_MANIFEST: u64 = 1 << 30;
 const MAX_ENTRIES: usize = 500_000;
+const MAX_VECTORS: u64 = 2 << 30;
+const VECTORS: &str = "vectors.bin";
 pub const MAX_ARCHIVE: u64 = 64 << 30;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -34,12 +38,20 @@ pub struct Snapshot {
     pub attachments: Vec<Attachment>,
 }
 
+fn yes() -> bool {
+    true
+}
+
 #[derive(Serialize, Deserialize)]
 struct Manifest {
     format: String,
     version: u32,
     app: String,
     created: String,
+    /// False for the automatic backups: they list the attachments but do not copy the files, which stay in
+    /// the data folder beside them.
+    #[serde(default = "yes")]
+    files: bool,
     #[serde(flatten)]
     data: Snapshot,
 }
@@ -194,6 +206,8 @@ pub fn write_zip(
     dest: &Path,
     snap: &Snapshot,
     files_root: &Path,
+    vectors: Option<&VectorCache>,
+    with_files: bool,
     job: &Job,
 ) -> Result<ArchiveInfo> {
     let blob = |hash: &str| files_root.join(&hash[..2]).join(hash);
@@ -201,7 +215,7 @@ pub fn write_zip(
     let mut attachments = Vec::new();
     for a in &snap.attachments {
         match a.storage {
-            Storage::Stored if !blob(&a.hash).is_file() => {
+            Storage::Stored if with_files && !blob(&a.hash).is_file() => {
                 warnings.push(format!("附件文件已缺失，未写入备份：{}", a.name));
             }
             _ => attachments.push(a.clone()),
@@ -221,13 +235,18 @@ pub fn write_zip(
         version: VERSION,
         app: env!("CARGO_PKG_VERSION").into(),
         created: now(),
+        files: with_files,
         data,
     };
     serde_json::to_writer(&mut zip, &manifest)?;
+    if let Some(cache) = vectors.filter(|c| !c.is_empty()) {
+        zip.start_file(VECTORS, options(CompressionMethod::Stored))?;
+        zip.write_all(&cache.encode(EMBEDDING_VERSION))?;
+    }
     job.phase("写入附件文件", 0.1, 1.0);
     let mut done = 0u64;
     let mut buffer = vec![0u8; 1 << 20];
-    for a in manifest.data.stored() {
+    for a in manifest.data.stored().filter(|_| with_files) {
         let method = if compressible(&a.mime) {
             CompressionMethod::Deflated
         } else {
@@ -270,6 +289,8 @@ pub fn read_zip(path: &Path) -> Result<(Snapshot, HashMap<String, u64>)> {
         if name == "manifest.json" {
             ensure!(f.size() <= MAX_MANIFEST, "备份清单过大");
             manifest = true;
+        } else if name == VECTORS {
+            ensure!(f.size() <= MAX_VECTORS, "备份中的向量文件过大");
         } else if name == "files/" {
             continue;
         } else if let Some(hash) = name.strip_prefix("files/") {
@@ -294,11 +315,27 @@ pub fn read_zip(path: &Path) -> Result<(Snapshot, HashMap<String, u64>)> {
         "不支持的备份格式或版本（需要 RecallPort 的 ZIP 备份）"
     );
     parsed.data.validate()?;
-    for a in parsed.data.stored() {
+    for a in parsed.data.stored().filter(|_| parsed.files) {
         let size = files.get(&a.hash).context("备份缺少附件文件")?;
         ensure!(*size == a.size, "备份中的附件大小与清单不一致");
     }
     Ok((parsed.data, files))
+}
+
+/// The semantic vectors saved in an archive, if it has any made by the model in use. Anything unreadable is
+/// ignored: the vectors are then simply computed again.
+pub fn read_vectors(path: &Path) -> Option<VectorCache> {
+    let mut zip = ZipArchive::new(File::open(path).ok()?).ok()?;
+    let mut entry = zip.by_name(VECTORS).ok()?;
+    let mut bytes = Vec::new();
+    entry
+        .by_ref()
+        .take(MAX_VECTORS)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    VectorCache::decode(&bytes, EMBEDDING_VERSION)
+        .ok()
+        .filter(|c| !c.is_empty())
 }
 
 /// Extract and verify the files in `want` into `dest`. Each file must match its name's SHA-256.
@@ -350,6 +387,17 @@ impl Store {
         self.dir.join("recovery").join("manifest.json")
     }
 
+    fn recovery_vectors(&self) -> PathBuf {
+        self.dir.join("recovery").join(VECTORS)
+    }
+
+    fn load_recovery_vectors(&self) -> Option<VectorCache> {
+        let bytes = fs::read(self.recovery_vectors()).ok()?;
+        VectorCache::decode(&bytes, EMBEDDING_VERSION)
+            .ok()
+            .filter(|c| !c.is_empty())
+    }
+
     fn journal(&self) -> PathBuf {
         self.dir.join("restore.journal")
     }
@@ -380,9 +428,23 @@ impl Store {
     }
 
     pub async fn export_to(&self, dest: PathBuf, job: Job) -> Result<ArchiveInfo> {
+        self.export_with(dest, job, true).await
+    }
+
+    /// `with_files` false writes the memories, entities and vectors only (the automatic backups).
+    pub async fn export_with(
+        &self,
+        dest: PathBuf,
+        job: Job,
+        with_files: bool,
+    ) -> Result<ArchiveInfo> {
         let snap = self.snapshot().await?;
+        let vectors = self.vector_cache(&snap.memories).await.ok();
         let root = self.dir.join("files");
-        tokio::task::spawn_blocking(move || write_zip(&dest, &snap, &root, &job)).await?
+        tokio::task::spawn_blocking(move || {
+            write_zip(&dest, &snap, &root, vectors.as_ref(), with_files, &job)
+        })
+        .await?
     }
 
     /// A rollback snapshot of the library before the last restore or merge, if there is one.
@@ -409,12 +471,23 @@ impl Store {
 
     pub async fn export_recovery_to(&self, dest: PathBuf, job: Job) -> Result<ArchiveInfo> {
         let snap = self.load_recovery()?;
+        let vectors = self.load_recovery_vectors();
         let root = self.dir.join("files");
-        tokio::task::spawn_blocking(move || write_zip(&dest, &snap, &root, &job)).await?
+        tokio::task::spawn_blocking(move || {
+            write_zip(&dest, &snap, &root, vectors.as_ref(), true, &job)
+        })
+        .await?
     }
 
     async fn save_recovery_locked(&self) -> Result<()> {
         let snap = self.snapshot().await?;
+        // Keep the vectors too, so going back is a copy, not a rebuild.
+        let vectors = self.vector_cache(&snap.memories).await?;
+        if vectors.is_empty() {
+            let _ = fs::remove_file(self.recovery_vectors());
+        } else {
+            write_atomic(&self.recovery_vectors(), &vectors.encode(EMBEDDING_VERSION))?;
+        }
         write_atomic(&self.recovery_manifest(), &serde_json::to_vec(&snap)?)
     }
 
@@ -422,7 +495,8 @@ impl Store {
     fn adopt_files(&self, staging: &Path, hashes: &[String]) -> Result<()> {
         for hash in hashes {
             let target = self.blob(hash);
-            if target.exists() {
+            // Already here, or (in an automatic backup) never copied: nothing to move.
+            if target.exists() || !staging.join(hash).exists() {
                 continue;
             }
             fs::create_dir_all(target.parent().context("blob path")?)?;
@@ -448,7 +522,7 @@ impl Store {
         let want: Vec<(String, u64)> = snap
             .stored()
             .filter(|a| !self.blob(&a.hash).exists())
-            .map(|a| (a.hash.clone(), sizes[&a.hash]))
+            .filter_map(|a| sizes.get(&a.hash).map(|size| (a.hash.clone(), *size)))
             .collect();
         let hashes = snap.stored().map(|a| a.hash.clone()).collect();
         job.phase("校验并解压附件", 0.05, 0.4);
@@ -466,6 +540,8 @@ impl Store {
         job.phase("校验备份包", 0.0, 0.05);
         let p = path.clone();
         let (snap, sizes) = tokio::task::spawn_blocking(move || read_zip(&p)).await??;
+        let p = path.clone();
+        let vectors = tokio::task::spawn_blocking(move || read_vectors(&p)).await?;
         let (staging, hashes) = self.stage(&path, &snap, &sizes, &job).await?;
         let info = ArchiveInfo {
             memories: snap.memories.len(),
@@ -474,7 +550,9 @@ impl Store {
             bytes: fs::metadata(&path)?.len(),
             warnings: vec![],
         };
-        let applied = self.apply(snap, &staging, &hashes, &job).await;
+        let applied = self
+            .apply(snap, vectors.as_ref(), &staging, &hashes, &job)
+            .await;
         let _ = fs::remove_dir_all(&staging);
         applied?;
         Ok(info)
@@ -492,22 +570,36 @@ impl Store {
         };
         let hashes: Vec<String> = snap.stored().map(|a| a.hash.clone()).collect();
         let empty = self.dir.join("files").join(".incoming").join("none");
-        self.apply(snap, &empty, &hashes, &job).await?;
+        let vectors = self.load_recovery_vectors();
+        self.apply(snap, vectors.as_ref(), &empty, &hashes, &job)
+            .await?;
         Ok(info)
     }
 
-    /// The common switch: re-encode vectors first (slow, no lock), then swap everything under the write lock.
+    /// The common switch: bring the vectors in first (reused when the archive has them, otherwise encoded; no
+    /// lock), then swap everything under the write lock.
     async fn apply(
         &self,
         snap: Snapshot,
+        vectors: Option<&VectorCache>,
         staging: &Path,
         hashes: &[String],
         job: &Job,
     ) -> Result<()> {
-        job.phase("重建语义向量", 0.4, 0.95);
+        job.phase(
+            if vectors.is_some() {
+                "载入语义向量"
+            } else {
+                "重建语义向量"
+            },
+            0.4,
+            0.95,
+        );
         let total = snap.memories.len() as u64;
         let rows = self
-            .embed_records(snap.memories.clone(), |done| job.step(done as u64, total))
+            .embed_records(snap.memories.clone(), vectors, |done| {
+                job.step(done as u64, total)
+            })
             .await?;
         job.phase("切换数据", 0.95, 1.0);
         let _guard = self.writes.lock().await;
@@ -550,7 +642,9 @@ impl Store {
                 let job = Job::detached();
                 let hashes: Vec<String> = snap.stored().map(|a| a.hash.clone()).collect();
                 let empty = self.dir.join("files").join(".incoming").join("none");
-                self.apply(snap, &empty, &hashes, &job).await?;
+                let vectors = self.load_recovery_vectors();
+                self.apply(snap, vectors.as_ref(), &empty, &hashes, &job)
+                    .await?;
                 "上次恢复被意外中断，已自动回到恢复之前的状态。".to_owned()
             }
             Err(_) => {
@@ -567,8 +661,12 @@ impl Store {
         job.phase("校验备份包", 0.0, 0.05);
         let p = path.clone();
         let (incoming, sizes) = tokio::task::spawn_blocking(move || read_zip(&p)).await??;
+        let p = path.clone();
+        let vectors = tokio::task::spawn_blocking(move || read_vectors(&p)).await?;
         let (staging, hashes) = self.stage(&path, &incoming, &sizes, &job).await?;
-        let merged = self.merge_snapshot(incoming, &staging, &hashes, &job).await;
+        let merged = self
+            .merge_snapshot(incoming, vectors.as_ref(), &staging, &hashes, &job)
+            .await;
         let _ = fs::remove_dir_all(&staging);
         merged
     }
@@ -576,6 +674,7 @@ impl Store {
     async fn merge_snapshot(
         &self,
         incoming: Snapshot,
+        vectors: Option<&VectorCache>,
         staging: &Path,
         hashes: &[String],
         job: &Job,
@@ -642,7 +741,7 @@ impl Store {
         }
         let total = upsert.len() as u64;
         let rows = self
-            .embed_records(upsert.clone(), |done| job.step(done as u64, total))
+            .embed_records(upsert.clone(), vectors, |done| job.step(done as u64, total))
             .await?;
         job.phase("写入", 0.95, 1.0);
         let _guard = self.writes.lock().await;

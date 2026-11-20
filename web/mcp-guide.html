@@ -52,21 +52,23 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
 </ol>
 
 <section id="tools" class="section" aria-labelledby="tools-title">
-  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 5 个工具。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
-  <div class="tool-flow" data-pagetabs data-pagetabs-none aria-label="选择一个工具查看说明"><a href="#tool-recall"><code>recall</code><span>找线索</span></a><a href="#tool-read"><code>read</code><span>读原文</span></a><a href="#tool-remember"><code>remember</code><span>留经历</span></a><a href="#tool-link"><code>link</code><span>建关联</span></a><a href="#tool-entity"><code>entity</code><span>管实体</span></a></div>
+  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 6 个工具，另有 <code>brief</code>（开始前先查）和 <code>wrap_up</code>（收尾记下收获）两个提示。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
+  <div class="tool-flow" data-pagetabs data-pagetabs-none aria-label="选择一个工具查看说明"><a href="#tool-recall"><code>recall</code><span>找线索</span></a><a href="#tool-read"><code>read</code><span>读原文</span></a><a href="#tool-remember"><code>remember</code><span>留经历</span></a><a href="#tool-link"><code>link</code><span>建关联</span></a><a href="#tool-entity"><code>entity</code><span>管实体</span></a><a href="#tool-health"><code>health</code><span>做体检</span></a></div>
   <div class="tool-list">
     <details class="tool-doc" id="tool-recall">
       <summary><code>recall</code><span>找以前的相关经历</span></summary><div class="tool-doc-body">
-      <p>用关键词、换一种说法，或按日期、按实体找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实；命中项如果被更正或汇总过，会带 <code>trail</code>，列出后续记录的时间和来源，请一起判断，较新的记录不一定更准确。</p>
+      <p>用关键词、换一种说法，或按日期、按实体找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实：每条命中都有 <code>match</code>（exact 字面包含、strong 高度相关、weak 弱相关、keyword 只按词匹配）和 <code>relevance</code>，一条强匹配都没有时 <code>no_strong_match</code> 为 true。被更正过的旧记忆会由更正它的新记忆代替出现（<code>replaces</code> 列出旧记录），旧文留在 <code>trail</code> 里，请一起判断，较新的记录不一定更准确。</p>
       <dl class="parameter-list">
         <div><dt><code>query</code><small>字符串 · 可选</small></dt><dd>要找的话题、原话或当前情境，最多 600 字符。例如 <code>开机自启</code>。</dd></div>
         <div><dt><code>strategy</code><small>枚举 · 默认 hybrid</small></dt><dd><code>hybrid</code> 混合，默认推荐；<code>lexical</code> 关键词，适合路径或精确名称；<code>semantic</code> 语义，适合改写与同义词。</dd></div>
+        <div><dt><code>queries</code><small>字符串数组 · 可选</small></dt><dd>同一件事的其他说法（同义词、另一种语言、报错原文），最多 5 条。每种说法都会检索，结果合并，被多种说法找到的更靠前。</dd></div>
+        <div><dt><code>history</code><small>布尔 · 默认 false</small></dt><dd>设为 true 时，被更正过的旧记忆也作为独立命中列出。</dd></div>
         <div><dt><code>entity</code><small>字符串 · 可选</small></dt><dd>只看提及某个实体的记忆（传实体 ID）。</dd></div>
         <div><dt><code>from</code> / <code>through</code><small>日期字符串 · 可选</small></dt><dd>按发生时间筛选，含起止边界。支持 <code>YYYY</code>、<code>YYYY-MM</code> 或 <code>YYYY-MM-DD</code>。</dd></div>
         <div><dt><code>limit</code><small>整数 · 默认 8</small></dt><dd>最多返回多少条，取值 <code>1–30</code>。</dd></div>
       </dl>
       <div class="code-block example-block"><pre id="recall-example">{"query": "开机自启", "strategy": "hybrid", "limit": 5}</pre>{{ copy_button("recall-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> <code>memories</code>（带 ID、时间、来源、提及的实体和 <code>trail</code>）、<code>mode</code>、<code>more</code>、<code>degraded</code>，以及提示下一步的 <code>hint</code>。</p>
+      <p class="tool-output"><strong>返回</strong> <code>memories</code>（带 ID、时间、来源、提及的实体、<code>match</code>、<code>relevance</code> 和 <code>trail</code>）、<code>mode</code>、<code>more</code>、<code>degraded</code>、<code>no_strong_match</code>，以及提示下一步的 <code>hint</code>。</p>
       </div>
     </details>
     <details class="tool-doc" id="tool-read">
@@ -122,6 +124,13 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
       </dl>
       <div class="code-block example-block"><pre id="entity-example">{"action": "search", "query": "服务器"}</pre>{{ copy_button("entity-example") }}</div>
       <p class="tool-output"><strong>返回</strong> 实体列表（含 ID、别名、说明、提及次数、最近出现）或单个实体的详情。</p>
+      </div>
+    </details>
+    <details class="tool-doc" id="tool-health">
+      <summary><code>health</code><span>记忆库体检：重复、没人处理的名称、更正链的问题</span></summary><div class="tool-doc-body">
+      <p>不需要参数。列出正文完全相同的记忆、同名却无法区分的实体、没有人处理的实体名称、没有关联任何实体的记忆、被两条以上不同更正的记忆（现状没有定论）、互相更正的循环、找不到文件的附件，以及缺向量的记忆。每一项附带几个起点和处理办法。会话开头的摘要在有事可整理时会提醒 AI 调用它。</p>
+      <div class="code-block example-block"><pre id="health-example">{}</pre>{{ copy_button("health-example") }}</div>
+      <p class="tool-output"><strong>返回</strong> <code>ok</code>、记忆与实体总数、<code>issues</code>（<code>kind</code>、<code>count</code>、<code>detail</code>、<code>examples</code>、<code>fix</code>）和 <code>hint</code>。需要删除记忆或找回文件的事由你来决定。</p>
       </div>
     </details>
   </div>

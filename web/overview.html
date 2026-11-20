@@ -7,6 +7,25 @@
   <a class="stat" href="/entities"><span>实体</span><strong>{{ Entities }}</strong>{% if Entities %}<span class="go">查看实体<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
   <a class="stat" href="/?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
 </div>
+{% if Issues %}
+<section class="tidy" aria-labelledby="tidy-title">
+  <div class="section-head"><div><h2 id="tidy-title">整理建议</h2><p>接入的 AI 能通过 health 工具看到同样的清单并动手整理；要删除记忆或找回文件的，由你决定。</p></div></div>
+  <ul class="tidy-list">{% for i in Issues %}<li>{% if i.URL %}<a href="{{ i.URL }}">{{ i.Detail }}</a>{% else %}<span>{{ i.Detail }}</span>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if Calendar.Total %}
+<section class="activity" aria-labelledby="activity-title">
+  <div class="section-head"><div><h2 id="activity-title">最近一年</h2><p>{{ Calendar.Total }} 条记忆发生在 {{ Calendar.Days }} 天里，颜色越深当天越多；点一天查看那天的记忆。</p></div></div>
+  <div class="cal-scroll">
+    <svg class="cal" viewBox="0 0 772 124" width="772" height="124" role="group" aria-label="最近一年每天的记忆数量">
+      {% for m in Calendar.Months %}<text class="cal-label" x="{{ m.X }}" y="12">{{ m.Label }}</text>{% endfor %}
+      <text class="cal-label" x="0" y="30">一</text><text class="cal-label" x="0" y="58">三</text><text class="cal-label" x="0" y="86">五</text>
+      {% for c in Calendar.Cells %}<a href="/?period={{ c.Date }}"><rect class="cal-cell lv{{ c.Level }}" x="{{ c.X }}" y="{{ c.Y }}" width="11" height="11" rx="2"><title>{{ c.Date }}：{{ c.Count }} 条</title></rect></a>{% endfor %}
+    </svg>
+  </div>
+  <p class="cal-legend" aria-hidden="true">少<i class="cal-key lv0"></i><i class="cal-key lv1"></i><i class="cal-key lv2"></i><i class="cal-key lv3"></i><i class="cal-key lv4"></i>多</p>
+</section>
+{% endif %}
 <section class="years" aria-label="按年、月浏览记忆">
 {% for r0 in Years %}
   <section class="year">
@@ -20,3 +39,18 @@
   <div class="card"><div class="empty"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg><h3>暂无带日期的记忆</h3><p>记忆写入时如果带有发生时间，就会按年月出现在这里。</p></div></div>
 {% endfor %}
 </section>
+{% if Changes.Items %}
+<section class="changes" aria-labelledby="changes-title">
+  <div class="section-head"><div><h2 id="changes-title">记忆的变化</h2><p>最近的更正与汇总：旧记录都还在，这里把新旧放在一起看。{% if Changes.Total > 12 %}共 {{ Changes.Total }} 条，只显示最近 12 条。{% endif %}</p></div></div>
+  <ol class="change-list">
+  {% for c in Changes.Items %}
+    <li class="change {% if c.Corrects %}is-correct{% else %}is-summary{% endif %}">
+      <div class="change-head"><span class="chip {% if c.Corrects %}chip-trail{% else %}chip-soft{% endif %}">{{ c.Kind }}</span><time>{{ local_time(c.When) }}</time><span class="muted">{{ c.Source }}</span></div>
+      <a class="change-new" href="/memory/{{ c.NewID }}">{{ c.New }}</a>
+      <p class="change-old"><span>{% if c.Corrects %}原先{% else %}汇总了{% endif %}</span><a href="/memory/{{ c.OldID }}">{{ c.Old }}</a></p>
+      {% if c.Reason %}<p class="change-reason">{{ c.Reason }}</p>{% endif %}
+    </li>
+  {% endfor %}
+  </ol>
+</section>
+{% endif %}

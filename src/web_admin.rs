@@ -39,6 +39,9 @@ pub(crate) fn routes() -> Router<Web> {
         .route("/recovery/export", post(recovery_export))
         .route("/recovery/rollback", post(recovery_rollback))
         .route("/settings/autostart", post(set_autostart))
+        .route("/settings/auto-backup", post(set_auto_backup))
+        .route("/backups/{name}", get(auto_backup_file))
+        .route("/backups/{name}/import", post(auto_backup_import))
         .route("/settings/quit", post(quit))
         .route("/clients-status", get(clients_status))
         .route("/clients/{id}/connect", post(client_connect))
@@ -73,7 +76,9 @@ pub(crate) async fn data_model(w: &Web) -> Value {
         .store
         .recovery_info()
         .map(|r| json!({"Memories":r.memories,"Entities":r.entities,"Attachments":r.attachments}));
+    let auto = w.store.auto_backup_info();
     let mut model = json!({"View":"data","Index":index_display(&s),"SearchConfig":configs(&s),"Recovery":recovery,
+        "Auto":{"Enabled":auto.enabled,"Keep":crate::autobackup::KEEP,"Files":auto.files.iter().map(|f| json!({"Name":f.name,"Size":human(f.bytes),"At":f.at})).collect::<Vec<_>>()},
         "Files":{"Stored":files.stored,"Referenced":files.referenced,"Size":human(files.bytes)},
         "Total":s.total});
     if shell::SUPPORTED {
@@ -284,9 +289,16 @@ async fn restore_upload(State(w): State<Web>, mut multipart: Multipart) -> Respo
         )
             .into_response();
     }
-    let merge = mode == "merge";
+    start_import(&w, path, mode == "merge", true)
+}
+
+/// Run an import or merge of the ZIP at `path` as a background job. An uploaded copy is deleted afterwards;
+/// an automatic backup stays where it is.
+fn start_import(w: &Web, path: PathBuf, merge: bool, temporary: bool) -> Response {
     let Some(job) = w.jobs.start(if merge { "merge" } else { "restore" }) else {
-        let _ = std::fs::remove_file(&path);
+        if temporary {
+            let _ = std::fs::remove_file(&path);
+        }
         return busy();
     };
     let (store, id, j) = (w.store.clone(), job.snapshot().id, job.clone());
@@ -306,13 +318,53 @@ async fn restore_upload(State(w): State<Web>, mut multipart: Multipart) -> Respo
             j.phase("重建检索索引", 0.99, 1.0);
             let _ = store.maintain(Some(LaneKind::All)).await;
         }
-        let _ = std::fs::remove_file(&path);
+        if temporary {
+            let _ = std::fs::remove_file(&path);
+        }
         match result {
             Ok(v) => j.succeed(v),
             Err(e) => j.fail(public_error(&e)),
         }
     });
     accepted(id)
+}
+
+async fn auto_backup_file(
+    State(w): State<Web>,
+    Path(name): Path<String>,
+    req: Request,
+) -> Response {
+    match w.store.backup_path(&name) {
+        Some(path) => {
+            serve(
+                path,
+                req,
+                "application/zip",
+                disposition("attachment", &name),
+                None,
+            )
+            .await
+        }
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+async fn auto_backup_import(
+    State(w): State<Web>,
+    Path(name): Path<String>,
+    Form(f): Form<Fields>,
+) -> Response {
+    match w.store.backup_path(&name) {
+        Some(path) => start_import(&w, path, get_field(&f, "mode") == "merge", false),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+async fn set_auto_backup(State(w): State<Web>, Form(f): Form<Fields>) -> Response {
+    match w.store.set_auto_backup(get_field(&f, "enabled") == "1") {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, public_error(&e)).into_response(),
+    }
 }
 
 async fn cleanup(State(w): State<Web>) -> Response {
