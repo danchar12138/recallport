@@ -935,3 +935,49 @@ body.graph-immersive { overflow: hidden; }
 .rules-text code { font-family: var(--mono); }
 .manual .path { margin: 14px 0 8px; }
 .manual .code-block + .path { margin-top: 16px; }
+
+/* ---------- 统一的展开 / 收起：整行可点的条 + 线条箭头 + 高度平滑过渡 ---------- */
+:root {
+  interpolate-size: allow-keywords;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --ease-out: cubic-bezier(.22, .8, .24, 1);
+}
+details:not(.popover) > summary { list-style: none; }
+details:not(.popover) > summary::-webkit-details-marker { display: none; }
+details:not(.popover) > summary::marker { content: ""; }
+details:not(.popover)::details-content {
+  block-size: 0; overflow-y: clip; opacity: 0;
+  transition: block-size .32s var(--ease-out), opacity .24s ease, content-visibility .32s allow-discrete;
+}
+details[open]:not(.popover)::details-content { block-size: auto; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { details:not(.popover)::details-content { transition: none; } }
+
+.manual > summary, .manual-rules > summary, .config-all > summary, .recent-clients > summary,
+.history > summary, .model-id > summary, .accounts > summary {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 12px 9px 14px; margin: 0;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-2); font-size: 13px; font-weight: 560; line-height: 1.4; cursor: pointer; user-select: none;
+  transition: background-color .16s, border-color .16s, color .16s, margin-bottom .32s var(--ease-out);
+}
+.manual > summary:hover, .manual-rules > summary:hover, .config-all > summary:hover, .recent-clients > summary:hover,
+.history > summary:hover, .model-id > summary:hover, .accounts > summary:hover { background: var(--hover); border-color: var(--border-strong); color: var(--text); }
+.manual > summary:focus-visible, .manual-rules > summary:focus-visible, .config-all > summary:focus-visible,
+.recent-clients > summary:focus-visible, .history > summary:focus-visible, .model-id > summary:focus-visible,
+.accounts > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.manual > summary::after, .manual-rules > summary::after, .config-all > summary::after, .recent-clients > summary::after,
+.history > summary::after, .model-id > summary::after, .accounts > summary::after, .tool-doc > summary::after {
+  content: ""; flex: none; margin-left: auto; width: 16px; height: 16px; opacity: .65;
+  background-color: currentColor; -webkit-mask: var(--chevron) center / 16px no-repeat; mask: var(--chevron) center / 16px no-repeat;
+  transition: transform .32s var(--ease-out), opacity .16s;
+}
+details[open] > summary::after { transform: rotate(180deg); opacity: 1; }
+.manual[open] > summary, .manual-rules[open] > summary, .config-all[open] > summary, .recent-clients[open] > summary,
+.history[open] > summary, .model-id[open] > summary { margin-bottom: 12px; border-color: var(--border-strong); color: var(--text); }
+.manual-rules { border-top: 0; padding-top: 0; margin-top: 18px; }
+.accounts { display: block; margin-top: 4px; }
+.accounts > summary { display: inline-flex; width: auto; padding: 3px 8px 3px 11px; border-radius: 999px; font-size: 12px; }
+.accounts[open] > summary { margin-bottom: 8px; }
+.history .count { font-weight: 500; color: var(--text-3); }
+/* 工具手册里的条目由上面的工具名按钮切换，条目自己的标题不再是按钮，也不画箭头 */
+.tool-doc > summary::before, .tool-doc > summary::after { display: none; }
