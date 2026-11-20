@@ -60,7 +60,7 @@ mod win {
             },
             WindowsAndMessaging::{
                 AppendMenuW, CreateIcon, CreatePopupMenu, CreateWindowExW, DefWindowProcW,
-                DestroyMenu, DestroyWindow, DispatchMessageW, GetCursorPos, GetMessageW,
+                DestroyMenu, DestroyWindow, DispatchMessageW, GetCursorPos, GetMessageW, LoadIconW,
                 MB_ICONERROR, MB_OK, MF_CHECKED, MF_SEPARATOR, MF_STRING, MSG, MessageBoxW,
                 PostMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW,
                 SetForegroundWindow, TPM_BOTTOMALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON,
@@ -230,8 +230,23 @@ mod win {
         Ok(())
     }
 
-    /// A 32x32 teal tile with a ring and a dot, drawn here so no resource compiler is needed.
+    /// The icon embedded in the executable (resource id 1, see `build.rs`); falls back to a drawn one.
     fn icon() -> *mut core::ffi::c_void {
+        let embedded = unsafe {
+            LoadIconW(
+                GetModuleHandleW(null()),
+                std::ptr::without_provenance::<u16>(1),
+            )
+        };
+        if embedded.is_null() {
+            drawn_icon()
+        } else {
+            embedded
+        }
+    }
+
+    /// A 32x32 teal tile with a ring and a dot, used only if the embedded icon cannot be loaded.
+    fn drawn_icon() -> *mut core::ffi::c_void {
         const N: usize = 32;
         let mut pixels = vec![0u8; N * N * 4];
         for y in 0..N {

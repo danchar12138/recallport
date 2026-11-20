@@ -2,6 +2,12 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.4.1] - 2026-11-19
+
+### 修复
+- 程序文件（`recallport.exe`）现在带有应用图标，托盘图标与之一致。
+- 接入页的工具手册默认全部收起。
+
 ## [0.4.0] - 2026-11-19
 
 这是一次面向「长期记忆会变化」的大改版，不兼容旧的 JSON 备份和旧的 MCP 约定；旧记忆库的数据会原样沿用。
@@ -47,5 +53,6 @@
 
 - 基于 Rust 与 LanceDB 重构本地记忆服务：关键词（BM25 + Jieba）与语义（IBM Granite 97M，本地 ONNX）混合检索，记忆关系图，备份与恢复，独立的索引维护。
 
+[0.4.1]: https://github.com/danchar12138/recallport/releases/tag/v0.4.1
 [0.4.0]: https://github.com/danchar12138/recallport/releases/tag/v0.4.0
 [0.3.0]: https://github.com/danchar12138/recallport/releases/tag/v0.3.0

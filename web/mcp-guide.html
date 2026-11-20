@@ -73,7 +73,7 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
   <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 5 个工具。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
   <div class="tool-flow"><a href="#recall"><code>recall</code><span>找线索</span></a><a href="#read"><code>read</code><span>读原文</span></a><a href="#remember"><code>remember</code><span>留经历</span></a><a href="#link"><code>link</code><span>建关联</span></a><a href="#entity"><code>entity</code><span>管实体</span></a></div>
   <div class="tool-list">
-    <details class="tool-doc" id="recall" open>
+    <details class="tool-doc" id="recall">
       <summary><code>recall</code><span>找以前的相关经历</span></summary><div class="tool-doc-body">
       <p>用关键词、换一种说法，或按日期、按实体找记忆。不传 <code>query</code> 时按时间浏览。结果是线索，不是当前事实；命中项如果被更正或汇总过，会带 <code>trail</code>，列出后续记录的时间和来源，请一起判断，较新的记录不一定更准确。</p>
       <dl class="parameter-list">
