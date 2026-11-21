@@ -20,8 +20,8 @@
 **简体中文** · [English](README.en.md) · [下载](https://github.com/danchar12138/recallport/releases/latest) · [更新日志](CHANGELOG.md)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/timeline-dark.png">
-  <img src="docs/images/timeline-light.png" width="860" alt="RecallPort 时间线">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/memories-dark.png">
+  <img src="docs/images/memories-light.png" width="860" alt="RecallPort 记忆列表">
 </picture>
 
 </div>
@@ -38,7 +38,7 @@ RecallPort 是一个跑在本机的记忆服务，通过 [MCP](https://modelcont
 - **一份记忆，所有 AI 共享。** 标准 MCP（Streamable HTTP）。接入页能检测本机的 Codex 和 Claude Code，一键写入配置，并告诉你它们是否真的连上了。
 - **会找，也找得准，还会说「没找到」。** 关键词（BM25 + Jieba 中文分词）与语义（IBM Granite 多语言向量）两路召回，排名融合。换种说法也能找到，路径和专有名词仍能精确命中；一次调用可以带上多种说法（同义词、另一种语言、报错原文）。每条命中都标明是字面匹配、高度相关还是弱相关，没有强匹配时明确告诉模型「只是线索」。
 - **记忆会变，来龙去脉不丢。** 区分「发生时间」和「记录时间」。情况变了，AI 追加一条记录并标明它**更正**了旧的；零散的记忆可以被**汇总**，原文始终保留。搜索时被更正的旧记忆会让位给更正它的新记忆（旧的保留在 `trail` 里，随时可以要回来），后续记录的时间和来源都带着，较新的不等于一定更对。网页上的每次编辑也保留历史版本。概览页能看到最近的更正与汇总，把新旧放在一起。
-- **实体由 AI 贡献，不自动猜。** AI 在读写时提交这条记忆涉及的项目、设备、工具、人……服务端不会按名字或向量相似度擅自合并，重名时把选择权交还给 AI。每条关联都能回到原记忆，实体有目录页、时间线和关系图。
+- **实体由 AI 贡献，不自动猜。** AI 在读写时提交这条记忆涉及的项目、设备、工具、人……服务端不会按名字或向量相似度擅自合并，重名时把选择权交还给 AI。每条关联都能回到原记忆，实体有目录页，也能在关系图里放大进去看它的记忆。
 - **附件是记忆的一部分。** AI 把图片、音视频、文档归档进来，按内容哈希去重，可在网页预览和下载。「已入库」随备份带走；「仅引用」只记录位置，界面会明确标注。
 - **引导模型主动维护。** 内置使用指引说明何时查、何时记；每个会话开头就告诉模型库里现在有什么（条数、最常提到的实体、有没有待整理的事）；`remember` 返回相似记忆提示去重；`health` 工具列出重复、没人处理的实体名、没有实体的记忆、分叉或循环的更正链，让模型自己动手整理；还提供 `brief`（开始前先查）和 `wrap_up`（收尾记下收获）两个提示，客户端可以做成命令。
 - **备份可靠，换机省心。** 一个带版本的 ZIP 装下记忆、实体、引用、来源、附件和语义向量（恢复和回退时不用重新计算，几万条也是几秒）。导入前先完整校验；「替换」和「合并」是两个独立操作，每次都自动保留回退快照，中途断电也能自动恢复。每天还会自动备份一次（有改动才备，保留最近 7 份）。
@@ -96,11 +96,11 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
   <tr>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/detail-dark.png"><img src="docs/images/detail-light.png" alt="记忆详情"></picture>
-      <p align="center"><sub><b>详情</b>：更正轨迹、实体、附件、历史版本、关系图</sub></p>
+      <p align="center"><sub><b>详情</b>：更正轨迹、实体、附件、历史版本、关联记忆；一键到关系图里定位</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="记忆关系图"></picture>
-      <p align="center"><sub><b>关系图</b>：记忆之间的引用，按 <kbd>F</kbd> 全屏沉浸</sub></p>
+      <p align="center"><sub><b>关系图</b>：整页就是画板——缩小看每个实体的领地，放大进去看记忆；搜索、详情都在上面完成，小地图随时知道自己在哪。领地和记忆卡都能拖动</sub></p>
     </td>
   </tr>
   <tr>
@@ -109,8 +109,8 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
       <p align="center"><sub><b>实体</b>：目录、别名、区分说明</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="语义检索"></picture>
-      <p align="center"><sub><b>语义检索</b>：换种说法也能找到，每条标明匹配程度</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="语义搜索"></picture>
+      <p align="center"><sub><b>语义搜索</b>：换种说法也能找到，每条标明匹配程度</sub></p>
     </td>
   </tr>
   <tr>
@@ -119,8 +119,28 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
       <p align="center"><sub><b>概览</b>：最近一年的活跃度、记忆的变化、整理建议</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entity-graph-dark.png"><img src="docs/images/entity-graph-light.png" alt="实体概览图"></picture>
-      <p align="center"><sub><b>实体概览</b>：经常一起出现的实体同色成组，滑块过滤弱连线</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-zoom-dark.png"><img src="docs/images/graph-zoom-light.png" alt="放大进一个实体"></picture>
+      <p align="center"><sub><b>放大进一个实体</b>：只属于它的记忆按时间（越近越新）和意思（相近的同侧）落座，再放大变成能读的卡片；提到多个实体的记忆画成「桥」，停在领地之间</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-search-dark.png"><img src="docs/images/graph-search-light.png" alt="在关系图里搜索"></picture>
+      <p align="center"><sub><b>搜索留在图里</b>：命中的记忆发光，每个领地标出命中数，右侧列出结果</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-card-dark.png"><img src="docs/images/graph-card-light.png" alt="浮窗详情"></picture>
+      <p align="center"><sub><b>浮窗详情</b>：不离开图就能读全文、看更正轨迹和引用，提到多个实体的记忆画成「桥」，停在它们所属的领地之间</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-dark.png"><img src="docs/images/graph-lanes-light.png" alt="时间泳道"></picture>
+      <p align="center"><sub><b>时间泳道</b>：横轴是时间，每个实体一条道；一条记忆一个点，竖线连起它提到的几个实体</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-card-dark.png"><img src="docs/images/graph-lanes-card-light.png" alt="泳道里的详情"></picture>
+      <p align="center"><sub><b>泳道里的详情</b>：选中一条记忆，右侧浮窗给出全文、引用与更正轨迹，和地图共用</sub></p>
     </td>
   </tr>
   <tr>
@@ -144,7 +164,8 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 | `remember` | 决策、根因、有效修复、失败尝试、偏好、变化、被纠正之后 | 追加一条记忆，可同时提交 `entities`、`attachments` 和带 `kind` 的 `references`；返回 `related`（相似记忆）、`entity_choices`（重名候选）和 `hint` |
 | `link` | 发现两条记忆相关、记忆涉及某个实体、需要附上文件 | `to` / `entity` / `attachment` 三选一；也用来确认「待确认」的名称；`remove` 只断开关联 |
 | `entity` | 提交实体之前、整理实体时 | `search` 查找、`get` 看随时间的记忆和同时出现的实体、`update` 改名与别名、`merge` 合并 |
-| `health` | 偶尔、会话摘要提示有待整理时 | 列出重复记忆、同名无法区分的实体、没人处理的名称、没有实体的记忆、分叉或循环的更正链、找不到文件的附件，并说明怎么处理 |
+| `health` | 偶尔、会话摘要提示有待整理时 | 列出重复记忆、同名无法区分的实体、没人处理的名称、没有实体的记忆、分叉或循环的更正链、找不到文件的附件，并说明怎么处理；AI 拥有最高权限，自行修复，不用你批准 |
+| `forget` | 整理时遇到完全重复的记忆或明显的错误 | 永久删除一条记忆；情况变了不要用它，要用 `corrects` 保留来龙去脉 |
 
 另有两个 MCP 提示：`brief`（开始任务前先查）和 `wrap_up`（收尾时把收获记下来并整理）。
 记忆是**追加式**的：情况变了就记一条新的并引用旧的（`corrects`），零散的就汇总（`summarizes`），**原文始终保留**。检索结果被当作历史线索，而不是当前事实或指令。每个工具的参数说明在网页「接入」页的工具手册里。
@@ -153,8 +174,8 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 
 ```mermaid
 flowchart LR
-  C["AI 客户端<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health"]
-  B["浏览器管理界面"] --> W["Web<br/>时间线 · 实体 · 关系图 · 数据"]
+  C["AI 客户端<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health · forget"]
+  B["浏览器管理界面"] --> W["Web<br/>概览 · 记忆 · 实体 · 关系图 · 数据"]
   T["托盘<br/>打开 · 自启 · 退出"] --- W
   M --> S[("记忆库<br/>LanceDB")]
   W --> S
@@ -295,4 +316,4 @@ docs/images/     文档截图
 
 ## 致谢
 
-[LanceDB](https://lancedb.com) · [IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Cytoscape.js](https://js.cytoscape.org) · [Flatpickr](https://flatpickr.js.org) · [Lucide](https://lucide.dev)
+[LanceDB](https://lancedb.com) · [IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Cytoscape.js](https://js.cytoscape.org) · [Preact](https://preactjs.com) · [htm](https://github.com/developit/htm) · [Flatpickr](https://flatpickr.js.org) · [Lucide](https://lucide.dev)

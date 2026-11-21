@@ -76,7 +76,24 @@
     validate();
   }
 
-  /* ---------- 时间线：筛选弹层、芯片、检索方式、清空 ---------- */
+  /* ---------- 记忆页：筛选弹层、芯片、搜索方式、清空 ---------- */
+  /* ---------- 搜索方式（混合 / 关键词 / 语义）：改选后立即重新搜 ---------- */
+  for (const by of $$('[data-search-by]')) {
+    const form = by.closest('form'), box = $('[data-search]', form);
+    for (const radio of $$('input', by)) radio.addEventListener('change', () => {
+      if (box?.value.trim()) form.requestSubmit();
+      else toast('已改选，输入内容后生效', {tone: 'info', timeout: 2000});
+    });
+  }
+
+  // 弹层默认和按钮左对齐；按钮靠右、放不下时改成右对齐，不再伸出页面。
+  for (const pop of $$('details.popover')) pop.addEventListener('toggle', () => {
+    if (!pop.open) return;
+    pop.classList.toggle('to-left', false);
+    const panel = $('.popover-panel', pop);
+    if (panel && panel.getBoundingClientRect().right > document.documentElement.clientWidth - 12) pop.classList.toggle('to-left', true);
+  });
+
   const searchForm = $('[data-search-form]');
   if (searchForm && $('[data-search]', searchForm)) {
     const q = $('[data-search]', searchForm), clear = $('[data-clear-search]', searchForm);
@@ -84,10 +101,6 @@
     q.addEventListener('input', sync);
     clear.addEventListener('click', () => { q.value = ''; sync(); q.focus(); });
     sync();
-    for (const radio of $$('[data-strategy] input', searchForm)) radio.addEventListener('change', () => {
-      if (q.value.trim()) searchForm.requestSubmit();
-      else toast('已切换检索方式，输入关键词后生效', {tone: 'info', timeout: 2400});
-    });
     for (const chip of $$('[data-remove-filter]', searchForm)) chip.addEventListener('click', () => {
       const kind = chip.dataset.removeFilter;
       if (kind === 'range') { searchForm.elements.from.value = ''; searchForm.elements.through.value = ''; }
@@ -126,6 +139,75 @@
     const ratio = Number(month.dataset.count) / Math.max(1, Number(month.dataset.max));
     month.dataset.level = ratio >= .75 ? 4 : ratio >= .5 ? 3 : ratio >= .25 ? 2 : 1;
   }
+
+  /* ---------- 列表：被截断的记忆在原地展开，不用点进去 ---------- */
+  const clipped = row => [$('.entry-text', row), $('.entry-context', row)].some(part => part && part.scrollHeight > part.clientHeight + 1);
+  const measure = () => {
+    for (const row of $$('article.entry')) {
+      const more = $('[data-entry-more]', row);
+      if (!more) continue;
+      if (!more.dataset.bound) {
+        more.dataset.bound = '1';
+        more.addEventListener('click', () => {
+          const open = row.classList.toggle('is-open');
+          more.textContent = open ? '收起' : '展开全文';
+          more.setAttribute('aria-expanded', String(open));
+        });
+      }
+      if (!row.classList.contains('is-open')) more.hidden = !clipped(row);
+    }
+  };
+  if ($('article.entry')) {
+    measure();
+    let pending = 0;
+    window.addEventListener('resize', () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(measure); });
+    document.fonts?.ready.then(measure);
+  }
+
+  /* ---------- 「显示更多」：在原地接着往下加，不刷新页面、不回到开头 ---------- */
+  for (const link of $$('a[data-more]')) link.addEventListener('click', async event => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    if (link.classList.contains('is-busy')) return;
+    const list = $(link.dataset.list), unit = link.dataset.unit, label = link.textContent;
+    link.classList.add('is-busy');
+    link.textContent = '正在加载…';
+    try {
+      const response = await fetch(link.href, {headers: {Accept: 'text/html'}});
+      if (!response.ok) throw new Error('more failed');
+      const next = new DOMParser().parseFromString(await response.text(), 'text/html');
+      const source = $(link.dataset.list, next);
+      if (!list || !source) throw new Error('more missing');
+      // 有的页面每次返回「从头到现在」的全部（实体页），只取已显示的那些之后的；有的只返回新的一页。
+      let skip = link.hasAttribute('data-cumulative') ? $$(unit, list).length : 0, held = [];
+      const fresh = document.createElement('div');
+      if (list.dataset.highlight) fresh.dataset.highlight = list.dataset.highlight;
+      for (const node of Array.from(source.children)) {
+        if (!node.matches(unit)) { held.push(node); continue; }
+        if (skip > 0) { skip--; held = []; continue; }
+        fresh.append(...held, node);
+        held = [];
+      }
+      const first = fresh.querySelector(unit);
+      if (list.dataset.highlight) window.RP.highlight(fresh);
+      list.append(...Array.from(fresh.children));
+      measure();
+      const again = $(`a[data-more][data-list="${link.dataset.list}"]`, next);
+      if (again) {
+        link.href = again.href;
+        link.textContent = again.textContent;
+        link.classList.remove('is-busy');
+      } else {
+        const holder = link.closest('.more-row, .pagination') || link;
+        holder.replaceWith();
+        first?.querySelector('a, button')?.focus({preventScroll: true});
+      }
+    } catch {
+      link.textContent = label;
+      link.classList.remove('is-busy');
+      toast('没能加载更多，请重试', {tone: 'error', timeout: 3000});
+    }
+  });
 
   /* ---------- 编辑器：自动增高、计数、未保存提示 ---------- */
   const editor = $('[data-editor]');
@@ -205,10 +287,10 @@
       results.replaceChildren(...Array.from({length: 4}, () => h('div', {class: 'skeleton'})));
       const q = search.value.trim();
       try {
-        const response = await fetch(`/graph-data?${new URLSearchParams(q ? {q} : {page: '1'})}`, {signal: controller.signal});
+        const response = await fetch(`/graph-hits?${new URLSearchParams(q ? {q} : {})}`, {signal: controller.signal});
         if (!response.ok) throw new Error('search failed');
         const data = await response.json();
-        if (mark === epoch) render(data.nodes);
+        if (mark === epoch) render(data.hits);
       } catch (error) {
         if (error.name !== 'AbortError' && mark === epoch) results.replaceChildren(note('搜索失败。', load));
       }
@@ -559,7 +641,7 @@
 
   const finishRestored = (state) => {
     const mode = state.result?.mode;
-    try { sessionStorage.setItem('rp-flash', mode === 'rollback' ? '已回到导入之前的状态' : '备份已导入，检索索引已重建'); } catch { /* 忽略 */ }
+    try { sessionStorage.setItem('rp-flash', mode === 'rollback' ? '已回到导入之前的状态' : '备份已导入，搜索索引已重建'); } catch { /* 忽略 */ }
     location.href = '/data';
   };
   const showMerge = report => openDialog({

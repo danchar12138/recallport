@@ -1,32 +1,25 @@
 {% from "rows.html" import entry_row %}
+{% from "search.html" import memory_by %}
 {% set filtered = Query.Text or Query.From or Query.Through or Period or Undated or EntityID %}
 <header class="page-head">
-  <div><h1>时间线</h1><p class="sub">按发生时间浏览，或用关键词与语义混合召回</p></div>
+  <div><h1>记忆</h1><p class="sub">全部记忆，按发生时间排列；也可以搜索。</p></div>
   <a class="btn btn-primary" href="/memory/new?back={{ Back | urlencode }}" data-shortcut-new><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>新建记忆 <kbd>N</kbd></a>
 </header>
 
-<form method="get" action="/" class="searchform" data-search-form>
+<form method="get" action="/memories" class="searchform" data-search-form>
   {% if Chronological %}<input type="hidden" name="order" value="date">{% endif %}
   {% if EntityID %}<input type="hidden" name="entity" value="{{ EntityID }}">{% endif %}
   {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
   <div class="searchrow">
     <div class="searchfield">
       <svg class="icon" aria-hidden="true"><use href="#search"/></svg>
-      <input type="search" name="q" value="{{ Query.Text }}" data-search aria-label="搜索记忆" placeholder="搜索记忆：话题、原话或关键词" maxlength="600" autocomplete="off">
+      <input type="search" name="q" value="{{ Query.Text }}" data-search aria-label="搜索记忆" placeholder="输入话题、原话或关键词" maxlength="600" autocomplete="off">
       <button type="button" class="btn btn-ghost btn-icon btn-sm clear-x" data-clear-search aria-label="清空搜索" hidden><svg class="icon icon-sm" aria-hidden="true"><use href="#x"/></svg></button>
     </div>
-  </div>
-  <div class="toolrow">
+    {{ memory_by(Query.Strategy) }}
     <details class="popover" data-popover>
-      <summary class="btn"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg>筛选{% if Query.From or Query.Through or (Query.Strategy == "lexical") or (Query.Strategy == "semantic") %}<span class="dot-count"></span>{% endif %}<svg class="icon icon-sm" aria-hidden="true"><use href="#chevron"/></svg></summary>
+      <summary class="btn"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg>筛选{% if Query.From or Query.Through %}<span class="dot-count"></span>{% endif %}<svg class="icon icon-sm" aria-hidden="true"><use href="#chevron"/></svg></summary>
       <div class="popover-panel">
-        <div class="field"><span class="graph-label">检索方式</span>
-        <fieldset class="segmented" aria-label="检索方式" data-strategy>
-      <input type="radio" name="strategy" id="hybrid" value="hybrid" {% if (Query.Strategy == "") or (Query.Strategy == "hybrid") %}checked{% endif %}><label for="hybrid" title="关键词与语义一起找，推荐">混合</label>
-      <input type="radio" name="strategy" id="lexical" value="lexical" {% if Query.Strategy == "lexical" %}checked{% endif %}><label for="lexical" title="字面精确匹配，适合路径、名称">关键词</label>
-      <input type="radio" name="strategy" id="semantic" value="semantic" {% if Query.Strategy == "semantic" %}checked{% endif %}><label for="semantic" title="按含义匹配，适合换种说法">语义</label>
-    </fieldset>
-        </div>
         <div class="field"><span class="graph-label">发生时间</span></div>
         <div class="row2">
           <div class="field" data-date-field><label for="from">从</label><div class="datefield"><input id="from" type="text" name="from" value="{{ Query.From }}" placeholder="例 2024-01" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择起始日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
@@ -36,19 +29,22 @@
         <div class="foot"><button type="button" class="btn btn-ghost" data-range="clear">清除日期</button><button class="btn btn-primary">应用</button></div>
       </div>
     </details>
+  </div>
+  {% if filtered %}<div class="toolrow">
     <div class="filter-chips">
       {% if EntityID %}<button type="button" class="chip chip-x" data-remove-filter="entity" title="移除此筛选">实体 {% if EntityName %}{{ EntityName }}{% else %}…{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Period %}<button type="button" class="chip chip-x" data-remove-filter="period" title="移除此筛选">时段 {{ Period }}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Undated %}<button type="button" class="chip chip-x" data-remove-filter="undated" title="移除此筛选">日期未记<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
       {% if Query.From or Query.Through %}<button type="button" class="chip chip-x" data-remove-filter="range" title="移除此筛选">{% if Query.From %}{{ Query.From }}{% else %}最早{% endif %} → {% if Query.Through %}{{ Query.Through }}{% else %}至今{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
-      {% if filtered %}<a class="btn btn-ghost btn-sm" href="/">清除全部</a>{% endif %}
+      {% if filtered %}<a class="btn btn-ghost btn-sm" href="/memories">清除全部</a>{% endif %}
     </div>
   </div>
+  {% endif %}
 </form>
 
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% else %}
-{% if Degraded %}<div class="banner banner-warn" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>部分搜索索引暂不可用，已改用可用的检索方式。可在「数据」页查看并重建索引。</p></div>{% endif %}
-{% if NoStrong %}<div class="banner banner-info" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>没有高度相关的记忆，下面只是弱相关的线索。换个说法，或在「筛选」里选「语义」，按含义再找一次。</p></div>{% endif %}
+{% if Degraded %}<div class="banner banner-warn" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>部分搜索索引暂不可用，已改用可用的搜索方式。可在「数据」页查看并重建索引。</p></div>{% endif %}
+{% if NoStrong %}<div class="banner banner-info" role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p>没有高度相关的记忆，下面只是弱相关的线索。换个说法，或在搜索框旁改选「语义」再搜一次。</p></div>{% endif %}
 {% if Query.Text %}
 <div class="result-bar">
   <h2>找到 <b>{{ (Rows|length) }}{% if More %}+{% endif %}</b> 条相关记忆</h2>
@@ -58,11 +54,11 @@
   </div>
 </div>
 {% endif %}
-<section class="stream" aria-label="记忆列表" data-highlight="{{ Query.Text }}">
+<section class="stream" aria-label="记忆列表" data-highlight="{{ Terms }}">
   {% for r1 in Rows %}{{ entry_row(r1, Back) }}
   {% else %}
     {% if filtered %}
-    <div class="empty"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><h3>没有匹配的记忆</h3><p>换个说法试试，或放宽日期范围。{% if Query.Text %}也可以切换到「语义」检索，按含义查找。{% endif %}</p><div class="actions"><a class="btn" href="/">清除筛选</a></div></div>
+    <div class="empty"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><h3>没有匹配的记忆</h3><p>换个说法试试，或放宽日期范围。{% if Query.Text %}也可以在搜索框旁改选「语义」。{% endif %}</p><div class="actions"><a class="btn" href="/memories">清除筛选</a></div></div>
     {% else %}
     <div class="onboarding">
       <h3>还没有记忆</h3>
@@ -70,12 +66,12 @@
       <ol>
         <li><b>接入你的 AI 客户端</b><span>复制 MCP 地址，粘贴到 Codex、Claude Code 等客户端的配置里。</span></li>
         <li><b>让 AI 记住经历</b><span>AI 调用 remember 工具后，记忆会自动出现在这里，无需手动整理。</span></li>
-        <li><b>随时检索与回顾</b><span>在这里搜索、纠错，或在关系图里查看记忆之间的引用。</span></li>
+        <li><b>随时搜索与回顾</b><span>在这里搜索、纠错，或在关系图里查看记忆之间的引用。</span></li>
       </ol>
       <div class="actions"><a class="btn btn-primary" href="/clients"><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入 AI</a><a class="btn" href="/memory/new?back={{ Back | urlencode }}"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg>手动新建一条</a></div>
     </div>
     {% endif %}
   {% endfor %}
 </section>
-{% if Prev or Next %}<nav class="pagination" aria-label="分页">{% if Prev %}<a class="btn" href="{{ Prev }}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>上一页</a>{% else %}<span></span>{% endif %}{% if Next %}<a class="btn" href="{{ Next }}">下一页<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>{% endif %}</nav>{% endif %}
+{% if Prev or Next %}<nav class="pagination" aria-label="分页">{% if Prev %}<a class="btn" href="{{ Prev }}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>上一页</a>{% else %}<span></span>{% endif %}{% if Next %}<a class="btn" href="{{ Next }}" data-more data-list=".stream" data-unit="article.entry">显示更多</a>{% endif %}</nav>{% endif %}
 {% endif %}

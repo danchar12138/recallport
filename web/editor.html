@@ -1,10 +1,10 @@
 {% from "date-control.html" import date_control %}
-<nav class="crumbs" aria-label="面包屑"><a href="{{ Back }}"><svg class="icon icon-sm" aria-hidden="true"><use href="#back"/></svg>返回列表</a></nav>
+<nav class="crumbs" aria-label="面包屑">{% if Entry.ID %}<a href="/memory/{{ Entry.ID }}?back={{ Back | urlencode }}"><svg class="icon icon-sm" aria-hidden="true"><use href="#back"/></svg>返回这条记忆</a>{% else %}<a href="{{ Back }}"><svg class="icon icon-sm" aria-hidden="true"><use href="#back"/></svg>返回列表</a>{% endif %}</nav>
 <header class="page-head">
   <div>
-    <h1>{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}</h1>
+    <h1>{% if Entry.ID %}编辑记忆{% else %}新建记忆{% endif %}</h1>
     {% if Entry.ID %}<p class="meta-line"><span>来源 <b>{{ Entry.Source }}</b></span><span>写入于 {{ local_time(Entry.Recorded) }}</span>{% if Entry.Revision > 1 %}<span>已编辑 · 版本 {{ Entry.Revision }}</span>{% endif %}</p>
-    {% else %}<p class="sub">记录一段值得长期保留的经历。之后任何接入的 AI 都能检索到它。</p>{% endif %}
+    {% else %}<p class="sub">记录一段值得长期保留的经历。之后任何接入的 AI 都能搜到它。</p>{% endif %}
   </div>
   {% if Entry.ID %}<button class="btn btn-danger-ghost" form="delete-form"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg>删除</button>{% endif %}
 </header>
@@ -24,7 +24,7 @@
     <div class="field">
       <label for="f-text">正文 <span class="req">必填</span></label>
       <textarea id="f-text" name="text" rows="7" required maxlength="12000" data-autosize data-counter="chars:12000" data-counter-id="c-text" placeholder="发生了什么？尝试了什么、做出了什么决定、得到什么结论……" {% if not Entry.ID %}autofocus{% endif %}>{{ Entry.Text }}</textarea>
-      <div class="field-foot"><span class="hint">按原文保存。账号、密码等私人信息也会原样保留，并像普通记忆一样被检索和备份。</span><span class="counter" id="c-text"></span></div>
+      <div class="field-foot"><span class="hint">按原文保存。账号、密码等私人信息也会原样保留，并像普通记忆一样被搜索和备份。</span><span class="counter" id="c-text"></span></div>
     </div>
     <div class="field">
       <label for="f-context">情境 <span class="opt">可选</span></label>
@@ -34,7 +34,7 @@
     {{ date_control(Entry.Occurred) }}
     <div class="actionbar">
       <span class="dirty-state" data-dirty-state role="status">{% if Entry.ID %}无未保存的更改{% endif %}</span>
-      <div class="btns"><button class="btn btn-primary" data-save><svg class="icon" aria-hidden="true"><use href="#save"/></svg>{% if Entry.ID %}保存更改{% else %}创建记忆{% endif %} <kbd>Ctrl ↵</kbd></button></div>
+      <div class="btns">{% if Entry.ID %}<a class="btn btn-ghost" href="/memory/{{ Entry.ID }}?back={{ Back | urlencode }}">取消</a>{% endif %}<button class="btn btn-primary" data-save><svg class="icon" aria-hidden="true"><use href="#save"/></svg>{% if Entry.ID %}保存更改{% else %}创建记忆{% endif %} <kbd>Ctrl ↵</kbd></button></div>
     </div>
   </form>
 
@@ -98,11 +98,6 @@
 <form id="delete-form" method="post" action="/memory/{{ Entry.ID }}/delete" data-confirm-title="删除这条记忆？" data-confirm-body="删除后无法在界面中恢复，其他记忆对它的引用也会失效。建议先在「数据」页导出一份备份。" data-confirm-quote="{{ Entry.Text }}" data-confirm-ok="删除" data-confirm-tone="danger" data-flash-after="记忆已删除">
   <input type="hidden" name="revision" value="{{ Entry.Revision }}"><input type="hidden" name="back" value="{{ Back }}">
 </form>
-<section class="graph-section" aria-labelledby="graph-title">
-  <div class="section-head"><div><h2 id="graph-title">关系图</h2><p>以这条记忆为中心，展开它的引用、更正与实体。</p></div></div>
-  {% include "graph-canvas.html" %}
-</section>
-
 <dialog class="dialog dialog-lg" id="entity-dialog" aria-labelledby="entity-dialog-title">
   <form method="post" action="/memory/{{ Entry.ID }}/entities" class="dialog-form" data-flash-after="已添加实体">
     <div class="dialog-head"><h2 id="entity-dialog-title">添加实体</h2><button type="button" class="btn btn-ghost btn-icon btn-sm" data-close aria-label="关闭"><svg class="icon" aria-hidden="true"><use href="#x"/></svg></button></div>

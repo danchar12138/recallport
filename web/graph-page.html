@@ -1,38 +1,63 @@
-<header class="page-head">
-  <div><h1>关系图</h1><p class="sub">点击节点看原文，双击展开相邻的记忆。按 <kbd>F</kbd> 全屏沉浸。</p></div>
-</header>
-<form class="searchform graph-bar" method="get" action="/graph" data-search-form>
-  <nav class="segmented" aria-label="视图"><a href="/graph" {% if not Overview %}aria-current="page"{% endif %}>记忆</a><a href="/graph?view=entities" {% if Overview %}aria-current="page"{% endif %}>实体概览</a></nav>
-  {% if not Overview %}
-  <div class="searchfield graph-search">
-    <svg class="icon" aria-hidden="true"><use href="#search"/></svg>
-    <input type="search" name="q" value="{{ Query.Text }}" data-search aria-label="按话题筛选" placeholder="按话题筛选，留空显示全部" maxlength="600" autocomplete="off">
-    <button type="button" class="btn btn-ghost btn-icon btn-sm clear-x" data-clear-search aria-label="清空" hidden><svg class="icon icon-sm" aria-hidden="true"><use href="#x"/></svg></button>
+{% from "search.html" import memory_by %}
+<section class="graph-workspace" data-graph data-view="map"{% if At %} data-at="{{ At }}"{% endif %}{% if Node %} data-node="{{ Node }}"{% endif %} aria-label="关系图">
+  <div class="graph-stage">
+    <div class="graph-canvas" data-graph-canvas tabindex="0" role="application" aria-label="关系图画板。方向键在相邻内容间移动，回车进入，Esc 取消选择，加减号缩放，0 适合窗口。"></div>
+    <canvas class="graph-lanes" data-lanes-canvas tabindex="0" role="application" aria-label="时间泳道。左右键换一条记忆，上下键翻泳道，加减号缩放时间，0 适合窗口，Esc 取消选择。"></canvas>
+    <div class="graph-message is-loading" data-graph-message role="status">正在加载关系图…</div>
+    <div data-ui-tip></div>
+    <noscript>关系图需要 JavaScript。</noscript>
   </div>
-    <details class="popover" data-popover>
-      <summary class="btn"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg>筛选{% if Query.From or Query.Through or (Query.Strategy == "lexical") or (Query.Strategy == "semantic") %}<span class="dot-count"></span>{% endif %}<svg class="icon icon-sm" aria-hidden="true"><use href="#chevron"/></svg></summary>
-      <div class="popover-panel">
-        <div class="field"><span class="graph-label">发生时间</span></div>
-        <div class="row2">
-          <div class="field" data-date-field><label for="from">从</label><div class="datefield"><input id="from" type="text" name="from" value="{{ Query.From }}" placeholder="例 2024-01" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择起始日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
-          <div class="field" data-date-field><label for="through">至</label><div class="datefield"><input id="through" type="text" name="through" value="{{ Query.Through }}" placeholder="例 2024-12" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择结束日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
-        </div>
-        <div class="presets" aria-label="快捷范围"><button type="button" class="chip chip-x" data-range="30d">近 30 天</button><button type="button" class="chip chip-x" data-range="year">今年</button><button type="button" class="chip chip-x" data-range="lastyear">去年</button></div>
-        <div class="foot"><button type="button" class="btn btn-ghost" data-range="clear">清除日期</button><button class="btn btn-primary">应用</button></div>
+
+  <div class="graph-top">
+  <form class="graph-form" method="get" action="/graph" data-search-form data-graph-form>
+    <div class="graph-bar">
+      <div class="graph-views" role="group" aria-label="视图"><button type="button" data-view-tab="map" aria-pressed="true">地图</button><button type="button" data-view-tab="lanes" aria-pressed="false">泳道</button></div>
+      <div class="searchfield graph-search">
+        <svg class="icon" aria-hidden="true"><use href="#search"/></svg>
+        <input type="search" name="q" value="{{ Query.Text }}" data-search aria-label="在关系图里搜索" placeholder="搜索：命中的记忆会在图里亮起" maxlength="600" autocomplete="off">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm clear-x" data-clear-search aria-label="清空" hidden><svg class="icon icon-sm" aria-hidden="true"><use href="#x"/></svg></button>
       </div>
-    </details>
-  {% if Query.Strategy %}<input type="hidden" name="strategy" value="{{ Query.Strategy }}">{% endif %}
-  {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
-    <div class="filter-chips">
-      {% if false %}<button type="button" class="chip chip-x" data-remove-filter="entity" title="移除此筛选">实体 {% if EntityName %}{{ EntityName }}{% else %}…{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
-      {% if Period %}<button type="button" class="chip chip-x" data-remove-filter="period" title="移除此筛选">时段 {{ Period }}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
-      {% if Undated %}<button type="button" class="chip chip-x" data-remove-filter="undated" title="移除此筛选">日期未记<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
-      {% if Query.From or Query.Through %}<button type="button" class="chip chip-x" data-remove-filter="range" title="移除此筛选">{% if Query.From %}{{ Query.From }}{% else %}最早{% endif %} → {% if Query.Through %}{{ Query.Through }}{% else %}至今{% endif %}<svg class="icon" aria-hidden="true"><use href="#x"/></svg></button>{% endif %}
-      {% if Query.Text or Query.From or Query.Through or Period or Undated %}<a class="btn btn-ghost btn-sm" href="/graph">清除全部</a>{% endif %}
+      {{ memory_by(Query.Strategy) }}
+      <details class="popover" data-popover>
+        <summary class="btn"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg>日期<svg class="icon icon-sm" aria-hidden="true"><use href="#chevron"/></svg></summary>
+        <div class="popover-panel">
+          <div class="field"><span class="graph-label">发生时间</span></div>
+          <div class="row2">
+            <div class="field" data-date-field><label for="from">从</label><div class="datefield"><input id="from" type="text" name="from" value="{{ Query.From }}" placeholder="例 2024-01" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择起始日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
+            <div class="field" data-date-field><label for="through">至</label><div class="datefield"><input id="through" type="text" name="through" value="{{ Query.Through }}" placeholder="例 2024-12" maxlength="10" autocomplete="off" data-date-input><button type="button" class="btn btn-icon" data-date-pick aria-label="选择结束日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div></div>
+          </div>
+          <div class="presets" aria-label="快捷范围"><button type="button" class="chip chip-x" data-range="30d">近 30 天</button><button type="button" class="chip chip-x" data-range="year">今年</button><button type="button" class="chip chip-x" data-range="lastyear">去年</button></div>
+          <div class="foot"><button type="button" class="btn btn-ghost" data-range="clear">清除日期</button><button class="btn btn-primary">应用</button></div>
+        </div>
+      </details>
+    </div>
+    {% if Period %}<input type="hidden" name="period" value="{{ Period }}">{% endif %}{% if Undated %}<input type="hidden" name="undated" value="1">{% endif %}
+    <div class="filter-chips" data-graph-chips></div>
+  </form>
+  <nav class="graph-crumbs" data-graph-crumbs aria-label="当前位置" hidden></nav>
+  </div>
+
+  <div class="graph-tools" role="toolbar" aria-label="视图工具">
+    <button type="button" class="btn btn-sm btn-icon" data-graph-action="out" title="缩小（-）" aria-label="缩小"><svg class="icon icon-sm" aria-hidden="true"><use href="#minus"/></svg></button>
+    <button type="button" class="btn btn-sm btn-icon" data-graph-action="in" title="放大（+）" aria-label="放大"><svg class="icon icon-sm" aria-hidden="true"><use href="#plus"/></svg></button>
+    <button type="button" class="btn btn-sm btn-icon" data-graph-action="fit" title="适合窗口（0）" aria-label="适合窗口"><svg class="icon icon-sm" aria-hidden="true"><use href="#scan"/></svg></button>
+    <button type="button" class="btn btn-sm btn-icon" data-graph-action="tidy" title="重新整理布局" aria-label="重新整理布局"><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg></button>
+    <button type="button" class="btn btn-sm btn-icon" data-graph-action="panel" title="显示/隐藏右侧面板" aria-label="显示或隐藏右侧面板" aria-pressed="false"><svg class="icon icon-sm" aria-hidden="true"><use href="#panel"/></svg></button>
+  </div>
+
+  <div class="graph-bottom">
+    <canvas class="graph-mini" data-graph-mini aria-hidden="true" hidden></canvas>
+    <div class="graph-legend-card">
+      <div class="graph-legend"><span class="lg-items" data-ui-legend></span><span class="graph-groups" data-graph-groups></span></div>
+      <div class="graph-foot">
+        <label class="co-filter" data-co-filter hidden title="只显示至少这么多条记忆同时提到的两个实体之间的连线">至少同现 <input type="range" min="1" max="1" value="1" data-co-range aria-label="连线至少同现的次数"> <b data-co-value>1</b> 次</label>
+        <p class="graph-status" data-graph-status aria-live="polite"></p>
+      </div>
     </div>
   </div>
 
-  {% else %}<span class="muted graph-note">按提及次数取前 40 个实体；连线表示它们出现在同一条记忆里，颜色相同的是经常一起出现的一组。</span>
-  <label class="co-filter" data-co-filter hidden title="只显示至少这么多条记忆同时提到的两个实体之间的连线">至少同现 <input type="range" min="1" max="1" value="1" data-co-range aria-label="连线至少同现的次数"> <b data-co-value>1</b> 次</label>{% endif %}
-</form>
-{% include "graph-canvas.html" %}
+  <aside class="graph-inspector" data-graph-inspector aria-label="详情">
+    <button type="button" class="btn btn-ghost btn-icon btn-sm inspector-close" data-panel-close aria-label="收起面板" title="收起面板"><svg class="icon icon-sm" aria-hidden="true"><use href="#x"/></svg></button>
+    <div data-ui-panel></div>
+  </aside>
+</section>

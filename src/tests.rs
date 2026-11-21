@@ -915,7 +915,7 @@ async fn entity_overview_groups_entities_that_appear_together() -> Result<()> {
             .await?;
         }
     }
-    let graph = s.graph(&[], "", false, true).await?;
+    let graph = s.graph("", 0, true).await?;
     let group = |name: &str| {
         graph["nodes"]
             .as_array()
@@ -965,5 +965,96 @@ fn granite_batches_match_single_runs() -> Result<()> {
     println!("cross-language     {:.3}", cos(0, 4));
     println!("unrelated          {:.3}", cos(0, 5));
     println!("unrelated 2        {:.3}", cos(1, 5));
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_map_territory_comes_in_pages_and_search_hits_know_their_territory() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let first = s
+        .remember(
+            Draft {
+                entities: vec![entity("大")],
+                occurred: "2020-01-01".into(),
+                ..say("第 0 条")
+            },
+            "t",
+            "T",
+        )
+        .await?;
+    let big = first.entry.mentions[0].entity.clone().unwrap();
+    for i in 1..205 {
+        s.remember(
+            Draft {
+                entities: vec![EntityInput {
+                    id: big.clone(),
+                    ..entity("大")
+                }],
+                occurred: format!("2021-{:02}-{:02}", 1 + i / 28 % 12, 1 + i % 28),
+                ..say(&format!("第 {i} 条各不相同的经历"))
+            },
+            "t",
+            "T",
+        )
+        .await?;
+    }
+    let page0 = s.graph(&big, 0, false).await?;
+    assert_eq!(page0["nodes"].as_array().unwrap().len(), 200);
+    assert_eq!(
+        (page0["total"].as_u64(), page0["more"].as_bool()),
+        (Some(205), Some(true))
+    );
+    let page1 = s.graph(&big, 1, false).await?;
+    assert_eq!(page1["nodes"].as_array().unwrap().len(), 5);
+    assert_eq!(
+        (page1["from"].as_u64(), page1["more"].as_bool()),
+        (Some(200), Some(false))
+    );
+    // Newest first, so the oldest memory is on the last page and never repeated.
+    let ids = |g: &serde_json::Value| -> Vec<String> {
+        g["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|n| n["id"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert!(ids(&page1).contains(&first.entry.id));
+    assert!(ids(&page0).iter().all(|id| !ids(&page1).contains(id)));
+    assert!(s.graph("nope", 0, false).await.is_err());
+    // Search hits say which territory they are drawn in; memories without a drawn entity go to the shelf.
+    let loose = s.remember(say("没有任何实体的一条"), "t", "T").await?;
+    let lands = s
+        .lands_of(&[loose.entry.id.clone(), first.entry.id.clone(), "x".into()])
+        .await?;
+    assert_eq!(lands[&loose.entry.id], vec![crate::store::LOOSE.to_owned()]);
+    assert_eq!(lands[&first.entry.id], vec![big]);
+    assert!(!lands.contains_key("x"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn results_say_which_fields_matched() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let saved = s
+        .remember(
+            Draft {
+                text: "把备份改成每天凌晨三点".into(),
+                context: "家庭服务器 Proxmox".into(),
+                ..Default::default()
+            },
+            "t",
+            "Codex",
+        )
+        .await?;
+    let words = crate::store::query_words("Proxmox 备份");
+    assert!(words.contains(&"proxmox".to_owned()) && words.contains(&"备份".to_owned()));
+    assert_eq!(
+        crate::store::found_in(&saved.entry, &words),
+        vec!["正文", "情境"]
+    );
+    assert!(crate::store::found_in(&saved.entry, &crate::store::query_words("路由器")).is_empty());
     Ok(())
 }

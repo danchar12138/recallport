@@ -50,6 +50,12 @@ pub const LEXICAL_WEIGHT: f64 = 1.0;
 pub const SEMANTIC_WEIGHT: f64 = 0.9;
 const TABLE: &str = "memories_v1";
 const FTS: &str = "search_text_idx";
+/// The map draws this many entities as territories; the rest of the memories sit under "unsorted".
+const MAP_ENTITIES: usize = 80;
+/// Memories drawn inside one entity's territory (newest first).
+const MAP_LAND: usize = 200;
+/// The id of the map's stand-in for memories that belong to no drawn entity.
+pub const LOOSE: &str = "~loose";
 const ANN: &str = "vector_idx";
 pub(crate) const EMBEDDING_VERSION: &str =
     "granite-embedding-97m-multilingual-r2/835ad140/fp32/cls-v1/passages-v1";
@@ -155,6 +161,62 @@ fn schema() -> Arc<Schema> {
         Field::new("vector", DataType::List(Arc::new(vector_item())), true),
     ]);
     Arc::new(Schema::new(fields))
+}
+
+/// The words of a search phrase: the phrase itself and its whole words, longest first. They are what a result
+/// is checked against and what gets marked in the results.
+pub fn query_words(text: &str) -> Vec<String> {
+    static JIEBA: OnceLock<jieba_rs::Jieba> = OnceLock::new();
+    let lower = text.trim().to_lowercase();
+    let mut words: Vec<String> = vec![];
+    if !lower.is_empty() && lower.chars().count() <= 40 {
+        words.push(lower.clone());
+    }
+    for w in JIEBA.get_or_init(jieba_rs::Jieba::new).cut(&lower, false) {
+        if w.chars().count() > 1
+            && w.chars().all(char::is_alphanumeric)
+            && !words.iter().any(|x| x == w)
+        {
+            words.push(w.to_owned());
+        }
+    }
+    words.sort_by_key(|w| std::cmp::Reverse(w.chars().count()));
+    words.truncate(12);
+    words
+}
+
+/// Which fields of a memory contain one of the words (text, context, entity names, attachments).
+pub fn found_in(e: &Entry, words: &[String]) -> Vec<&'static str> {
+    let has = |haystack: String| {
+        let haystack = haystack.to_lowercase();
+        words.iter().any(|w| haystack.contains(w.as_str()))
+    };
+    let mut found = vec![];
+    if has(e.text.clone()) {
+        found.push("正文");
+    }
+    if has(e.context.clone()) {
+        found.push("情境");
+    }
+    if has(e
+        .mentions
+        .iter()
+        .map(|m| m.name.as_str())
+        .collect::<Vec<_>>()
+        .join("\n"))
+    {
+        found.push("实体");
+    }
+    if has(e
+        .attachments
+        .iter()
+        .map(|a| format!("{}\n{}", a.name, a.caption))
+        .collect::<Vec<_>>()
+        .join("\n"))
+    {
+        found.push("附件");
+    }
+    found
 }
 
 /// Text the keyword index sees: the memory plus the entity names and attachment captions around it.
@@ -1318,7 +1380,7 @@ impl Store {
                     &mut status.keyword,
                     "degraded",
                     false,
-                    Some("关键词索引不可用，已保留字面匹配。".into()),
+                    Some("关键词索引不可用，已保留原话匹配。".into()),
                 );
             }
         }
@@ -1428,25 +1490,159 @@ impl Store {
         ))
     }
 
+    /// The direction of each memory by meaning inside its group (see `principal_angles`); empty without
+    /// vectors or with fewer than three memories.
+    pub(crate) async fn layout_angles(&self, ids: &[&str]) -> HashMap<String, f32> {
+        self.layout_angles_of(ids).await.unwrap_or_default()
+    }
+
+    async fn layout_angles_of(&self, ids: &[&str]) -> Result<HashMap<String, f32>> {
+        let rows = self.mean_vectors(ids).await?;
+        Ok(principal_angles(&rows))
+    }
+
+    /// The mean passage vector of each of these memories (those that have vectors), sorted by id.
+    pub(crate) async fn mean_vectors(&self, ids: &[&str]) -> Result<Vec<(String, Vec<f32>)>> {
+        if !self.uses_vectors() || ids.len() < 3 {
+            return Ok(vec![]);
+        }
+        let list = ids.iter().map(|id| sql(id)).collect::<Vec<_>>().join(",");
+        let mut stream = self
+            .table
+            .query()
+            .only_if(format!(
+                "NOT deleted AND embedding_id = {} AND id IN ({list})",
+                sql(EMBEDDING_VERSION)
+            ))
+            .select(Select::columns(&["id", "vector"]))
+            .execute()
+            .await?;
+        let mut rows: Vec<(String, Vec<f32>)> = vec![];
+        while let Some(batch) = stream.try_next().await? {
+            let names = col::<StringArray>(&batch, "id")?;
+            let lists = col::<ListArray>(&batch, "vector")?;
+            for i in 0..batch.num_rows() {
+                if lists.is_null(i) || names.is_null(i) {
+                    continue;
+                }
+                let inner = lists.value(i);
+                let Some(group) = inner.as_any().downcast_ref::<FixedSizeListArray>() else {
+                    continue;
+                };
+                let mut sum: Vec<f32> = vec![];
+                let mut count = 0f32;
+                for j in 0..group.len() {
+                    let item = group.value(j);
+                    if let Some(values) = item.as_any().downcast_ref::<Float32Array>() {
+                        if sum.is_empty() {
+                            sum = vec![0.0; values.len()];
+                        }
+                        if values.len() == sum.len() {
+                            sum.iter_mut()
+                                .zip(values.values())
+                                .for_each(|(a, b)| *a += b);
+                            count += 1.0;
+                        }
+                    }
+                }
+                if count > 0.0 {
+                    sum.iter_mut().for_each(|a| *a /= count);
+                    rows.push((names.value(i).to_owned(), sum));
+                }
+            }
+        }
+        rows.sort_by(|a, b| a.0.cmp(&b.0));
+        Ok(rows)
+    }
+
+    /// The newest memories in compact form, for the swim lanes.
+    pub async fn lane_memories(&self, limit: usize) -> Result<serde_json::Value> {
+        let entries = self.all().await?;
+        let by_id: HashMap<&str, &Entry> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
+        let cites = cite_map(&entries);
+        let idx = self.idx.read().await;
+        let mut list: Vec<&Entry> = entries.iter().collect();
+        list.sort_by_key(|e| std::cmp::Reverse((e.occurred.clone(), e.recorded.clone())));
+        list.truncate(limit);
+        Ok(serde_json::json!(
+            list.iter()
+                .map(|e| memory_brief(e, &idx, &cites, &by_id, false))
+                .collect::<Vec<_>>()
+        ))
+    }
+
+    /// For search hits on the map: the territory each memory is drawn in (every drawn entity it mentions,
+    /// or the unsorted shelf when none of them is drawn).
+    pub async fn lands_of(&self, ids: &[String]) -> Result<HashMap<String, Vec<String>>> {
+        let entries = self.all().await?;
+        let by_id: HashMap<&str, &Entry> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
+        let idx = self.idx.read().await;
+        let (ranked, _) = top_ranked(&idx);
+        let top: HashSet<&str> = ranked.iter().map(|r| r.0.as_str()).collect();
+        let mut out = HashMap::new();
+        for id in ids {
+            let Some(e) = by_id.get(id.as_str()) else {
+                continue;
+            };
+            let mut lands: Vec<String> = vec![];
+            for m in &e.mentions {
+                if let Some(c) = m.entity.as_deref().and_then(|x| idx.canonical(x))
+                    && top.contains(c.id.as_str())
+                    && !lands.contains(&c.id)
+                {
+                    lands.push(c.id.clone());
+                }
+            }
+            if lands.is_empty() {
+                lands.push(LOOSE.to_owned());
+            }
+            out.insert(id.clone(), lands);
+        }
+        Ok(out)
+    }
+
     /// Graph data. Memories and entities are nodes; edges are saved references and AI-provided mentions.
     /// `overview` shows the most mentioned entities and how often they appear together.
     pub async fn graph(
         &self,
-        selected: &[String],
         focus: &str,
-        suggested: bool,
+        page: usize,
         overview: bool,
     ) -> Result<serde_json::Value> {
         use serde_json::json;
         let entries = self.all().await?;
         let by_id: HashMap<&str, &Entry> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
         let last_of = |e: &Entry| (e.occurred.clone(), e.recorded.clone());
-        let memory_node = |e: &Entry| json!({"id": e.id, "kind": "memory", "text": snippet(&e.text, 110), "occurred": e.occurred, "source": e.source});
         let idx = self.idx.read().await;
-        let entity_node = |id: &str, count: usize| {
+        // `text` labels the node; `full` and the entity names let the page show the memory without opening it.
+        let cites = cite_map(&entries);
+        let memory_node = |e: &Entry| memory_brief(e, &idx, &cites, &by_id, true);
+        let entity_node = |id: &str, count: usize, own: usize, last: &str| {
             idx.entities.get(id).map(|e| {
-                json!({"id": e.id, "kind": "entity", "text": e.name, "hint": e.hint, "aliases": e.aliases, "count": count})
+                json!({"id": e.id, "kind": "entity", "text": e.name, "hint": e.hint, "aliases": e.aliases, "count": count, "own": own, "last": last})
             })
+        };
+        // The canonical entities a memory mentions, once each.
+        let entities_of = |e: &Entry| -> Vec<String> {
+            let mut found: Vec<String> = vec![];
+            for m in &e.mentions {
+                if let Some(c) = m.entity.as_deref().and_then(|x| idx.canonical(x))
+                    && !found.contains(&c.id)
+                {
+                    found.push(c.id.clone());
+                }
+            }
+            found
+        };
+        let top_entities = || top_ranked(&idx);
+        // Memories that no drawn entity claims (no entity at all, or only rarely mentioned ones).
+        let loose_memories = |top: &HashSet<&str>| -> Vec<&Entry> {
+            let mut found: Vec<&Entry> = entries
+                .iter()
+                .filter(|e| !entities_of(e).iter().any(|id| top.contains(id.as_str())))
+                .collect();
+            found.sort_by_key(|e| std::cmp::Reverse(last_of(e)));
+            found
         };
         let mut nodes: Vec<serde_json::Value> = vec![];
         let mut edges: Vec<serde_json::Value> = vec![];
@@ -1454,16 +1650,8 @@ impl Store {
         let mut extra = json!({});
 
         if overview {
-            let mut ranked: Vec<(String, usize)> = idx
-                .entities
-                .values()
-                .filter(|e| e.merged_into.is_none())
-                .map(|e| (e.id.clone(), idx.memory_ids(&e.id).len()))
-                .filter(|(_, n)| *n > 0)
-                .collect();
-            ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-            more = ranked.len() > 40;
-            ranked.truncate(40);
+            let (ranked, truncated) = top_entities();
+            more = truncated;
             let top: HashSet<&str> = ranked.iter().map(|r| r.0.as_str()).collect();
             let mut pairs: HashMap<(String, String), usize> = HashMap::new();
             for e in entries.iter() {
@@ -1483,7 +1671,43 @@ impl Store {
                     }
                 }
             }
-            nodes.extend(ranked.iter().filter_map(|(id, n)| entity_node(id, *n)));
+            // When each drawn entity was last mentioned (by the date the memory says it happened).
+            let mut lasts: HashMap<String, &str> = HashMap::new();
+            for e in entries.iter().filter(|e| !e.occurred.is_empty()) {
+                for id in entities_of(e) {
+                    let slot = lasts.entry(id).or_default();
+                    if e.occurred.as_str() > *slot {
+                        *slot = e.occurred.as_str();
+                    }
+                }
+            }
+            // How many of its memories belong to it alone: those live inside its territory; the rest sit between
+            // the territories they belong to, so the territory is sized by the first kind.
+            let mut own: HashMap<String, usize> = HashMap::new();
+            for e in entries.iter() {
+                let drawn: Vec<String> = entities_of(e)
+                    .into_iter()
+                    .filter(|id| top.contains(id.as_str()))
+                    .collect();
+                if let [only] = drawn.as_slice() {
+                    *own.entry(only.clone()).or_default() += 1;
+                }
+            }
+            nodes.extend(ranked.iter().filter_map(|(id, n)| {
+                entity_node(
+                    id,
+                    *n,
+                    own.get(id).copied().unwrap_or(0),
+                    lasts.get(id).copied().unwrap_or(""),
+                )
+            }));
+            let loose = loose_memories(&top).len();
+            if loose > 0 {
+                nodes.push(
+                    json!({"id": LOOSE, "kind": "entity", "text": "未归类", "count": loose, "own": loose,
+                    "hint": "没有关联任何实体、或只关联了不常见实体的记忆", "aliases": []}),
+                );
+            }
             // Entities that keep appearing together get one colour; the slider hides weak links.
             let names: HashMap<&str, &str> = idx
                 .entities
@@ -1508,26 +1732,47 @@ impl Store {
                     node["group"] = json!(g);
                 }
             }
-            extra = json!({"groups": legend, "max_co": max_co, "suggested_min": suggested_min});
+            extra = json!({"groups": legend, "max_co": max_co, "suggested_min": suggested_min,
+                "memories": entries.len()});
+            // A fixed order, so the same library always draws the same map.
+            let mut pairs: Vec<_> = pairs.into_iter().collect();
+            pairs.sort();
             for ((a, b), n) in pairs {
                 edges.push(
                     json!({"from": a, "to": b, "co": n, "reason": format!("{n} 条记忆同时提及")}),
                 );
             }
-        } else if let Some(entity) = (!focus.is_empty()).then(|| idx.canonical(focus)).flatten() {
-            let mut ids: Vec<&Entry> = idx
-                .memory_ids(&entity.id)
-                .iter()
-                .filter_map(|id| by_id.get(id.as_str()).copied())
-                .collect();
-            ids.sort_by_key(|e| std::cmp::Reverse(last_of(e)));
-            more = ids.len() > 60;
-            ids.truncate(60);
-            nodes.extend(entity_node(&entity.id, ids.len()));
+        } else {
+            // One entity's territory (or the stand-in for unsorted memories): its memories, newest first, one
+            // page of MAP_LAND at a time. The map draws them inside the territory; only the links between
+            // them are needed here.
+            let mut ids: Vec<&Entry> = if focus == LOOSE {
+                let (ranked, _) = top_entities();
+                let top: HashSet<&str> = ranked.iter().map(|r| r.0.as_str()).collect();
+                loose_memories(&top)
+            } else {
+                let entity = idx.canonical(focus).context("未找到实体")?;
+                let mut found: Vec<&Entry> = idx
+                    .memory_ids(&entity.id)
+                    .iter()
+                    .filter_map(|id| by_id.get(id.as_str()).copied())
+                    .collect();
+                found.sort_by_key(|e| std::cmp::Reverse(last_of(e)));
+                found
+            };
+            let total = ids.len();
+            let start = page.saturating_mul(MAP_LAND).min(total);
+            ids = ids[start..(start + MAP_LAND).min(total)].to_vec();
+            more = total > start + ids.len();
             let visible: HashSet<&str> = ids.iter().map(|e| e.id.as_str()).collect();
+            let wanted: Vec<&str> = ids.iter().map(|e| e.id.as_str()).collect();
+            let angles = self.layout_angles(&wanted).await;
             for e in &ids {
-                nodes.push(memory_node(e));
-                edges.push(json!({"from": e.id, "to": entity.id, "mention": true}));
+                let mut node = memory_node(e);
+                if let Some(angle) = angles.get(&e.id) {
+                    node["sa"] = json!(angle);
+                }
+                nodes.push(node);
                 for r in &e.references {
                     if visible.contains(r.id.as_str()) {
                         edges.push(
@@ -1536,76 +1781,7 @@ impl Store {
                     }
                 }
             }
-        } else {
-            let mut ids = selected.to_vec();
-            let mut guesses = vec![];
-            if !focus.is_empty() {
-                let f = by_id.get(focus).context("未找到记忆")?;
-                ids = vec![focus.into()];
-                ids.extend(f.references.iter().map(|r| r.id.clone()));
-                ids.extend(
-                    idx.cites
-                        .get(focus)
-                        .into_iter()
-                        .flatten()
-                        .map(|(source, _)| source.clone()),
-                );
-                if suggested
-                    && let Some(v) = self.embedding(format!("{}\n{}", f.text, f.context)).await?
-                {
-                    for (id, similarity) in self
-                        .neighbors(
-                            &format!("NOT deleted AND id != {}", sql(focus)),
-                            v,
-                            GRAPH,
-                            20,
-                        )
-                        .await?
-                    {
-                        if !ids.contains(&id) && guesses.len() < 8 {
-                            guesses.push(json!({"from": focus, "to": id, "suggested": true, "reason": format!("语义接近 {similarity:.2}")}));
-                            ids.push(id);
-                        }
-                    }
-                }
-            }
-            ids.retain(|id| by_id.contains_key(id.as_str()));
-            let mut seen = HashSet::new();
-            ids.retain(|id| seen.insert(id.clone()));
-            more = ids.len() > 100;
-            ids.truncate(100);
-            let visible: HashSet<&str> = ids.iter().map(String::as_str).collect();
-            let mut shown_entities: Vec<String> = vec![];
-            for id in &ids {
-                let e = by_id[id.as_str()];
-                nodes.push(memory_node(e));
-                for r in &e.references {
-                    if visible.contains(r.id.as_str()) {
-                        edges.push(
-                            json!({"from": id, "to": r.id, "reason": r.reason, "rk": r.kind}),
-                        );
-                    }
-                }
-                for m in &e.mentions {
-                    if let Some(c) = m.entity.as_deref().and_then(|x| idx.canonical(x)) {
-                        if !shown_entities.contains(&c.id) && shown_entities.len() < 60 {
-                            shown_entities.push(c.id.clone());
-                        }
-                        if shown_entities.contains(&c.id) {
-                            edges.push(json!({"from": id, "to": c.id, "mention": true}));
-                        }
-                    }
-                }
-            }
-            for id in &shown_entities {
-                nodes.extend(entity_node(id, idx.memory_ids(id).len()));
-            }
-            edges.extend(
-                guesses
-                    .into_iter()
-                    .filter(|g| g["to"].as_str().is_some_and(|id| visible.contains(id))),
-            );
-            edges.dedup_by(|a, b| a == b);
+            extra = json!({"total": total, "from": start, "page": page});
         }
         let mut graph = json!({"nodes": nodes, "edges": edges, "more": more});
         if let (Some(target), Some(source)) = (graph.as_object_mut(), extra.as_object()) {
@@ -1613,6 +1789,170 @@ impl Store {
         }
         Ok(graph)
     }
+}
+
+/// Which memories cite each memory, and how.
+fn cite_map(entries: &[Entry]) -> HashMap<&str, Vec<(&Entry, RefKind)>> {
+    let mut map: HashMap<&str, Vec<(&Entry, RefKind)>> = HashMap::new();
+    for e in entries {
+        for r in &e.references {
+            map.entry(r.id.as_str()).or_default().push((e, r.kind));
+        }
+    }
+    map
+}
+
+/// One memory as the map and the swim lanes draw it. `detail` adds the full text and context (for the cards
+/// on the map); without it the text is longer but there is no context, and the correcting references come
+/// along (for the lanes, which draw them as lines).
+fn memory_brief(
+    e: &Entry,
+    idx: &EntityIndex,
+    cites: &HashMap<&str, Vec<(&Entry, RefKind)>>,
+    by_id: &HashMap<&str, &Entry>,
+    detail: bool,
+) -> serde_json::Value {
+    use serde_json::json;
+    let mut names: Vec<String> = vec![];
+    let mut ids: Vec<String> = vec![];
+    for m in &e.mentions {
+        let entity = m.entity.as_deref().and_then(|x| idx.canonical(x));
+        let name = entity.map_or_else(|| m.name.clone(), |c| c.name.clone());
+        if names.len() < 8 && !names.contains(&name) {
+            names.push(name);
+        }
+        if let Some(c) = entity
+            && !ids.contains(&c.id)
+        {
+            ids.push(c.id.clone());
+        }
+    }
+    let word = |k: RefKind| match k {
+        RefKind::Corrects => "corrects",
+        RefKind::Summarizes => "summarizes",
+        RefKind::Relates => "relates",
+    };
+    let replaces: Vec<serde_json::Value> = e
+        .references
+        .iter()
+        .filter(|r| !r.kind.is_relates())
+        .filter_map(|r| {
+            by_id.get(r.id.as_str()).map(|o| {
+                json!({"kind": word(r.kind), "text": snippet(&o.text, 60), "occurred": o.occurred})
+            })
+        })
+        .take(2)
+        .collect();
+    let citing = cites.get(e.id.as_str()).map_or(&[][..], Vec::as_slice);
+    let replaced_by = citing
+        .iter()
+        .filter(|(_, k)| !k.is_relates())
+        .max_by_key(|(c, _)| c.recorded.as_str())
+        .map(|(c, k)| json!({"kind": word(*k), "text": snippet(&c.text, 60), "occurred": c.occurred}));
+    let out = e
+        .references
+        .iter()
+        .filter(|r| r.kind.is_relates() && by_id.contains_key(r.id.as_str()))
+        .count();
+    let ins = citing.iter().filter(|(_, k)| k.is_relates()).count();
+    let mut node = json!({"id": e.id, "kind": "memory", "entities": names, "entity_ids": ids,
+        "occurred": e.occurred, "source": e.source, "recorded": e.recorded, "revision": e.revision,
+        "replaces": replaces, "replaced_by": replaced_by, "out": out, "ins": ins});
+    if detail {
+        node["text"] = json!(snippet(&e.text, 110));
+        node["full"] = json!(snippet(&e.text, 1600));
+        node["context"] = json!(snippet(&e.context, 240));
+    } else {
+        node["text"] = json!(snippet(&e.text, 300));
+        node["refs"] = json!(
+            e.references
+                .iter()
+                .filter(|r| !r.kind.is_relates() && by_id.contains_key(r.id.as_str()))
+                .map(|r| json!({"to": r.id, "kind": word(r.kind)}))
+                .collect::<Vec<_>>()
+        );
+    }
+    node
+}
+
+/// The entities the map draws as territories: the most mentioned ones, biggest first.
+fn top_ranked(idx: &EntityIndex) -> (Vec<(String, usize)>, bool) {
+    let mut ranked: Vec<(String, usize)> = idx
+        .entities
+        .values()
+        .filter(|e| e.merged_into.is_none())
+        .map(|e| (e.id.clone(), idx.memory_ids(&e.id).len()))
+        .filter(|(_, n)| *n > 0)
+        .collect();
+    ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    let more = ranked.len() > MAP_ENTITIES;
+    ranked.truncate(MAP_ENTITIES);
+    (ranked, more)
+}
+
+/// Each memory's position on the first two principal axes of the group's vectors (empty when that cannot be
+/// worked out: fewer than three memories, or identical vectors).
+fn principal_coords(rows: &[(String, Vec<f32>)]) -> Vec<(f32, f32)> {
+    let n = rows.len();
+    let d = rows.first().map_or(0, |r| r.1.len());
+    if n < 3 || d == 0 {
+        return vec![];
+    }
+    let mut mean = vec![0f32; d];
+    for (_, v) in rows {
+        for (m, x) in mean.iter_mut().zip(v) {
+            *m += x / n as f32;
+        }
+    }
+    let mut x: Vec<Vec<f32>> = rows
+        .iter()
+        .map(|(_, v)| v.iter().zip(&mean).map(|(a, m)| a - m).collect())
+        .collect();
+    let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(p, q)| p * q).sum::<f32>();
+    let axis = |x: &[Vec<f32>]| -> Option<Vec<f32>> {
+        let mut v: Vec<f32> = (0..d).map(|i| ((i * 37 + 11) % 17) as f32 - 8.0).collect();
+        let norm = dot(&v, &v).sqrt();
+        v.iter_mut().for_each(|a| *a /= norm);
+        for _ in 0..40 {
+            let t: Vec<f32> = x.iter().map(|r| dot(r, &v)).collect();
+            let mut w = vec![0f32; d];
+            for (r, t) in x.iter().zip(&t) {
+                for (wi, ri) in w.iter_mut().zip(r) {
+                    *wi += ri * t;
+                }
+            }
+            let norm = dot(&w, &w).sqrt();
+            if !norm.is_finite() || norm < 1e-9 {
+                return None;
+            }
+            v = w.into_iter().map(|a| a / norm).collect();
+        }
+        Some(v)
+    };
+    let Some(v1) = axis(&x) else {
+        return vec![];
+    };
+    let first: Vec<f32> = x.iter().map(|r| dot(r, &v1)).collect();
+    for (r, t) in x.iter_mut().zip(&first) {
+        for (ri, vi) in r.iter_mut().zip(&v1) {
+            *ri -= t * vi;
+        }
+    }
+    let Some(v2) = axis(&x) else {
+        return vec![];
+    };
+    (0..n).map(|i| (first[i], dot(&x[i], &v2))).collect()
+}
+
+/// Where each memory sits among the others by meaning: the direction of its position on the first two
+/// principal axes of the group's vectors. The map seats memories with similar meaning on the same side of a
+/// territory. Deterministic (fixed starting axis): the same vectors always give the same directions.
+fn principal_angles(rows: &[(String, Vec<f32>)]) -> HashMap<String, f32> {
+    let coords = principal_coords(rows);
+    rows.iter()
+        .zip(coords)
+        .map(|((id, _), (a, b))| (id.clone(), (b.atan2(a) * 1000.0).round() / 1000.0))
+        .collect()
 }
 
 /// How many colours the entity map uses; further groups share the last one.
@@ -1732,6 +2072,44 @@ pub fn now() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn similar_memories_get_nearby_directions_and_the_same_input_the_same_answer() {
+        // Three clusters of four memories in a 6-dimensional space.
+        let mut rows: Vec<(String, Vec<f32>)> = vec![];
+        for (c, axis) in [0usize, 2, 4].into_iter().enumerate() {
+            for k in 0..4 {
+                let mut v = vec![0.02 * k as f32; 6];
+                v[axis] = 1.0;
+                v[(axis + 1) % 6] += 0.03 * k as f32;
+                rows.push((format!("{c}-{k}"), v));
+            }
+        }
+        let first = principal_angles(&rows);
+        assert_eq!(first, principal_angles(&rows), "deterministic");
+        let gap = |a: f32, b: f32| {
+            let d = (a - b).abs() % std::f32::consts::TAU;
+            d.min(std::f32::consts::TAU - d)
+        };
+        for c in 0..3 {
+            for k in 1..4 {
+                assert!(
+                    gap(first[&format!("{c}-0")], first[&format!("{c}-{k}")]) < 0.5,
+                    "cluster {c} stays together"
+                );
+            }
+        }
+        for (x, y) in [(0, 1), (0, 2), (1, 2)] {
+            assert!(
+                gap(first[&format!("{x}-0")], first[&format!("{y}-0")]) > 1.0,
+                "clusters {x} and {y} sit apart"
+            );
+        }
+        // Too few memories, or identical vectors, give no direction rather than a made-up one.
+        assert!(principal_angles(&rows[..2]).is_empty());
+        let same: Vec<(String, Vec<f32>)> = (0..5).map(|i| (i.to_string(), vec![1.0; 4])).collect();
+        assert!(principal_angles(&same).is_empty());
+    }
 
     #[test]
     fn entities_that_appear_together_share_a_group_and_loners_have_none() {

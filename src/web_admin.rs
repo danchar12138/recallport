@@ -62,8 +62,8 @@ fn configs(s: &IndexStatus) -> Value {
     let row =
         |label: &str, v: String, meaning: &str| json!({"Label":label,"Value":v,"Meaning":meaning});
     json!([
-        {"Title":"关键词候选","Rows":[row("索引与分词","LanceDB BM25 · Jieba + 双字".into(),"原文精确匹配优先；路径搜索保留原文；实体名称和附件说明也参与关键词检索。"),row("查询分词上限","36".into(),"限制关键词查询的候选词数量。")]},
-        {"Title":"语义编码与检索","Rows":[row("模型",s.model.into(),"官方 Granite 97M Multilingual R2，FP32，CLS 池化与 L2 归一化。"),row("推理",format!("{} tokens / {} 线程 / {} 维",crate::embedding::TOKENS,crate::embedding::THREADS,s.dimensions),"按整条和片段分别编码。"),row("切片",format!("整条 + 最多 {} 段；片段 ≥ {} 字",store::MAX_PASSAGES-1,store::MIN_PASSAGE),"使用最相关的片段相似度作为记忆得分。"),row("候选与建议门槛",format!("{:.2} / {:.2}",store::SEMANTIC,store::GRAPH),"余弦相似度；不是置信度或两路占比。"),row("向量索引",format!("IVF-HNSW-Flat · ≥ {} 条",store::ANN_MIN),"数据较少时精确扫描；ANN 保持浮点向量，不量化。"),row("探测分区 / 重排倍数",format!("{} / 3",store::ANN_PROBES),"日期约束在候选召回前应用。") ]},
+        {"Title":"关键词候选","Rows":[row("索引与分词","LanceDB BM25 · Jieba + 双字".into(),"原文精确匹配优先；路径搜索保留原文；实体名称和附件说明也参与关键词搜索。"),row("查询分词上限","36".into(),"限制关键词查询的候选词数量。")]},
+        {"Title":"语义编码与搜索","Rows":[row("模型",s.model.into(),"官方 Granite 97M Multilingual R2，FP32，CLS 池化与 L2 归一化。"),row("推理",format!("{} tokens / {} 线程 / {} 维",crate::embedding::TOKENS,crate::embedding::THREADS,s.dimensions),"按整条和片段分别编码。"),row("切片",format!("整条 + 最多 {} 段；片段 ≥ {} 字",store::MAX_PASSAGES-1,store::MIN_PASSAGE),"使用最相关的片段相似度作为记忆得分。"),row("候选与建议门槛",format!("{:.2} / {:.2}",store::SEMANTIC,store::GRAPH),"余弦相似度；不是置信度或两路占比。"),row("向量索引",format!("IVF-HNSW-Flat · ≥ {} 条",store::ANN_MIN),"数据较少时精确扫描；ANN 保持浮点向量，不量化。"),row("探测分区 / 重排倍数",format!("{} / 3",store::ANN_PROBES),"日期约束在候选召回前应用。") ]},
         {"Title":"混合排序","Rows":[row("排名融合",format!("偏移 {} / 关键词 {} / 语义 {}",store::RRF,store::LEXICAL_WEIGHT,store::SEMANTIC_WEIGHT),"关键词与语义独立入选，同一条记忆两路命中时分数相加。"),row("候选上限",format!("每路 {} 条",store::CANDIDATES),"候选去重后返回；MCP 默认 8 条、最多 30 条。") ]},
         {"Title":"自动维护","Rows":[row("检查频率","60 秒".into(),"补齐缺失向量并维护派生索引，不修改正文与引用。") ]}
     ])
@@ -170,7 +170,7 @@ async fn recovery_rollback(State(w): State<Web>) -> Response {
     tokio::spawn(async move {
         match store.rollback(j.clone()).await {
             Ok(info) => {
-                j.phase("重建检索索引", 0.99, 1.0);
+                j.phase("重建搜索索引", 0.99, 1.0);
                 let _ = store.maintain(Some(LaneKind::All)).await;
                 j.succeed(json!({"mode":"rollback","info":info}));
             }
@@ -315,7 +315,7 @@ fn start_import(w: &Web, path: PathBuf, merge: bool, temporary: bool) -> Respons
                 .map(|i| json!({"mode":"restore","info":i}))
         };
         if result.is_ok() {
-            j.phase("重建检索索引", 0.99, 1.0);
+            j.phase("重建搜索索引", 0.99, 1.0);
             let _ = store.maintain(Some(LaneKind::All)).await;
         }
         if temporary {

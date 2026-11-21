@@ -53,8 +53,8 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
 </ol>
 
 <section id="tools" class="section" aria-labelledby="tools-title">
-  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 6 个工具，另有 <code>brief</code>（开始前先查）和 <code>wrap_up</code>（收尾记下收获）两个提示。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
-  <div class="tool-flow" data-pagetabs data-pagetabs-none aria-label="选择一个工具查看说明"><a href="#tool-recall"><code>recall</code><span>找线索</span></a><a href="#tool-read"><code>read</code><span>读原文</span></a><a href="#tool-remember"><code>remember</code><span>留经历</span></a><a href="#tool-link"><code>link</code><span>建关联</span></a><a href="#tool-entity"><code>entity</code><span>管实体</span></a><a href="#tool-health"><code>health</code><span>做体检</span></a></div>
+  <div class="section-head"><div><h2 id="tools-title">工具手册</h2><p>接入后，AI 可以使用下面 7 个工具，另有 <code>brief</code>（开始前先查）和 <code>wrap_up</code>（收尾记下收获）两个提示。服务端会在每次返回中附带提示，引导模型去重、关联、补实体和更正；是否主动调用仍取决于客户端和模型。</p></div></div>
+  <div class="tool-flow" data-pagetabs data-pagetabs-none aria-label="选择一个工具查看说明"><a href="#tool-recall"><code>recall</code><span>找线索</span></a><a href="#tool-read"><code>read</code><span>读原文</span></a><a href="#tool-remember"><code>remember</code><span>留经历</span></a><a href="#tool-link"><code>link</code><span>建关联</span></a><a href="#tool-entity"><code>entity</code><span>管实体</span></a><a href="#tool-health"><code>health</code><span>做体检</span></a><a href="#tool-forget"><code>forget</code><span>删记忆</span></a></div>
   <div class="tool-list">
     <details class="tool-doc" id="tool-recall">
       <summary><code>recall</code><span>找以前的相关经历</span></summary><div class="tool-doc-body">
@@ -106,7 +106,7 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
     </details>
     <details class="tool-doc" id="tool-link">
       <summary><code>link</code><span>把记忆与记忆、实体、附件关联起来</span></summary><div class="tool-doc-body">
-      <p>三选一：<code>to</code>（另一条记忆）、<code>entity</code>（它讲的是什么，也用来确认「待确认」的名称）、<code>attachment</code>（附上文件）。重复调用只会更新；<code>remove: true</code> 只断开关联，不删除任何东西。</p>
+      <p>三选一：<code>to</code>（另一条记忆）、<code>entity</code>（它讲的是什么，也用来确认「待确认」的名称）、<code>attachment</code>（附上文件）。重复调用只会更新；<code>remove: true</code> 只断开关联，不删除记忆（删除用 <code>forget</code>）。</p>
       <dl class="parameter-list">
         <div><dt><code>from</code><small>字符串 · 必填</small></dt><dd>发起关联的记忆 ID，通常是较新的那条。</dd></div>
         <div><dt><code>to</code> + <code>kind</code> + <code>reason</code><small>可选</small></dt><dd>关联另一条记忆；<code>kind</code> 同上，更正旧结论时用 <code>corrects</code>。</dd></div>
@@ -131,7 +131,18 @@ url = "{{ Base }}/mcp"</pre>{{ copy_button("codex-config") }}</div>
       <summary><code>health</code><span>记忆库体检：重复、没人处理的名称、更正链的问题</span></summary><div class="tool-doc-body">
       <p>不需要参数。列出正文完全相同的记忆、同名却无法区分的实体、没有人处理的实体名称、没有关联任何实体的记忆、被两条以上不同更正的记忆（现状没有定论）、互相更正的循环、找不到文件的附件，以及缺向量的记忆。每一项附带几个起点和处理办法。会话开头的摘要在有事可整理时会提醒 AI 调用它。</p>
       <div class="code-block example-block"><pre id="health-example">{}</pre>{{ copy_button("health-example") }}</div>
-      <p class="tool-output"><strong>返回</strong> <code>ok</code>、记忆与实体总数、<code>issues</code>（<code>kind</code>、<code>count</code>、<code>detail</code>、<code>examples</code>、<code>fix</code>）和 <code>hint</code>。需要删除记忆或找回文件的事由你来决定。</p>
+      <p class="tool-output"><strong>返回</strong> <code>ok</code>、记忆与实体总数、<code>issues</code>（<code>kind</code>、<code>count</code>、<code>detail</code>、<code>examples</code>、<code>fix</code>）和 <code>hint</code>。AI 对整个记忆库拥有最高权限，会自行修复，不需要你批准。</p>
+      </div>
+    </details>
+    <details class="tool-doc" id="tool-forget">
+      <summary><code>forget</code><span>永久删除一条记忆（重复、明显的错误）</span></summary><div class="tool-doc-body">
+      <p>AI 已获得你的长期授权，遇到完全重复的记忆（保留信息最全的一条）或明显的错误、空内容时可以直接删除，不用询问。情况变了不要用它：那种情形应当 <code>remember</code> 新情况并用 <code>corrects</code> 引用旧记忆，来龙去脉才会保留。指向被删记忆的关联会一起消失。</p>
+      <dl class="parameter-list">
+        <div><dt><code>id</code><small>字符串 · 必填</small></dt><dd>要删除的记忆 ID。</dd></div>
+        <div><dt><code>reason</code><small>字符串 · 可选</small></dt><dd>为什么删，几个字即可，会写进服务日志。</dd></div>
+      </dl>
+      <div class="code-block example-block"><pre id="forget-example">{"id": "记忆 id", "reason": "与另一条完全相同"}</pre>{{ copy_button("forget-example") }}</div>
+      <p class="tool-output"><strong>返回</strong> <code>{"deleted": true, "id": …}</code>。误删可以从数据页的自动备份里找回。</p>
       </div>
     </details>
   </div>

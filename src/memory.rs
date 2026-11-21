@@ -261,6 +261,10 @@ pub struct Query {
     #[serde(skip)]
     #[schemars(skip)]
     pub undated: bool,
+    /// The web graph draws many memories at once; AI clients stay within 30.
+    #[serde(skip)]
+    #[schemars(skip)]
+    pub wide: bool,
 }
 
 /// One step of how a memory was corrected or summarized, with when and by whom.
@@ -460,7 +464,10 @@ impl Query {
             self.text.chars().count() <= 600,
             "query 最多 600 个字符，请缩短（只保留关键词或一句话）"
         );
-        ensure!(self.limit <= 30, "limit 最大为 30（默认 8），请调小");
+        ensure!(
+            self.limit <= 30 || self.wide,
+            "limit 最大为 30（默认 8），请调小"
+        );
         ensure!(
             self.queries.len() <= 5 && self.queries.iter().all(|q| q.chars().count() <= 600),
             "queries 最多 5 条，每条最多 600 个字符"

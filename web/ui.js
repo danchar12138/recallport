@@ -228,7 +228,8 @@
       title: '键盘快捷键', icon: 'keyboard',
       body: [h('div', {class: 'shortcut-list'},
         row('聚焦搜索', ['/']), row('新建记忆', ['N']), row('保存正在编辑的记忆', ['Ctrl', 'Enter']),
-        row('关闭对话框', ['Esc']), row('显示本帮助', ['?']))],
+        row('关闭对话框', ['Esc']), row('显示本帮助', ['?']),
+        h('p', {class: 'muted', text: '关系图里'}), row('在相邻内容间移动', ['←', '↑', '→', '↓']), row('进入选中的领地', ['Enter']), row('缩放 / 适合窗口', ['+', '-', '0']))],
       actions: [{label: '知道了', value: 'ok', primary: true}],
     });
   };
@@ -244,6 +245,7 @@
     if (event.key === '/') {
       const search = $('[data-search]');
       if (search) { event.preventDefault(); search.focus(); search.select(); }
+      else if (doc.body.dataset.view === 'overview') { event.preventDefault(); navigating(true); location.href = '/memories'; }
     } else if (event.key === 'n' || event.key === 'N') {
       const link = $('[data-shortcut-new]');
       if (link) { navigating(true); location.href = link.href; }
@@ -254,7 +256,7 @@
 
   /* ---------- 搜索词高亮 ---------- */
   const highlight = root => {
-    const terms = (root.dataset.highlight || '').split(/\s+/).filter(Boolean).slice(0, 8);
+    const terms = (root.dataset.highlight || '').split(/\s+/).filter(Boolean).slice(0, 12);
     if (!terms.length) return;
     const pattern = new RegExp(terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
     for (const el of $$('[data-hl]', root)) {
@@ -331,5 +333,5 @@
     tick();
   }
 
-  window.RP = {$, $$, h, icon, toast, openDialog, confirmDialog, progressDialog, formatBytes, navigating, rebuilds};
+  window.RP = {$, $$, h, icon, toast, highlight, openDialog, confirmDialog, progressDialog, formatBytes, navigating, rebuilds};
 })();

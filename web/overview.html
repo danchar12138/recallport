@@ -1,16 +1,16 @@
 <header class="page-head">
-  <div><h1>概览</h1><p class="sub">按年、月查看记忆的分布，点击任意月份跳转到对应时段</p></div>
+  <div><h1>概览</h1><p class="sub">记忆的整体分布、最近的变化，以及值得整理的地方</p></div>
 </header>
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
 <div class="stats">
-  <a class="stat" href="/"><span>全部记忆</span><strong>{{ Total }}</strong><span class="go">查看时间线<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span></a>
+  <a class="stat" href="/memories"><span>全部记忆</span><strong>{{ Total }}</strong><span class="go">查看全部记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span></a>
   <a class="stat" href="/entities"><span>实体</span><strong>{{ Entities }}</strong>{% if Entities %}<span class="go">查看实体<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
-  <a class="stat" href="/?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
+  <a class="stat" href="/memories?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
 </div>
 {% if Issues %}
 <section class="tidy" aria-labelledby="tidy-title">
-  <div class="section-head"><div><h2 id="tidy-title">整理建议</h2><p>接入的 AI 能通过 health 工具看到同样的清单并动手整理；要删除记忆或找回文件的，由你决定。</p></div></div>
-  <ul class="tidy-list">{% for i in Issues %}<li>{% if i.URL %}<a href="{{ i.URL }}">{{ i.Detail }}</a>{% else %}<span>{{ i.Detail }}</span>{% endif %}</li>{% endfor %}</ul>
+  <div class="section-head"><div><h2 id="tidy-title">整理建议</h2><p>接入的 AI 通过 health 工具看到同样的清单，会自己动手修复，不需要你批准；这里只是让你知道库里有什么。</p></div></div>
+  <ul class="tidy-list">{% for i in Issues %}<li>{% if i.URL %}<a href="{{ i.URL }}">{{ i.Detail }}</a>{% else %}<span>{{ i.Detail }}</span>{% endif %}{% if i.Help %}<small>{{ i.Help }}</small>{% endif %}</li>{% endfor %}</ul>
 </section>
 {% endif %}
 {% if Calendar.Total %}
@@ -20,24 +20,36 @@
     <svg class="cal" viewBox="0 0 772 124" width="772" height="124" role="group" aria-label="最近一年每天的记忆数量">
       {% for m in Calendar.Months %}<text class="cal-label" x="{{ m.X }}" y="12">{{ m.Label }}</text>{% endfor %}
       <text class="cal-label" x="0" y="30">一</text><text class="cal-label" x="0" y="58">三</text><text class="cal-label" x="0" y="86">五</text>
-      {% for c in Calendar.Cells %}<a href="/?period={{ c.Date }}"><rect class="cal-cell lv{{ c.Level }}" x="{{ c.X }}" y="{{ c.Y }}" width="11" height="11" rx="2"><title>{{ c.Date }}：{{ c.Count }} 条</title></rect></a>{% endfor %}
+      {% for c in Calendar.Cells %}<a href="/memories?period={{ c.Date }}"><rect class="cal-cell lv{{ c.Level }}" x="{{ c.X }}" y="{{ c.Y }}" width="11" height="11" rx="2"><title>{{ c.Date }}：{{ c.Count }} 条</title></rect></a>{% endfor %}
     </svg>
   </div>
   <p class="cal-legend" aria-hidden="true">少<i class="cal-key lv0"></i><i class="cal-key lv1"></i><i class="cal-key lv2"></i><i class="cal-key lv3"></i><i class="cal-key lv4"></i>多</p>
 </section>
 {% endif %}
-<section class="years" aria-label="按年、月浏览记忆">
-{% for r0 in Years %}
-  <section class="year">
-    <div class="year-head"><a href="{{ r0.URL }}"><span>{{ r0.Year }}</span><small>{{ r0.Count }} 条</small></a></div>
+{% macro year_row(r0) %}
+  <div class="year">
+    <a class="year-head" href="{{ r0.URL }}" title="查看 {{ r0.Year }} 全年"><span>{{ r0.Year }}</span><small>{{ r0.Count }} 条</small></a>
     <div class="months">{% for r1 in r0.Months %}
       {% if r1.Count %}<a class="month" data-count="{{ r1.Count }}" data-max="{{ r1.Max }}" href="{{ r1.URL }}" aria-label="{{ r0.Year }} 年 {{ r1.Label }} 月：{{ r1.Count }} 条" title="{{ r0.Year }}-{{ r1.Label }}：{{ r1.Count }} 条"><span>{{ r1.Label }} 月</span><strong>{{ r1.Count }}</strong></a>
       {% else %}<div class="month is-empty"><span>{{ r1.Label }} 月</span><strong>0</strong></div>{% endif %}
     {% endfor %}</div>
-  </section>
+  </div>
+{% endmacro %}
+<section class="years" aria-labelledby="years-title">
+  <div class="section-head"><div><h2 id="years-title">按年月浏览</h2><p>点年份看全年，点月份看那个月。</p></div></div>
+{% if Years %}
+  <div class="year-list">
+    {% for r0 in Years[:3] %}{{ year_row(r0) }}{% endfor %}
+    {% if (Years|length) > 3 %}
+    <details class="history older">
+      <summary>更早的 {{ (Years|length) - 3 }} 个年份</summary>
+      <div class="older-rows">{% for r0 in Years[3:] %}{{ year_row(r0) }}{% endfor %}</div>
+    </details>
+    {% endif %}
+  </div>
 {% else %}
   <div class="card"><div class="empty"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg><h3>暂无带日期的记忆</h3><p>记忆写入时如果带有发生时间，就会按年月出现在这里。</p></div></div>
-{% endfor %}
+{% endif %}
 </section>
 {% if Changes.Items %}
 <section class="changes" aria-labelledby="changes-title">

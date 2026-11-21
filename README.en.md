@@ -20,8 +20,8 @@ Memories change over time; the AI organizes entities, keeps the trail of correct
 [简体中文](README.md) · **English** · [Download](https://github.com/danchar12138/recallport/releases/latest) · [Changelog](CHANGELOG.md)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/timeline-dark.png">
-  <img src="docs/images/timeline-light.png" width="860" alt="RecallPort timeline">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/memories-dark.png">
+  <img src="docs/images/memories-light.png" width="860" alt="RecallPort memory list">
 </picture>
 
 </div>
@@ -98,11 +98,11 @@ The server already ships usage instructions, but some clients ignore them. One-c
   <tr>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/detail-dark.png"><img src="docs/images/detail-light.png" alt="Memory detail"></picture>
-      <p align="center"><sub><b>Detail</b>: correction trail, entities, attachments, history, graph</sub></p>
+      <p align="center"><sub><b>Detail</b>: correction trail, entities, attachments, history, linked memories; one click to find it on the graph</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="Memory graph"></picture>
-      <p align="center"><sub><b>Graph</b>: references between memories, <kbd>F</kbd> for full-screen</sub></p>
+      <p align="center"><sub><b>Graph</b>: the whole page is the canvas. Zoom out for each entity's territory, zoom in for its memories; search and details happen right on it, and a minimap tells you where you are. Territories and memory cards can be dragged</sub></p>
     </td>
   </tr>
   <tr>
@@ -121,8 +121,28 @@ The server already ships usage instructions, but some clients ignore them. One-c
       <p align="center"><sub><b>Overview</b>: the last year at a glance, what changed, tidy-up suggestions</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entity-graph-dark.png"><img src="docs/images/entity-graph-light.png" alt="Entity overview"></picture>
-      <p align="center"><sub><b>Entity overview</b>: entities that appear together share a colour; a slider hides weak links</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-zoom-dark.png"><img src="docs/images/graph-zoom-light.png" alt="Zoomed into an entity"></picture>
+      <p align="center"><sub><b>Zoomed into an entity</b>: memories that belong only to it are seated by time (newer is closer to the middle) and meaning (similar ones on the same side), then turn into readable cards; a memory that mentions several entities is a "bridge" between their territories</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-search-dark.png"><img src="docs/images/graph-search-light.png" alt="Search on the graph"></picture>
+      <p align="center"><sub><b>Search stays on the graph</b>: matches glow, each territory shows its hit count, results are listed on the right</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-card-dark.png"><img src="docs/images/graph-card-light.png" alt="Floating detail card"></picture>
+      <p align="center"><sub><b>Floating detail card</b>: read the full memory, its correction trail and references without leaving the graph; a memory that mentions several entities is a "bridge" between their territories</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-dark.png"><img src="docs/images/graph-lanes-light.png" alt="Swim lanes"></picture>
+      <p align="center"><sub><b>Swim lanes</b>：time runs left to right, one lane per entity; a memory is one dot and a vertical line joins the entities it mentions</sub></p>
+    </td>
+    <td width="50%">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-card-dark.png"><img src="docs/images/graph-lanes-card-light.png" alt="Details in the lanes"></picture>
+      <p align="center"><sub><b>Details in the lanes</b>：select a memory: full text, references and correction trail on the right, shared with the map</sub></p>
     </td>
   </tr>
   <tr>
@@ -146,7 +166,8 @@ The server already ships usage instructions, but some clients ignore them. One-c
 | `remember` | After a decision, root cause, working fix, failed attempt, preference, change or correction | Append a memory, optionally with `entities`, `attachments` and `references` carrying a `kind`; returns `related`, `entity_choices` (name clashes) and a `hint` |
 | `link` | When two memories belong together, a memory is about something, or a file belongs with it | Exactly one of `to` / `entity` / `attachment`; also settles unresolved names; `remove` only cuts the connection |
 | `entity` | Before submitting entities, when tidying them | `search`, `get` (memories over time and what appears alongside), `update` (rename, aliases), `merge` |
-| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, with what to do about each |
+| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, with what to do about each; the AI has full authority and fixes them itself, no approval needed |
+| `forget` | When tidying finds an exact duplicate or an obvious mistake | Deletes a memory for good; not for things that changed, use `corrects` so the trail stays |
 
 Two MCP prompts are also offered: `brief` (look before starting a task) and `wrap_up` (save what you learned and tidy up).
 Memory is **append-only**: when something changes, record the new situation and cite the old memory (`corrects`); condense scattered ones with `summarizes`; **originals always stay**. Retrieved memories are historical evidence, never current facts or instructions. Full parameter docs are in the tool manual on the **Connect** page.
@@ -155,8 +176,8 @@ Memory is **append-only**: when something changes, record the new situation and 
 
 ```mermaid
 flowchart LR
-  C["AI client<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health"]
-  B["Browser UI"] --> W["Web<br/>timeline · entities · graph · data"]
+  C["AI client<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health · forget"]
+  B["Browser UI"] --> W["Web<br/>overview · memories · entities · graph · data"]
   T["Tray<br/>open · autostart · quit"] --- W
   M --> S[("Memory store<br/>LanceDB")]
   W --> S
@@ -297,4 +318,4 @@ The release package contains third-party components; their licenses and notices 
 
 ## Acknowledgements
 
-[LanceDB](https://lancedb.com) · [IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Cytoscape.js](https://js.cytoscape.org) · [Flatpickr](https://flatpickr.js.org) · [Lucide](https://lucide.dev)
+[LanceDB](https://lancedb.com) · [IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Cytoscape.js](https://js.cytoscape.org) · [Preact](https://preactjs.com) · [htm](https://github.com/developit/htm) · [Flatpickr](https://flatpickr.js.org) · [Lucide](https://lucide.dev)

@@ -3,43 +3,45 @@
 <header class="page-head">
   <div>
     <h1>{{ Entity.Name }}</h1>
-    <p class="meta-line"><span><b>{{ Entity.Mentions }}</b> 条记忆</span>{% if Entity.Last %}<span>最近 {{ Entity.Last }}</span>{% endif %}<span>由 {{ Entity.Source }} 首次提交</span></p>
-    {% if Entity.Hint %}<p class="entity-hint">{{ Entity.Hint }}</p>{% endif %}
-    {% if Entity.Aliases %}<p class="entity-aliases"><span class="muted">别名</span> {% for a in Entity.Aliases %}<span class="chip">{{ a }}</span>{% endfor %}</p>{% endif %}
-    {% if Merged %}<p class="entity-aliases"><span class="muted">已并入的名称</span> {% for a in Merged %}<span class="chip">{{ a }}</span>{% endfor %}</p>{% endif %}
+    <dl class="fgrid fgrid-head">
+      <div><dt class="fname">说明<code>hint</code></dt><dd>{% if Entity.Hint %}{{ Entity.Hint }}{% else %}<span class="fempty">没有写</span>{% endif %}</dd></div>
+      <div><dt class="fname">别名<code>aliases</code></dt><dd>{% if Entity.Aliases %}{% for a in Entity.Aliases %}<span class="chip">{{ a }}</span>{% endfor %}{% else %}<span class="fempty">没有</span>{% endif %}</dd></div>
+      {% if Merged %}<div><dt class="fname">已并入的名称<code>merged</code></dt><dd>{% for a in Merged %}<span class="chip">{{ a }}</span>{% endfor %}</dd></div>{% endif %}
+      <div><dt class="fname">记忆数<code>mentions</code></dt><dd><b>{{ Entity.Mentions }}</b> 条</dd></div>
+      <div><dt class="fname">最近出现<code>last</code></dt><dd>{% if Entity.Last %}{{ Entity.Last }}{% else %}<span class="fempty">没有日期</span>{% endif %}</dd></div>
+      <div><dt class="fname">首次提交<code>source</code></dt><dd>{{ Entity.Source }}</dd></div>
+      <div><dt class="fname">编号<code>id</code></dt><dd><code class="fcode">{{ Entity.ID }}</code></dd></div>
+    </dl>
   </div>
   <div class="head-actions">
     <button type="button" class="btn" data-dialog-open="entity-edit"><svg class="icon" aria-hidden="true"><use href="#edit"/></svg>编辑</button>
     <button type="button" class="btn" data-dialog-open="entity-merge"><svg class="icon" aria-hidden="true"><use href="#link"/></svg>合并到…</button>
-    <a class="btn" href="/?entity={{ Entity.ID }}"><svg class="icon" aria-hidden="true"><use href="#history"/></svg>在时间线中查看</a>
+    <a class="btn" href="/memories?entity={{ Entity.ID }}"><svg class="icon" aria-hidden="true"><use href="#history"/></svg>只看它的记忆</a>
+    <a class="btn" href="/graph?at={{ Entity.ID }}"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>在关系图中查看</a>
   </div>
 </header>
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
 {% if Notice == "saved" %}<div data-flash="success" hidden>实体已保存</div>{% elif Notice == "merged" %}<div data-flash="success" hidden>已合并。如果合并错了，可在被合并的实体页撤销</div>{% endif %}
 
-<div class="editor-layout has-side">
+<div id="entity-list" class="editor-layout has-side">
   <section aria-label="按时间的相关记忆">
     <div class="stream">
       {% for r1 in Rows %}{{ entry_row(r1, Back) }}{% else %}
       <div class="empty"><svg class="icon" aria-hidden="true"><use href="#history"/></svg><h3>还没有记忆提及它</h3><p>在记忆详情页给记忆添加这个实体，或让接入的 AI 来整理。</p></div>
       {% endfor %}
     </div>
-    {% if MoreCount %}<p class="more-row"><a class="btn" href="{{ MoreURL }}">显示更多（还有 {{ MoreCount }} 条）</a></p>{% endif %}
+    {% if MoreCount %}<p class="more-row" aria-live="polite"><a class="btn" href="{{ MoreURL }}#entity-list" data-more data-list="#entity-list .stream" data-unit="article.entry" data-cumulative>显示更多（还有 {{ MoreCount }} 条）</a></p>{% endif %}
   </section>
   <aside class="relations" aria-label="同时出现的实体">
     <div class="relations-head"><h2>同时出现</h2></div>
     <p class="sub">与它出现在同一条记忆里的其他实体。</p>
-    {% for r in Related %}<div class="rel-item"><a href="/entity/{{ r.ID }}">{{ r.Name }}</a><small>{{ r.Count }} 条共同的记忆{% if r.Hint %} · {{ r.Hint }}{% endif %}</small></div>{% else %}<p class="rel-empty">暂时没有。</p>{% endfor %}
+    {% for r in Related[:8] %}<div class="rel-item"><a href="/entity/{{ r.ID }}">{{ r.Name }}</a><small>{{ r.Count }} 条共同的记忆{% if r.Hint %} · {{ r.Hint }}{% endif %}</small></div>{% else %}<p class="rel-empty">暂时没有。</p>{% endfor %}
+    {% if Related|length > 8 %}<details class="rel-more"><summary>其余 {{ Related|length - 8 }} 个</summary>{% for r in Related[8:] %}<div class="rel-item"><a href="/entity/{{ r.ID }}">{{ r.Name }}</a><small>{{ r.Count }} 条共同的记忆{% if r.Hint %} · {{ r.Hint }}{% endif %}</small></div>{% endfor %}</details>{% endif %}
     {% if Entity.Mentions == 0 %}
     <form method="post" action="/entity/{{ Entity.ID }}/delete" class="danger-zone" data-confirm-title="删除这个实体？" data-confirm-body="没有任何记忆提及它，删除不会影响记忆。" data-confirm-ok="删除" data-confirm-tone="danger" data-flash-after="实体已删除"><button class="btn btn-danger-ghost btn-sm">删除空实体</button></form>
     {% endif %}
   </aside>
 </div>
-
-<section class="graph-section" aria-labelledby="graph-title">
-  <div class="section-head"><div><h2 id="graph-title">关系图</h2><p>实体居中，周围是提及它的记忆；点击节点可继续展开。</p></div></div>
-  {% include "graph-canvas.html" %}
-</section>
 
 <dialog class="dialog" id="entity-edit" aria-labelledby="entity-edit-title">
   <form method="post" action="/entity/{{ Entity.ID }}" class="dialog-form">

@@ -53,14 +53,15 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
     macro_rules! templates { ($($name:literal),+) => { $(templates.add_template(concat!($name,".html"),include_str!(concat!("../web/",$name,".html")))?;)+ }; }
     templates!(
         "page",
-        "timeline",
+        "memories",
         "rows",
+        "search",
         "overview",
         "editor",
+        "memory",
         "relations",
         "date-control",
         "graph-page",
-        "graph-canvas",
         "entities",
         "entity",
         "data",
@@ -91,12 +92,16 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
     let app = Router::new()
         .route_service("/mcp", mcp)
         .route("/health", get(|| async { "ok\n" }))
-        .route("/", get(timeline))
-        .route("/overview", get(overview))
+        .route("/", get(overview))
+        .route("/memories", get(memories_page))
         .route("/graph", get(graph_page))
         .route("/graph-data", get(graph_data))
+        .route("/graph-hits", get(graph_hits))
+        .route("/graph-lanes", get(graph_lanes))
+        .route("/memory/{id}/peek", get(peek))
         .route("/memory/new", get(new_memory).post(create))
         .route("/memory/{id}", get(detail).post(edit))
+        .route("/memory/{id}/edit", get(edit_page))
         .route("/memory/{id}/delete", post(delete))
         .route("/memory/{id}/links", post(link))
         .route("/memory/{id}/entities", post(memory_entities))
@@ -133,6 +138,14 @@ pub fn router(store: Arc<Store>, address: SocketAddr, app: Arc<App>) -> Result<R
     asset!(app, "ui.js", "text/javascript; charset=utf-8");
     asset!(app, "controls.js", "text/javascript; charset=utf-8");
     asset!(app, "graph.js", "text/javascript; charset=utf-8");
+    asset!(app, "graph-ui.js", "text/javascript; charset=utf-8");
+    asset!(app, "lanes.js", "text/javascript; charset=utf-8");
+    asset!(
+        app,
+        "vendor/preact.min.js",
+        "text/javascript; charset=utf-8"
+    );
+    asset!(app, "vendor/htm.min.js", "text/javascript; charset=utf-8");
     asset!(app, "vendor/flatpickr.min.css", "text/css; charset=utf-8");
     asset!(
         app,
@@ -318,7 +331,7 @@ pub(crate) fn file_view(a: &AttachmentView) -> Value {
         "Stored":a.storage==Storage::Stored,"Available":a.available,"Path":a.path,"URL":a.url,"Kind":file_kind(&a.mime)})
 }
 fn entry(e: &Entry) -> Value {
-    json!({"ID":e.id,"Text":e.text,"Context":e.context,"Occurred":e.occurred,"Source":e.source,"Recorded":e.recorded,"Revision":e.revision,"Updated":e.updated})
+    json!({"ID":e.id,"Text":e.text,"Context":e.context,"Occurred":e.occurred,"Source":e.source,"Recorded":e.recorded,"Revision":e.revision,"Updated":e.updated,"Origin":e.origin})
 }
 fn trail_label(relation: &str) -> &'static str {
     match relation {
@@ -366,10 +379,11 @@ fn row(e: &Entry, trail: &[Trail], others: &[Entry], period: &str) -> Value {
     view["Edited"] = json!(e.revision > 1);
     view
 }
-fn hit(h: Hit, period: &str) -> Value {
+fn hit(h: Hit, period: &str, words: &[String]) -> Value {
     let mut view = row(&h.entry, &h.trail, &h.other_accounts, period);
+    view["Found"] = json!(crate::store::found_in(&h.entry, words));
     view["Match"] = json!(match h.match_kind {
-        "exact" => "字面匹配",
+        "exact" => "原话匹配",
         "strong" => "高度相关",
         "weak" => "弱相关",
         "keyword" => "仅关键词",
@@ -380,20 +394,30 @@ fn hit(h: Hit, period: &str) -> Value {
     view["Replaces"] = json!(h.replaces.len());
     view
 }
+/// The words of the search the user came from (the `q` inside the back link), to mark them on the memory page.
+fn back_terms(back: &str) -> String {
+    let query = back.split_once('?').map_or("", |x| x.1);
+    let text = url::form_urlencoded::parse(query.as_bytes())
+        .find(|(k, _)| k == "q")
+        .map(|(_, v)| v.into_owned())
+        .unwrap_or_default();
+    crate::store::query_words(&text).join(" ")
+}
 fn local_back(f: &Fields) -> String {
     let back = get_field(f, "back");
     if !back.contains(['\\', '\n', '\r'])
         && (back == "/"
+            || back == "/memories"
             || back == "/graph"
             || back == "/entities"
-            || back.starts_with("/?")
+            || back.starts_with("/memories?")
             || back.starts_with("/graph?")
             || back.starts_with("/entities?")
             || back.starts_with("/entity/"))
     {
         back
     } else {
-        "/".into()
+        "/memories".into()
     }
 }
 fn uri(path: &str, f: &BTreeMap<String, String>) -> String {
@@ -417,36 +441,39 @@ pub fn public_error(err: &anyhow::Error) -> String {
         "操作未完成，请检查输入或重试。".into()
     }
 }
+/// Where to go after a change. Saving returns to the read-only page; adding an entity or a link keeps the
+/// editor open, because that is usually one of several adjustments.
 fn mem_location(id: &str, f: &Fields, saved: bool, anchor: &str) -> String {
     let mut args = BTreeMap::from([("back".into(), local_back(f))]);
     if saved {
         args.insert("saved".into(), "1".into());
     }
-    format!("{}{anchor}", uri(&format!("/memory/{id}"), &args))
+    let page = if saved { "" } else { "/edit" };
+    format!("{}{anchor}", uri(&format!("/memory/{id}{page}"), &args))
 }
 
-async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
+async fn memories_page(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
     let q = query(&f, 20);
     let n = number(&f, "page").clamp(1, 10000);
     let ordered = get_field(&f, "order") == "date";
     let mut args = qs(&f);
     args.remove("page");
     args.remove("order");
-    let by_rank = uri("/", &args);
+    let by_rank = uri("/memories", &args);
     let graph = uri("/graph", &args);
     args.insert("order".into(), "date".into());
-    let by_date = uri("/", &args);
+    let by_date = uri("/memories", &args);
     let nav = |page: usize| {
         let mut p = qs(&f);
         p.insert("page".into(), page.to_string());
-        uri("/", &p)
+        uri("/memories", &p)
     };
     let entity_label = if q.entity.is_empty() {
         String::new()
     } else {
         w.store.entity_label(&q.entity).await.unwrap_or_default()
     };
-    let mut p = json!({"View":"timeline","Query":qview(&q),"Back":uri("/",&qs(&f)),"Period":q.period,"Undated":q.undated,"EntityID":q.entity,"EntityName":entity_label,"Chronological":ordered,"ByRank":by_rank,"ByDate":by_date,"GraphURL":graph});
+    let mut p = json!({"View":"memories","Query":qview(&q),"Back":uri("/memories",&qs(&f)),"Period":q.period,"Undated":q.undated,"EntityID":q.entity,"EntityName":entity_label,"Chronological":ordered,"ByRank":by_rank,"ByDate":by_date,"GraphURL":graph});
     let list = if q.text.is_empty() {
         w.store.timeline(&q, (n - 1) * q.limit).await
     } else {
@@ -473,6 +500,8 @@ async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
                 }
             }
             let mut previous = String::new();
+            let words = crate::store::query_words(&q.text);
+            p["Terms"] = json!(words.join(" "));
             p["Rows"] = json!(
                 res.memories
                     .into_iter()
@@ -489,7 +518,7 @@ async fn timeline(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
                                 period = date.into();
                             }
                         }
-                        hit(h, &period)
+                        hit(h, &period, &words)
                     })
                     .collect::<Vec<_>>()
             );
@@ -520,8 +549,8 @@ async fn overview(State(w): State<Web>) -> Response {
     }
     let years:Vec<_>=by_year.into_iter().rev().map(|(year,counts)|{
         let max=counts[1..].iter().max().copied().unwrap_or(1).max(1);
-        let months=(1..=12).map(|m|json!({"Label":format!("{m:02}"),"Count":counts[m],"Max":max,"URL":format!("/?period={year}-{m:02}")})).collect::<Vec<_>>();
-        json!({"Year":year,"Count":counts[0],"URL":format!("/?period={year}"),"Months":months})
+        let months=(1..=12).map(|m|json!({"Label":format!("{m:02}"),"Count":counts[m],"Max":max,"URL":format!("/memories?period={year}-{m:02}")})).collect::<Vec<_>>();
+        json!({"Year":year,"Count":counts[0],"URL":format!("/memories?period={year}"),"Months":months})
     }).collect();
     let entities = w
         .store
@@ -545,7 +574,17 @@ async fn overview(State(w): State<Web>) -> Response {
                 _ if !first.is_empty() => format!("/memory/{first}"),
                 _ => String::new(),
             };
-            json!({"Detail":i.detail,"Count":i.count,"URL":link,"Kind":i.kind})
+            let help = match i.kind {
+                "duplicate_memories" => "同一段话存了多份。接入的 AI 会保留信息最全的一条、删掉多余的，不用你批准；你也可以自己在记忆页删除。",
+                "duplicate_entities" => "两个同名的实体分不清。AI 会自行合并或给它们各写一句说明；你也可以在实体页「合并到…」。",
+                "without_entities" => "这些记忆没有关联任何实体，不影响搜索。AI 会陆续补上，你也可以在记忆页手动添加。",
+                "unresolved_names" => "AI 提到了名字却没确定是哪个实体，之后会自己确认；你也可以在实体页选一个。",
+                "correction_forks" | "correction_loops" => "几条更正之间互相矛盾，现状没有定论。AI 会判断以哪条为准并汇总；你也可以打开看看。",
+                "missing_files" => "附件的原文件找不到了。AI 会去找，找不到就移除这条附件。",
+                "index_gap" => "有些记忆的搜索索引还没建好，服务会在后台自己修复。",
+                _ => "",
+            };
+            json!({"Detail":i.detail,"Count":i.count,"URL":link,"Kind":i.kind,"Help":help})
         })
         .collect();
     w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown,"Entities":entities,
@@ -623,43 +662,45 @@ fn changes(list: &[Entry]) -> Value {
     json!({"Items":items,"Total":total})
 }
 
+/// A search on the map shows at most this many memories as hits.
+const GRAPH_LIMIT: usize = 150;
 async fn graph_page(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
-    let q = query(&f, 30);
-    w.render(json!({"View":"graph","Query":qview(&q),"Period":q.period,"Undated":q.undated,"Overview":get_field(&f,"view")=="entities"}))
+    let q = query(&f, GRAPH_LIMIT);
+    w.render(json!({"View":"graph","Query":qview(&q),"Period":q.period,"Undated":q.undated,"At":get_field(&f,"at"),"Node":get_field(&f,"node")}))
 }
+/// The map's data: the entity territories, or the memories inside one territory (`focus`, a page at a time).
 async fn graph_data(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
-    let q = query(&f, 30);
     let focus = get_field(&f, "focus");
     let overview = get_field(&f, "overview") == "1";
-    let n = if q.text.is_empty() {
-        number(&f, "page").clamp(1, 10000)
-    } else {
-        1
+    match w.store.graph(&focus, number(&f, "page"), overview).await {
+        Ok(g) => Json(g).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, public_error(&e)).into_response(),
+    }
+}
+/// Search on the map: which memories match (by words, meaning or date), and the territory each is drawn in.
+async fn graph_hits(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
+    let q = Query {
+        wide: true,
+        ..query(&f, GRAPH_LIMIT)
     };
     let work = async {
-        let mut ids = vec![];
-        let mut more = false;
-        let mut degraded = false;
-        if focus.is_empty() && !overview {
-            let results = if q.text.is_empty() {
-                w.store.timeline(&q, (n - 1) * q.limit).await?
-            } else {
-                w.store.recall(&q).await?
-            };
-            ids = results.memories.into_iter().map(|h| h.entry.id).collect();
-            more = results.more;
-            degraded = results.degraded;
-        }
-        let mut g = w
-            .store
-            .graph(&ids, &focus, get_field(&f, "suggested") == "1", overview)
-            .await?;
-        let paged = focus.is_empty() && !overview;
-        g["page"] = json!(n);
-        g["next"] = json!(paged && q.text.is_empty() && more);
-        g["limited"] = json!(paged && !q.text.is_empty() && more);
-        g["degraded"] = json!(degraded);
-        Ok::<_, anyhow::Error>(g)
+        let results = if q.text.is_empty() {
+            w.store.timeline(&q, 0).await?
+        } else {
+            w.store.recall(&q).await?
+        };
+        let ids: Vec<String> = results.memories.iter().map(|h| h.entry.id.clone()).collect();
+        let lands = w.store.lands_of(&ids).await?;
+        let hits: Vec<Value> = results
+            .memories
+            .iter()
+            .map(|h| {
+                json!({"id":h.entry.id,"text":snippet(&h.entry.text,120),"occurred":h.entry.occurred,"source":h.entry.source,
+                    "lands":lands.get(&h.entry.id),"match":h.match_kind,
+                    "relevance":h.relevance.map(|r| format!("{r:.2}"))})
+            })
+            .collect();
+        Ok::<_, anyhow::Error>(json!({"hits":hits,"more":results.more,"degraded":results.degraded,"no_strong":results.no_strong_match}))
     }
     .await;
     match work {
@@ -667,16 +708,60 @@ async fn graph_data(State(w): State<Web>, Params(f): Params<Fields>) -> Response
         Err(e) => (StatusCode::BAD_REQUEST, public_error(&e)).into_response(),
     }
 }
+/// The memories for the swim-lane view (the entities come from the overview data).
+async fn graph_lanes(State(w): State<Web>) -> Response {
+    match w.store.lane_memories(3000).await {
+        Ok(list) => Json(list).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, public_error(&e)).into_response(),
+    }
+}
+/// One memory in full, for the floating card on the map (the same facts as the memory page).
+async fn peek(State(w): State<Web>, Path(id): Path<String>) -> Response {
+    let d = match w.store.detail(&id).await {
+        Ok(d) => d,
+        Err(err) => return (StatusCode::NOT_FOUND, public_error(&err)).into_response(),
+    };
+    let link = |l: &Link| json!({"id":l.id,"text":l.text,"kind":l.kind,"label":kind_label(l.kind),"reason":l.reason,"occurred":l.occurred});
+    let mentions: Vec<Value> = d
+        .mentions
+        .iter()
+        .map(|m| json!({"name":m.name,"entity":m.entity,"entity_name":m.entity_name,"hint":m.hint}))
+        .collect();
+    let trail: Vec<Value> = d
+        .trail
+        .iter()
+        .map(|t| json!({"label":trail_label(t.relation),"id":t.id,"source":t.source,"recorded":t.recorded,"reason":t.reason,"text":t.text}))
+        .collect();
+    let files: Vec<Value> = d
+        .attachments
+        .iter()
+        .map(|a| json!({"name":a.name,"caption":a.caption,"kind":file_kind(&a.mime),"url":a.url,"available":a.available}))
+        .collect();
+    Json(json!({"id":d.entry.id,"text":d.entry.text,"context":d.entry.context,"occurred":d.entry.occurred,
+        "source":d.entry.source,"recorded":d.entry.recorded,"revision":d.entry.revision,
+        "edited":d.entry.history.len(),"mentions":mentions,
+        "out":d.links_out.iter().map(link).collect::<Vec<_>>(),"in":d.links_in.iter().map(link).collect::<Vec<_>>(),
+        "trail":trail,"files":files}))
+    .into_response()
+}
 
 async fn new_memory(State(w): State<Web>, Params(f): Params<Fields>) -> Response {
     w.render(json!({"View":"detail","Back":local_back(&f),"Entry":entry(&Entry::default())}))
 }
+/// Reading comes first: the memory page shows the memory; editing is a separate page.
 async fn detail(
     State(w): State<Web>,
     Path(id): Path<String>,
     Params(f): Params<Fields>,
 ) -> Response {
-    detail_view(&w, &id, &f, "", None).await
+    detail_view(&w, &id, &f, "", None, false).await
+}
+async fn edit_page(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Params(f): Params<Fields>,
+) -> Response {
+    detail_view(&w, &id, &f, "", None, true).await
 }
 
 fn links(list: &[Link]) -> Vec<Value> {
@@ -691,6 +776,7 @@ async fn detail_view(
     f: &Fields,
     error: &str,
     unsaved: Option<Draft>,
+    editing: bool,
 ) -> Response {
     let mut d = match w.store.detail(id).await {
         Ok(d) => d,
@@ -719,8 +805,9 @@ async fn detail_view(
         .map(|m| json!({"Name":m.name,"Entity":m.entity,"EntityName":m.entity_name,"Hint":m.hint}))
         .collect();
     let files: Vec<Value> = d.attachments.iter().map(file_view).collect();
-    w.render(json!({"View":"detail","Entry":entry(&d.entry),"Error":error,"Back":local_back(f),"Saved":get_field(f,"saved")=="1",
-        "Incoming":links(&d.links_in),"Outgoing":links(&d.links_out),"Mentions":mentions,"Files":files,"History":history,"Trail":trail}))
+    w.render(json!({"View":if editing {"detail"} else {"memory"},"Entry":entry(&d.entry),"Error":error,"Back":local_back(f),"Saved":get_field(f,"saved")=="1",
+        "Incoming":links(&d.links_in),"Outgoing":links(&d.links_out),"Mentions":mentions,"Files":files,"History":history,"Trail":trail,
+        "Terms":back_terms(&local_back(f))}))
 }
 async fn create(State(w): State<Web>, Form(f): Form<Fields>) -> Response {
     let d = draft(&f);
@@ -742,7 +829,7 @@ async fn edit(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields
         .await
     {
         Ok(()) => Redirect::to(&mem_location(&id, &f, true, "")).into_response(),
-        Err(e) => detail_view(&w, &id, &f, &public_error(&e), Some(d)).await,
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), Some(d), true).await,
     }
 }
 async fn delete(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields>) -> Response {
@@ -752,7 +839,7 @@ async fn delete(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fiel
         .await
     {
         Ok(()) => Redirect::to(&local_back(&f)).into_response(),
-        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None, false).await,
     }
 }
 async fn link(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields>) -> Response {
@@ -767,7 +854,7 @@ async fn link(State(w): State<Web>, Path(id): Path<String>, Form(f): Form<Fields
         .await
     {
         Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#relations")).into_response(),
-        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None, true).await,
     }
 }
 async fn memory_entities(
@@ -795,7 +882,7 @@ async fn memory_entities(
     };
     match result {
         Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#entities")).into_response(),
-        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None, true).await,
     }
 }
 async fn memory_attachments(
@@ -805,7 +892,7 @@ async fn memory_attachments(
 ) -> Response {
     match w.store.unlink_attachment(&id, &get_field(&f, "hash")).await {
         Ok(()) => Redirect::to(&mem_location(&id, &f, false, "#files")).into_response(),
-        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None).await,
+        Err(e) => detail_view(&w, &id, &f, &public_error(&e), None, true).await,
     }
 }
 
@@ -840,6 +927,7 @@ async fn entities_page(State(w): State<Web>, Params(f): Params<Fields>) -> Respo
             }
             if n * per < total {
                 p["Next"] = json!(args(n + 1));
+                p["Left"] = json!(total - n * per);
             }
         }
         Err(e) => p["Error"] = json!(public_error(&e)),

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "entities" %}实体{% elif View == "entity" %}{{ Entity.Name }}{% elif View == "detail" %}{% if Entry.ID %}记忆详情{% else %}新建记忆{% endif %}{% else %}时间线{% endif %} · RecallPort</title>
+<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "entities" %}实体{% elif View == "entity" %}{{ Entity.Name }}{% elif View == "memory" %}记忆详情{% elif View == "detail" %}{% if Entry.ID %}编辑记忆{% else %}新建记忆{% endif %}{% else %}记忆{% endif %} · RecallPort</title>
 <script src="/theme.js"></script>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/vendor/flatpickr.min.css">
@@ -12,8 +12,8 @@
 <script src="/vendor/flatpickr.min.js" defer></script>
 <script src="/ui.js" defer></script>
 <script src="/controls.js" defer></script>
-{% if (View == "graph") or ((View == "detail") and Entry.ID) %}<meta id="__________cytoscape_stylesheet" name="cytoscape-style" content="rules live in style.css">
-<script src="/vendor/cytoscape.min.js" defer></script><script src="/graph.js" defer></script>{% endif %}
+{% if View == "graph" %}<meta id="__________cytoscape_stylesheet" name="cytoscape-style" content="rules live in style.css">
+<script src="/vendor/cytoscape.min.js" defer></script><script src="/vendor/preact.min.js" defer></script><script src="/vendor/htm.min.js" defer></script><script src="/graph-ui.js" defer></script><script src="/lanes.js" defer></script><script src="/graph.js" defer></script>{% endif %}
 </head>
 <body data-view="{{ View }}">
 <!-- Lucide icon license
@@ -105,8 +105,8 @@ SOFTWARE.
 <header class="top">
   <a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#history"/></svg></span>RecallPort</a>
   <nav class="tabs" aria-label="主导航">
-    <a href="/" {% if (View == "timeline") or (View == "detail") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>时间线</a>
-    <a href="/overview" {% if View == "overview" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
+    <a href="/" {% if View == "overview" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
+    <a href="/memories" {% if (View == "memories") or (View == "detail") or (View == "memory") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>记忆</a>
     <a href="/entities" {% if (View == "entities") or (View == "entity") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#tag"/></svg>实体</a>
     <a href="/graph" {% if View == "graph" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a>
     <a href="/clients" {% if View == "clients" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入</a>
@@ -114,15 +114,15 @@ SOFTWARE.
   </nav>
   <div class="theme-switch theme-switch-mobile" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
   <div class="side-foot">
-    <div class="status-line"><span class="dot"></span>本地运行 · 仅本机可访问</div>
-    <div class="status-line"><span class="dot"></span>语义检索已启用</div>
+    {% if Semantic %}<div class="status-line" title="只监听本机 127.0.0.1；语义搜索已启用"><span class="dot"></span>服务运行中</div>
+    {% else %}<div class="status-line is-warn" title="没有找到语义模型：现在只能按关键词搜索"><span class="dot"></span>运行中 · 无语义搜索</div>{% endif %}
     <div class="theme-switch" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
 
     <button type="button" class="btn btn-ghost btn-sm side-shortcuts" data-shortcuts><svg class="icon icon-sm" aria-hidden="true"><use href="#keyboard"/></svg>快捷键 <kbd>?</kbd></button>
   </div>
 </header>
 <main id="main" class="shell{% if View == "graph" %} shell-graph{% endif %}">
-{% if View == "timeline" %}{% include "timeline.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% elif View == "entities" %}{% include "entities.html" %}{% elif View == "entity" %}{% include "entity.html" %}{% else %}{% include "data.html" %}{% endif %}
+{% if View == "memories" %}{% include "memories.html" %}{% elif View == "memory" %}{% include "memory.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% elif View == "entities" %}{% include "entities.html" %}{% elif View == "entity" %}{% include "entity.html" %}{% else %}{% include "data.html" %}{% endif %}
 </main>
 </body>
 </html>

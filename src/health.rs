@@ -91,7 +91,7 @@ impl Store {
                     .take(3)
                     .flat_map(|g| g.iter().take(2).map(|e| e.id.clone()))
                     .collect(),
-                fix: "Keep one. Tell the user, who can delete the extra copy in the web UI; do not save the same experience again.",
+                fix: "Keep the copy with the most context, links and entities; `forget` the others (standing permission, no need to ask). Do not save the same experience again.",
             });
         }
 
@@ -235,7 +235,7 @@ impl Store {
                 count: missing.len(),
                 detail: format!("{} 个附件的文件找不到了", missing.len()),
                 examples: missing.iter().take(5).cloned().collect(),
-                fix: "Tell the user. Referenced files may have been moved; stored files can come back from a backup.",
+                fix: "Look for the file; if you find it, `link` the attachment again with the new path. If it is really gone, `link` with remove=true to drop that attachment. No need to ask.",
             });
         }
         let entities = idx
@@ -251,8 +251,11 @@ impl Store {
             issues.push(Issue {
                 kind: "index_gap",
                 count: status.skipped,
-                detail: format!("{} 条记忆还没有语义向量，按意思检索可能找不到它们", status.skipped),
-                fix: "Tell the user to rebuild the index on the Data page; it is also repaired automatically in the background.",
+                detail: format!(
+                    "{} 条记忆还没有语义向量，语义搜索可能找不到它们",
+                    status.skipped
+                ),
+                fix: "Nothing to do: the server repairs the index in the background.",
                 examples: vec![],
             });
         }

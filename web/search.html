@@ -1,0 +1,8 @@
+{# 所有记忆搜索框共用：怎么找。三选一，和搜索框并排。 #}
+{% macro memory_by(current) %}
+<fieldset class="segmented search-by" aria-label="搜索方式" data-search-by>
+  <input type="radio" name="strategy" id="by-hybrid" value="hybrid" {% if (current == "") or (current == "hybrid") %}checked{% endif %}><label for="by-hybrid" title="关键词和语义一起搜，推荐">混合</label>
+  <input type="radio" name="strategy" id="by-lexical" value="lexical" {% if current == "lexical" %}checked{% endif %}><label for="by-lexical" title="只按词搜，适合路径、名称、报错原文">关键词</label>
+  <input type="radio" name="strategy" id="by-semantic" value="semantic" {% if current == "semantic" %}checked{% endif %}><label for="by-semantic" title="只按意思搜，适合换种说法">语义</label>
+</fieldset>
+{% endmacro %}

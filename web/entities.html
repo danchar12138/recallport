@@ -3,7 +3,7 @@
 </header>
 <form method="get" action="/entities" class="searchform">
   <div class="searchrow">
-    <div class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input type="search" name="q" value="{{ Q }}" data-search placeholder="按名称、别名或说明查找实体" aria-label="查找实体" autocomplete="off"></div>
+    <div class="searchfield"><svg class="icon" aria-hidden="true"><use href="#search"/></svg><input type="search" name="q" value="{{ Q }}" data-search placeholder="输入实体的名称、别名或说明" aria-label="查找实体" autocomplete="off"></div>
   </div>
   <div class="toolrow">
     <fieldset class="segmented" aria-label="排序" data-autosubmit>
@@ -19,21 +19,22 @@
 <section id="unresolved" class="card pad unresolved">
   <h2>待确认的名称</h2>
   <p class="muted">这些名称与已有实体重名或相近，系统没有擅自合并。接入的 AI 会在整理时选择，你也可以在记忆详情页手动指定。</p>
-  <ul>{% for u in Unresolved %}<li><b>{{ u.Name }}</b><span class="muted">{{ u.Count }} 条记忆</span>{% if u.Example %}<a class="btn btn-sm" href="/memory/{{ u.Example }}?back=/entities#entities">去处理</a>{% endif %}</li>{% endfor %}</ul>
+  <ul>{% for u in Unresolved[:5] %}<li><b>{{ u.Name }}</b><span class="muted">{{ u.Count }} 条记忆</span>{% if u.Example %}<a class="btn btn-sm" href="/memory/{{ u.Example }}?back=/entities#entities">去处理</a>{% endif %}</li>{% endfor %}</ul>
+  {% if Unresolved|length > 5 %}<details class="rel-more"><summary>其余 {{ Unresolved|length - 5 }} 个</summary><ul>{% for u in Unresolved[5:] %}<li><b>{{ u.Name }}</b><span class="muted">{{ u.Count }} 条记忆</span>{% if u.Example %}<a class="btn btn-sm" href="/memory/{{ u.Example }}?back=/entities#entities">去处理</a>{% endif %}</li>{% endfor %}</ul></details>{% endif %}
 </section>
 {% endif %}
 {% if Entities %}
-<section class="entity-grid" aria-label="实体列表">
+<section class="entity-grid" aria-label="实体列表" data-highlight="{{ Q }}">
   {% for e in Entities %}
   <a class="entity-card" href="/entity/{{ e.ID }}">
-    <h3>{{ e.Name }}</h3>
-    {% if e.Hint %}<p class="entity-hint">{{ e.Hint }}</p>{% endif %}
-    {% if e.Aliases %}<p class="entity-aliases">{% for a in e.Aliases %}<span class="chip">{{ a }}</span>{% endfor %}</p>{% endif %}
+    <h3 data-hl>{{ e.Name }}</h3>
+    {% if e.Hint %}<p class="entity-hint" data-hl>{{ e.Hint }}</p>{% endif %}
+    {% if e.Aliases %}<p class="entity-aliases">{% for a in e.Aliases %}<span class="chip" data-hl>{{ a }}</span>{% endfor %}</p>{% endif %}
     <p class="muted entity-foot">{{ e.Mentions }} 条记忆{% if e.Last %} · 最近 {{ e.Last }}{% endif %}</p>
   </a>
   {% endfor %}
 </section>
-{% if Prev or Next %}<nav class="pagination" aria-label="分页">{% if Prev %}<a class="btn" href="{{ Prev }}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>上一页</a>{% else %}<span></span>{% endif %}{% if Next %}<a class="btn" href="{{ Next }}">下一页<svg class="icon" aria-hidden="true"><use href="#right"/></svg></a>{% endif %}</nav>{% endif %}
+{% if Prev or Next %}<nav class="pagination" aria-label="分页">{% if Prev %}<a class="btn" href="{{ Prev }}"><svg class="icon" aria-hidden="true"><use href="#back"/></svg>上一页</a>{% else %}<span></span>{% endif %}{% if Next %}<a class="btn" href="{{ Next }}" data-more data-list=".entity-grid" data-unit=".entity-card">显示更多{% if Left %}（还有 {{ Left }} 个）{% endif %}</a>{% endif %}</nav>{% endif %}
 {% elif not Error %}
 <div class="card"><div class="empty"><svg class="icon" aria-hidden="true"><use href="#tag"/></svg><h3>{% if Q %}没有匹配的实体{% else %}还没有实体{% endif %}</h3><p>{% if Q %}换个名称或别名试试。{% else %}接入的 AI 会在读写记忆时，把项目、设备、工具、人等提交到这里；你不需要手动整理。也可以在任意记忆详情页手动添加。{% endif %}</p><div class="actions">{% if Q %}<a class="btn" href="/entities">清除查找</a>{% else %}<a class="btn btn-primary" href="/clients">接入 AI</a>{% endif %}</div></div></div>
 {% endif %}
