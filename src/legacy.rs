@@ -4,7 +4,7 @@
 //! A memory becomes a node (its context folded into the text, the entities it mentions kept as tags). The
 //! summaries become parents; a memory that corrects another becomes a later version of one node, so the old text
 //! lives on in its history; a summary that corrects another takes over its children.
-use crate::tree::{Attachment, Event, Node, Status, Storage};
+use crate::tree::{Attachment, Event, MAX_CONTENT, Node, Status, Storage};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 

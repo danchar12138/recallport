@@ -4,7 +4,8 @@
 //! a deleted node is purged on purpose.
 use serde::{Deserialize, Serialize};
 
-pub const MAX_CONTENT: usize = 4000;
+/// Longer than any note the 0.x series accepted (12,000 characters), so old libraries always fit.
+pub const MAX_CONTENT: usize = 16_000;
 pub const MAX_LINKS: usize = 64;
 pub const MAX_TAGS: usize = 12;
 pub const MAX_SOURCES: usize = 16;
