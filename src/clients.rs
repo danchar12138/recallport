@@ -1,6 +1,6 @@
 //! Connect RecallPort to AI clients by editing only their `recallport` entry.
 //! Never overwrites a same-named entry that points elsewhere without an explicit choice, backs the
-//! file up before changing it, and never touches memories.
+//! file up before changing it, and never touches the library.
 use anyhow::{Context, Result, bail};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -228,9 +228,16 @@ pub fn rules_present(c: Client) -> bool {
         .is_some_and(|t| t.contains(BEGIN) && t.contains(END))
 }
 
+/// What `write_rules` did.
+pub struct RulesWritten {
+    /// False when the block was already exactly what it should be.
+    pub changed: bool,
+    pub backup: Option<String>,
+}
+
 /// Add or refresh the rules block. Everything outside the markers is kept; the file is backed up
-/// first. Returns the backup path when the file changed and existed before.
-pub fn write_rules(c: Client) -> Result<Option<String>> {
+/// first (`backup` is its copy, when there was a file to copy).
+pub fn write_rules(c: Client) -> Result<RulesWritten> {
     let path = rules_path(c).context("找不到用户目录")?;
     let text = if path.is_file() {
         fs::read_to_string(&path)?
@@ -257,11 +264,17 @@ pub fn write_rules(c: Client) -> Result<Option<String>> {
         ),
     };
     if updated == text {
-        return Ok(None);
+        return Ok(RulesWritten {
+            changed: false,
+            backup: None,
+        });
     }
     let saved = backup(&path)?;
     write_atomic(&path, &updated)?;
-    Ok(saved)
+    Ok(RulesWritten {
+        changed: true,
+        backup: saved,
+    })
 }
 
 /// Remove only the rules block. Returns whether there was one.
@@ -441,17 +454,17 @@ Be brief.
 ",
         )?;
         assert!(!rules_present(Client::Codex));
-        assert!(write_rules(Client::Codex)?.is_some());
+        assert!(write_rules(Client::Codex)?.changed);
         let with = fs::read_to_string(&agents)?;
         assert!(
             with.starts_with(
                 "# My rules
 Be brief."
-            ) && with.contains("recall")
+            ) && with.contains(RULES.trim_end())
         );
         assert!(rules_present(Client::Codex));
         assert!(
-            write_rules(Client::Codex)?.is_none(),
+            !write_rules(Client::Codex)?.changed,
             "unchanged: no rewrite"
         );
         assert_eq!(fs::read_to_string(&agents)?, with);

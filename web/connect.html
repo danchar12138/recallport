@@ -1,1 +1,258 @@
+{% macro state_badge(c) %}<span class="adm-badge" data-state="{{ c.state }}">{% if c.state == "connected" %}已接入{% elif c.state == "conflict" %}地址不同{% elif c.state == "error" %}配置有问题{% else %}未接入{% endif %}</span>{% endmacro %}
+<div id="adm-connect" class="adm">
+<header class="page-head">
+  <div><h1>接入</h1><p class="sub">让 AI 客户端使用这份本地记忆。只在本机可用，不需要账号或令牌。</p></div>
+</header>
 
+<section class="adm-sec" id="address" aria-labelledby="h-address">
+  <div class="adm-intro card">
+    <h2 id="h-address">MCP 地址</h2>
+    <p>“接入”就是告诉 AI 客户端：记忆服务在下面这个地址。RecallPort 只会在客户端的配置里加一项叫 <code>recallport</code> 的内容，改之前先备份原文件，别的配置一律不动。接入后重启客户端，它就能用下面的 9 个工具读写记忆。</p>
+    <div class="adm-path">
+      <span class="adm-path-label">地址</span>
+      <code id="adm-mcp-url" class="adm-path-value">{{ Url }}</code>
+      <button type="button" class="btn btn-sm" data-copy="{{ Url }}" aria-label="复制 MCP 地址">复制地址</button>
+    </div>
+  </div>
+</section>
+
+<section class="adm-sec" id="clients" aria-labelledby="h-clients">
+  <div class="section-head"><div><h2 id="h-clients">一键接入</h2><p>RecallPort 能直接改写下面两个客户端的配置；别的客户端见后面的“其他客户端”。</p></div></div>
+  <p class="adm-flash" data-flash role="status" aria-live="polite" hidden></p>
+  <div class="adm-clients" data-region="clients">
+    {% for c in Clients %}
+    <article class="adm-client card" data-client="{{ c.id }}" data-state="{{ c.state }}" aria-labelledby="client-{{ c.id }}">
+      <div class="adm-client-head">
+        <h3 id="client-{{ c.id }}" tabindex="-1">{{ c.name }}</h3>
+        {{ state_badge(c) }}
+        {% if c.state == "connected" and c.seen %}<span class="adm-badge" data-state="seen">最近连过</span>{% endif %}
+      </div>
+      <p class="adm-sub">{{ c.scope }} · 配置文件 <code>{{ c.path }}</code>{% if not c.installed %} · 没有检测到它已安装，仍然可以接入{% endif %}</p>
+      <p class="adm-status">
+        {% if c.state == "connected" %}
+          {% if c.seen %}最近连过：{{ c.seen.name }} · {{ local_time(c.seen.at) }} · 共 {{ c.seen.calls }} 次调用。{% else %}配置正确，但还没有收到它的连接。重启 {{ c.name }} 后，点“验证连接”确认。{% endif %}
+        {% elif c.state == "conflict" %}
+          它的配置里已经有一项叫 <code>recallport</code>，指向 <code>{{ c.existing }}</code>，和当前地址不同。替换后它会指向 <code>{{ Url }}</code>，原文件会先备份。
+        {% elif c.state == "error" %}
+          读不了它的配置文件：{{ c.error }}。RecallPort 不会改动这个文件，请先修好它再来接入。
+        {% else %}
+          还没有接入。
+        {% endif %}
+      </p>
+      <div class="adm-actions">
+        {% if c.state == "none" %}<button type="button" class="btn btn-primary" data-client-act="connect">一键接入</button>{% endif %}
+        {% if c.state == "conflict" %}<button type="button" class="btn btn-primary" data-client-act="connect" data-replace="1" data-confirm="替换 {{ c.name }} 里原有的 recallport 配置？它会改为指向当前地址，原文件先备份。">替换为当前地址</button>{% endif %}
+        {% if c.state != "error" %}<button type="button" class="btn{% if c.state == "connected" %} btn-primary{% endif %}" data-client-act="verify">验证连接</button>{% endif %}
+        {% if c.state == "connected" or c.state == "conflict" %}<button type="button" class="btn btn-danger-ghost" data-client-act="disconnect" data-confirm="断开 {{ c.name }}？只会删掉它配置里的 recallport 这一项（原文件先备份），记忆不受影响。">断开</button>{% endif %}
+      </div>
+      <div class="adm-verify" data-verify aria-live="polite"></div>
+
+      {% if c.state != "error" %}
+      <details class="adm-details">
+        <summary>将写入的配置</summary>
+        <p class="adm-hint">写进 <code>{{ c.path }}</code>，只有这一项：</p>
+        <div class="adm-code"><pre id="preview-{{ c.id }}">{{ c.preview }}</pre><button type="button" class="btn btn-sm" data-copy-target="#preview-{{ c.id }}" aria-label="复制 {{ c.name }} 的配置">复制</button></div>
+        {% if c.command %}<p class="adm-hint">或者自己在命令行里加：</p>
+        <div class="adm-code"><pre id="command-{{ c.id }}">{{ c.command }}</pre><button type="button" class="btn btn-sm" data-copy-target="#command-{{ c.id }}" aria-label="复制命令">复制</button></div>{% endif %}
+      </details>
+
+      <div class="adm-rules">
+        <h4>使用规则 <span class="chip">可选</span> <span class="adm-badge" data-state="{% if c.rules %}connected{% else %}none{% endif %}">{% if c.rules %}已写入{% else %}未写入{% endif %}</span></h4>
+        <p>一小段提示，写进 {{ c.name }} 的全局指令文件 <code>{{ c.rules_path }}</code>，让 AI 在该查的时候主动查、该记的时候主动记。不写也能用：AI 在你要求时仍会调用工具，只是不一定主动。它用标记包住，文件里的其他内容不动，随时可以更新或移除，改动前会备份原文件。</p>
+        <div class="adm-actions">
+          <button type="button" class="btn btn-sm" data-client-act="rules-on">{% if c.rules %}更新为最新规则{% else %}写入使用规则{% endif %}</button>
+          {% if c.rules %}<button type="button" class="btn btn-sm btn-danger-ghost" data-client-act="rules-off" data-confirm="从 {{ c.rules_path }} 里移除使用规则？文件里的其他内容不动。">移除规则</button>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+
+  <details class="adm-details adm-standalone">
+    <summary>查看使用规则的全文</summary>
+    <div class="adm-code"><pre id="adm-rules-text" class="adm-prose">{{ Rules }}</pre><button type="button" class="btn btn-sm" data-copy-target="#adm-rules-text" aria-label="复制使用规则">复制</button></div>
+  </details>
+
+  <details class="adm-details adm-standalone" data-recent>
+    <summary>最近访问过 MCP 的客户端{% if Recent %}（{{ Recent|length }}）{% endif %}</summary>
+    {% if Recent %}
+    <ul class="adm-recent">
+      {% for r in Recent %}<li><b>{{ r.name }}</b><span class="muted"> · {{ local_time(r.at) }} · {{ r.calls }} 次调用{% if r.agent and r.agent != r.name %} · {{ r.agent }}{% endif %}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="adm-hint">还没有任何客户端访问过。接入并重启客户端后，它会出现在这里。</p>{% endif %}
+  </details>
+</section>
+
+<section class="adm-sec" id="manual" aria-labelledby="h-manual">
+  <div class="section-head"><div><h2 id="h-manual">其他客户端</h2><p>任何支持 MCP 的 HTTP 方式（Streamable HTTP）的客户端都能接入，地址同上，不需要认证。配置的字段名因客户端而异（常见的有 <code>type</code> / <code>transport</code>、<code>url</code> / <code>serverUrl</code>），以它自己的文档为准。</p></div></div>
+  <div class="adm-snippets">
+    <div class="adm-snippet card">
+      <h3>JSON（<code>mcpServers</code> 写法）</h3>
+      <div class="adm-code"><pre id="snip-json">{
+  "mcpServers": {
+    "recallport": {
+      "type": "http",
+      "url": "{{ Url }}"
+    }
+  }
+}</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-json" aria-label="复制 JSON 配置">复制</button></div>
+    </div>
+    <div class="adm-snippet card">
+      <h3>TOML（Codex 一类）</h3>
+      <div class="adm-code"><pre id="snip-toml">[mcp_servers.recallport]
+url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-toml" aria-label="复制 TOML 配置">复制</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="adm-sec" id="tools" aria-labelledby="h-tools">
+  <div class="section-head">
+    <div><h2 id="h-tools">工具手册</h2><p>接入后，AI 能用到下面 9 个工具。整份手册可以复制给 AI（比如放进项目说明里）。</p></div>
+    <button type="button" class="btn" data-copy="" data-manual-copy>复制整份手册</button>
+  </div>
+
+  <div class="adm-model card" id="how">
+    <h3>AI 怎么维护这棵树</h3>
+    <ul>
+      <li>记忆是<b>一棵树</b>。第 0 层是 AI 从对话里提取的原子记忆，每条是一段完整的经历（发生了什么、为什么、结果）；更高的层是 AI 写的汇总，层数不限。</li>
+      <li><b>写汇总</b>：用 <code>write</code>，并在 <code>adopt</code> 里列出它概括的节点；这些节点就挂到新节点下面，新节点比它们高一层。汇总只是索引，细节要用 <code>get</code> 看它下面的节点。</li>
+      <li><b>保养</b>：<code>maintain</code> 自下而上地列出缺汇总的地方，分批给出——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点——还有已经过期的汇总（下面有比它更新的节点）。AI 补写或改写之后，核对过仍然正确的汇总用 <code>update</code> 加 <code>touch</code> 刷新。</li>
+      <li><b>不会丢</b>：每次改动都留在节点的历史里（<code>get</code> 加 <code>history</code> 可以看）；<code>delete</code> 只是进回收站，放满一个月前随时能 <code>restore</code>。</li>
+    </ul>
+  </div>
+
+  <nav class="adm-tool-index" aria-label="工具目录">
+    {% for t in Tools %}<a href="#tool-{{ t }}"><code>{{ t }}</code></a>{% endfor %}
+  </nav>
+
+  <div class="adm-tool-list">
+    <article class="adm-tool card" id="tool-search" data-tool="search">
+      <h3><code>search</code><span>找记忆</span></h3>
+      <p class="adm-when">什么时候用：开始较大的任务、做技术选型、改配置之前，先查有没有相关的过往经历；没找到就换几种说法再查。</p>
+      <dl class="adm-args">
+        <div><dt><code>query</code><small>字符串</small></dt><dd>要找的话题、原话或当前情境。</dd></div>
+        <div><dt><code>queries</code><small>字符串数组</small></dt><dd>同一件事的其他说法（同义词、另一种语言、原始报错）。每种说法都会检索，结果合并。</dd></div>
+        <div><dt><code>scope</code><small>节点编号</small></dt><dd>只在这个节点和它下面的所有节点里找。</dd></div>
+        <div><dt><code>min_layer</code> / <code>max_layer</code><small>整数</small></dt><dd>只要这个层范围内的节点：0 是原子记忆，更高的层是汇总。</dd></div>
+        <div><dt><code>tag</code><small>字符串</small></dt><dd>只要带这个标签的节点。</dd></div>
+        <div><dt><code>from</code> / <code>through</code><small>日期</small></dt><dd>按“事情发生的日期”（<code>occurred</code>）筛选，含两端，格式 <code>YYYY-MM-DD</code>，可以只写前几位。没有日期的节点不会被排除。</dd></div>
+        <div><dt><code>limit</code><small>整数</small></dt><dd>最多返回几条。</dd></div>
+        <div><dt><code>expand</code><small>整数</small></dt><dd>命中的是汇总时，顺带带出它下面最相关的几个节点。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>命中的节点：编号、层、正文（太长会截断，要全文用 <code>get</code>）、标签、发生日期、与问题的相关度；汇总命中时带上它下面最相关的节点，每个命中还带着它上面各层汇总的路径。没有真正相关的内容时会明说，命中只是线索。</p>
+      <div class="adm-code"><pre id="ex-search">{"query": "备份策略", "queries": ["backup schedule", "每天几点备份"], "max_layer": 1, "limit": 5}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-search" aria-label="复制 search 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-get" data-tool="get">
+      <h3><code>get</code><span>读一个节点的全部</span></h3>
+      <p class="adm-when">什么时候用：搜到线索后看完整内容；顺着汇总往下找细节；改它之前先读一遍，拿到当前版本号。</p>
+      <dl class="adm-args">
+        <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>从 <code>search</code>、<code>write</code> 等的返回里取。</dd></div>
+        <div><dt><code>history</code><small>布尔</small></dt><dd>为 true 时附上这个节点每一版的正文、改动人和时间。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>完整正文、版本号、标签、发生日期、所在的层、从最上面到它的路径、它的子节点、引用和被引用、来源、附件（含文件在本机的路径）。</p>
+      <div class="adm-code"><pre id="ex-get">{"id": "替换成节点编号", "history": true}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-get" aria-label="复制 get 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-write" data-tool="write">
+      <h3><code>write</code><span>写入新节点</span></h3>
+      <p class="adm-when">什么时候用：做出带理由的决定、找到根因、验证有效的修复、失败的尝试、用户的偏好或约束、情况变化之后；也用来写汇总。先 <code>search</code>，已有同样的内容就改它，别重复写。</p>
+      <dl class="adm-args">
+        <div><dt><code>content</code><small>字符串 · 必填</small></dt><dd>正文。一段完整的经历，用用户的语言写，让没有上下文的人也看得懂。</dd></div>
+        <div><dt><code>parent</code><small>节点编号</small></dt><dd>把新节点直接放在这个节点下面。不填就暂时不属于任何汇总。</dd></div>
+        <div><dt><code>adopt</code><small>节点编号数组</small></dt><dd>写汇总用：把这些已有节点收到新节点下面，新节点成为它们的父节点。</dd></div>
+        <div><dt><code>tags</code><small>字符串数组</small></dt><dd>标签，用来按项目、设备、人等筛选。</dd></div>
+        <div><dt><code>refs</code><small>节点编号数组</small></dt><dd>相关、但不是上下级的其他节点。</dd></div>
+        <div><dt><code>sources</code><small>字符串数组</small></dt><dd>信息从哪来：文件名、网址、哪次对话。</dd></div>
+        <div><dt><code>occurred</code><small>日期</small></dt><dd>事情发生的日期，<code>YYYY-MM-DD</code>，可以只写年或年月。</dd></div>
+        <div><dt><code>attachments</code><small>对象数组</small></dt><dd>要归档的文件。每项：<code>path</code>（本机绝对路径）<b>或</b> <code>data_base64</code>（内联内容，约 96 KB 以内，更大的请用 <code>path</code>）；<code>name</code> 文件名；<code>caption</code> 一句说明（说明不会被搜索，重要的信息写进正文）；<code>reference</code> 为 true 时只记住文件的位置、不复制进记忆库（只对 <code>path</code> 有效）。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>写好的节点，内容和 <code>get</code> 一样（含新节点的编号和所在的层）。</p>
+      <div class="adm-code"><pre id="ex-write">{"content": "家庭服务器的备份改成每天凌晨三点跑，因为白天会占满上行带宽。", "tags": ["家庭服务器"], "occurred": "2026-11-22"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-write" aria-label="复制 write 示例">复制</button></div>
+      <div class="adm-code"><pre id="ex-adopt">{"content": "家庭服务器的备份策略：每天凌晨三点，保留七份。", "adopt": ["节点编号 1", "节点编号 2"]}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-adopt" aria-label="复制写汇总的示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-update" data-tool="update">
+      <h3><code>update</code><span>改写或刷新节点</span></h3>
+      <p class="adm-when">什么时候用：情况变了就改写那条旧节点，旧的内容会留在历史里，不要让两条互相矛盾的节点同时存在；汇总核对过仍然正确时，用 <code>touch</code> 刷新。</p>
+      <dl class="adm-args">
+        <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>要改的节点。</dd></div>
+        <div><dt><code>version</code><small>整数</small></dt><dd>你读到的版本号。节点在那之后被别人改过，这次更新会被拒绝，免得盖掉别人的修改；不填则按最新版本。</dd></div>
+        <div><dt><code>content</code><small>字符串</small></dt><dd>新的正文。不填表示不改正文。</dd></div>
+        <div><dt><code>tags</code> / <code>refs</code> / <code>sources</code><small>数组</small></dt><dd>整个换成新的列表（不是追加）。不填表示不动。</dd></div>
+        <div><dt><code>occurred</code><small>日期</small></dt><dd>新的发生日期。</dd></div>
+        <div><dt><code>add_attachments</code><small>对象数组</small></dt><dd>要新增的附件，写法同 <code>write</code> 的 <code>attachments</code>。</dd></div>
+        <div><dt><code>remove_attachments</code><small>数组</small></dt><dd>要摘掉的附件（用 <code>get</code> 返回的附件标识）。</dd></div>
+        <div><dt><code>touch</code><small>布尔</small></dt><dd>为 true 表示“核对过，仍然正确”：不改内容，只刷新这个节点的更新时间，它之后不再被当作过期。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>更新后的节点，内容和 <code>get</code> 一样。</p>
+      <div class="adm-code"><pre id="ex-update">{"id": "节点编号", "version": 2, "content": "备份改成每天凌晨四点，保留十四份。"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-update" aria-label="复制 update 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-move" data-tool="move">
+      <h3><code>move</code><span>调整位置</span></h3>
+      <p class="adm-when">什么时候用：整理这棵树，把节点挪到更合适的汇总下面。</p>
+      <dl class="adm-args">
+        <div><dt><code>ids</code><small>节点编号数组 · 必填</small></dt><dd>要移动的节点，它们下面的子节点跟着走。</dd></div>
+        <div><dt><code>to</code><small>节点编号</small></dt><dd>移到哪个节点下面；不填就移到最上层。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>移动的结果；不合法的移动（比如把节点放进它自己的子树里）会被拒绝并说明原因。</p>
+      <div class="adm-code"><pre id="ex-move">{"ids": ["节点编号 1", "节点编号 2"], "to": "汇总的节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-move" aria-label="复制 move 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-delete" data-tool="delete">
+      <h3><code>delete</code><span>删除节点（进回收站）</span></h3>
+      <p class="adm-when">什么时候用：重复的、错误的、已经没有意义的节点。不是永久删除：回收站里放满一个月才会被清掉，期间可以 <code>restore</code>。</p>
+      <dl class="adm-args">
+        <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>要删除的节点。它下面的子节点不会被删，而是上移，挂到它原来的父节点下面。</dd></div>
+        <div><dt><code>version</code><small>整数</small></dt><dd>你读到的版本号，用法同 <code>update</code>。</dd></div>
+        <div><dt><code>reason</code><small>字符串</small></dt><dd>为什么删，记在历史里。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>删除的结果，包括有几个子节点上移了。</p>
+      <div class="adm-code"><pre id="ex-delete">{"id": "节点编号", "reason": "和另一条重复"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-delete" aria-label="复制 delete 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-restore" data-tool="restore">
+      <h3><code>restore</code><span>从回收站取回</span></h3>
+      <p class="adm-when">什么时候用：删错了，或者情况又变回来了。</p>
+      <dl class="adm-args">
+        <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>回收站里的节点（用 <code>trash</code> 查）。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>取回后的节点，内容和 <code>get</code> 一样。</p>
+      <div class="adm-code"><pre id="ex-restore">{"id": "节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-restore" aria-label="复制 restore 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-trash" data-tool="trash">
+      <h3><code>trash</code><span>看回收站</span></h3>
+      <p class="adm-when">什么时候用：找被删掉的节点，决定要不要 <code>restore</code>。</p>
+      <dl class="adm-args">
+        <div><dt><code>limit</code><small>整数</small></dt><dd>最多列出几个。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>回收站里的节点（编号、正文的第一行、删除时间和原因）。</p>
+      <div class="adm-code"><pre id="ex-trash">{"limit": 20}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-trash" aria-label="复制 trash 示例">复制</button></div>
+    </article>
+
+    <article class="adm-tool card" id="tool-maintain" data-tool="maintain">
+      <h3><code>maintain</code><span>树的保养清单</span></h3>
+      <p class="adm-when">什么时候用：一段时间写了不少新记忆之后，或者在较长的任务收尾时，时不时调用一次。它只给清单，不改任何东西。</p>
+      <dl class="adm-args">
+        <div><dt>（没有参数）</dt><dd>传空对象 <code>{}</code>。</dd></div>
+      </dl>
+      <p class="adm-returns"><b>返回</b>每一层的节点数，以及已经有多少挂在汇总下面；过期的汇总和下面比它更新的节点；自下而上的下一批缺口——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点。一轮处理完再调用，会给出下一批或更高一层。</p>
+      <div class="adm-code"><pre id="ex-maintain">{}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-maintain" aria-label="复制 maintain 示例">复制</button></div>
+    </article>
+  </div>
+</section>
+
+<section class="adm-sec" id="trouble" aria-labelledby="h-trouble">
+  <div class="section-head"><div><h2 id="h-trouble">遇到问题</h2></div></div>
+  <ul class="adm-trouble card">
+    <li><b>客户端不调用工具。</b>接入之后要重启客户端（Claude Code 要新开一个会话）才会读到新配置。点上面的“验证连接”确认服务和 9 个工具都正常；再写入“使用规则”，AI 会更主动地查和记。仍然不用的话，直接对它说“先用 RecallPort 查一下”。</li>
+    <li><b>验证连接失败或连不上。</b>确认 RecallPort 还在运行（系统托盘里有它的图标），并且客户端配置里的地址和上面的 MCP 地址一致。</li>
+    <li><b>端口被占用。</b>默认端口 3765。被其他程序占用时，RecallPort 会改用附近的端口，MCP 地址也就变了：再点一次“一键接入”（卡片提示“地址不同”时选“替换为当前地址”）。想固定端口，可以用 <code>--listen 127.0.0.1:端口</code> 启动。</li>
+    <li><b>想还原客户端的配置。</b>每次改动前，RecallPort 都会在配置文件旁边留一份 <code>.recallport-时间.bak</code> 备份，直接换回去就行。</li>
+  </ul>
+</section>
+</div>
+<script src="/data.js" defer></script>
