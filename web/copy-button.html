@@ -1,3 +1,0 @@
-{% macro copy_button(arg) %}
-<div class="copy-control"><button type="button" class="btn btn-icon" data-copy="{{ arg }}" aria-label="{% if arg == "endpoint" %}复制 MCP 地址{% elif arg == "agent-rules" %}复制规则提示{% elif arg == "link-example" %}复制 link 示例{% elif arg == "entity-example" %}复制 entity 示例{% elif (arg == "codex-config") or (arg == "claude-config") %}复制 {% if arg == "codex-config" %}Codex{% else %}Claude Code{% endif %} 配置{% else %}复制 {% if arg == "recall-example" %}recall{% elif arg == "read-example" %}read{% elif arg == "health-example" %}health{% elif arg == "forget-example" %}forget{% else %}remember{% endif %} 示例{% endif %}" title="复制" hidden><svg class="icon" aria-hidden="true"><use href="#copy"/></svg></button></div>
-{% endmacro %}

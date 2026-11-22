@@ -1,0 +1,5 @@
+{# Small pieces the pages share. #}
+{% macro icon(name, size="") %}<svg class="icon{% if size %} icon-{{ size }}{% endif %}" aria-hidden="true"><use href="#{{ name }}"/></svg>{% endmacro %}
+{% macro layer(n) %}<span class="layer" data-layer="{{ [n, 5]|min }}" title="{% if n == 0 %}第 0 层：记忆本身{% else %}第 {{ n }} 层：汇总{% endif %}">第 {{ n }} 层</span>{% endmacro %}
+{% macro tags(list) %}{% if list %}<span class="chips">{% for t in list %}<a class="chip" href="/memories?tag={{ t|urlencode }}">{{ t }}</a>{% endfor %}</span>{% endif %}{% endmacro %}
+{% macro node_link(b) %}<a class="node-link" href="/node/{{ b.id }}">{{ layer(b.layer) }}<span class="node-text">{{ b.text or "（没有文字）" }}</span></a>{% endmacro %}

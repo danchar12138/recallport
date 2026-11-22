@@ -1,7 +1,0 @@
-{% macro date_control(arg) %}
-<div class="field" data-date-field data-date-hint-field>
-  <label for="f-occurred">发生时间 <span class="opt">可选</span></label>
-  <div class="datefield"><input id="f-occurred" type="text" name="occurred" value="{{ arg }}" placeholder="例如 2024-09-12，或只填 2024-09、2024" maxlength="10" autocomplete="off" data-date-input aria-describedby="f-occurred-hint"><button type="button" class="btn btn-icon" data-date-pick aria-label="打开日历选择日期" title="选择日期"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg></button></div>
-  <div class="field-foot"><span class="hint" id="f-occurred-hint" data-date-hint>不确定具体日子时，只填年或年月即可；留空表示日期未记。</span><span class="quick"><button type="button" class="link-btn" data-date-set="today">今天</button><button type="button" class="link-btn" data-date-set="yesterday">昨天</button><button type="button" class="link-btn" data-date-set="">清空</button></span></div>
-</div>
-{% endmacro %}

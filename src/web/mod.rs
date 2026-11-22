@@ -52,7 +52,7 @@ pub fn router(service: Arc<Service>, address: SocketAddr, app: Arc<App>) -> Resu
         };
     }
     templates!(
-        "page", "overview", "tree", "memories", "node", "trash", "data", "connect"
+        "page", "parts", "overview", "tree", "memories", "node", "editor", "trash", "data", "connect"
     );
     let web = Web {
         service: service.clone(),
@@ -94,8 +94,6 @@ pub fn router(service: Arc<Service>, address: SocketAddr, app: Arc<App>) -> Resu
         "tree.js" => "text/javascript; charset=utf-8",
         "node.js" => "text/javascript; charset=utf-8",
         "data.js" => "text/javascript; charset=utf-8",
-        "vendor/flatpickr.min.css" => "text/css; charset=utf-8",
-        "vendor/flatpickr.min.js" => "text/javascript; charset=utf-8",
     );
     Ok(router
         .with_state(web.clone())
