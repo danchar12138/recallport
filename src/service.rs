@@ -99,7 +99,7 @@ pub struct Link {
 pub struct HitView {
     pub id: String,
     pub layer: u32,
-    pub relevance: f32,
+    pub relevance: f64,
     pub exact: bool,
     pub matched: &'static str,
     pub content: String,
@@ -415,7 +415,7 @@ impl Service {
                 let node = t.live(&h.id);
                 HitView {
                     layer: h.layer,
-                    relevance: (h.relevance * 100.0).round() / 100.0,
+                    relevance: (f64::from(h.relevance) * 100.0).round() / 100.0,
                     exact: h.exact,
                     matched: h.matched,
                     content: h.content,

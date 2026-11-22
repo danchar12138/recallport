@@ -488,7 +488,7 @@ fn hit_json(h: &crate::service::HitView) -> Value {
 }
 
 /// From this closeness in meaning a related node counts as listed for the AI to look at.
-const RELATED_MIN: f32 = 0.6;
+const RELATED_MIN: f64 = 0.6;
 /// From this closeness a related node is told to be saying the same thing.
 const SAME: f32 = 0.85;
 
