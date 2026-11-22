@@ -1,75 +1,120 @@
+{% macro backup_row(b, full, busy) %}
+<li class="adm-row" data-backup="{{ b.name }}">
+  <div class="adm-row-main">
+    <span class="adm-name">{{ b.name }}</span>
+    <span class="adm-meta"><span class="chip">{{ b.label }}</span><span>{{ b.size }}</span><time datetime="{{ b.at }}">{{ local_time(b.at) }}</time></span>
+  </div>
+  <div class="adm-actions">
+    {% if full %}<a class="btn btn-sm" href="/backup/{{ b.name }}" download>下载</a>{% endif %}
+    {% if full %}<button type="button" class="btn btn-sm" data-job-action data-act="restore" data-mode="replace" data-name="{{ b.name }}" data-confirm="把记忆库替换成这一份？现在的记忆库会先另存为一份“恢复前的副本”。" {% if busy %}disabled{% endif %}>恢复为这份（替换）</button>
+    {% else %}<button type="button" class="btn btn-sm btn-primary" data-job-action data-act="restore" data-mode="replace" data-name="{{ b.name }}" {% if busy %}disabled{% endif %}>恢复</button>{% endif %}
+    <button type="button" class="btn btn-sm" data-job-action data-act="restore" data-mode="merge" data-name="{{ b.name }}" {% if busy %}disabled{% endif %}>合并进来</button>
+    {% if full %}<button type="button" class="btn btn-sm btn-danger-ghost" data-job-action data-act="delete" data-name="{{ b.name }}" data-confirm="删除这一份备份？删除后无法找回。" {% if busy %}disabled{% endif %}>删除</button>{% endif %}
+  </div>
+</li>
+{% endmacro %}
+<div id="adm-data" class="adm"{% if Busy %} data-busy{% endif %}>
 <header class="page-head">
-  <div><h1>数据</h1><p class="sub">所有记忆只保存在这台电脑上（本地 LanceDB）</p></div>
+  <div><h1>数据</h1><p class="sub">备份、恢复，以及记忆库在这台电脑上的位置。所有内容只保存在本机。</p></div>
 </header>
-<section id="backups" aria-labelledby="backup-title">
-  <div class="section-head"><div><h2 id="backup-title">备份与恢复</h2><p>备份是一个 ZIP：含全部记忆、实体、引用、来源、已入库的附件文件和语义向量，不含模型。内容是明文，请妥善保管，不要上传到公开位置。</p></div></div>
-  <div class="panel-list">
-    <div class="panel">
-      <div><h3>导出备份</h3><p>生成一个可随身携带的 .zip，用于搬迁、换电脑或日常保护。</p></div>
-      <button class="btn btn-primary" type="button" data-export><svg class="icon" aria-hidden="true"><use href="#download"/></svg>导出备份</button>
-    </div>
-    <div class="panel is-column">
-      <div class="panel-row">
-        <div><h3>自动备份</h3><p>每天最多一次，有改动才备份，保留最近 {{ Auto.Keep }} 份，存放在数据目录的 backups 文件夹里。带着语义向量，恢复时不用重新计算；不复制附件文件（它们本来就在数据目录里），换电脑请用上面的「导出备份」。</p></div>
-        <label class="switch"><input type="checkbox" data-auto-backup {% if Auto.Enabled %}checked{% endif %} aria-label="开启自动备份"><span class="switch-ui" aria-hidden="true"></span></label>
-      </div>
-      {% if Auto.Files %}<details class="config-all"><summary>最近 {{ (Auto.Files|length) }} 份自动备份</summary>
-        <ul class="auto-list">{% for f in Auto.Files %}<li><span><b>{{ f.Name }}</b><small>{{ f.Size }}{% if f.At %} · {{ local_time(f.At) }}{% endif %}</small></span><span class="auto-actions"><a class="btn btn-sm" href="/backups/{{ f.Name }}" download>下载</a><button class="btn btn-sm" type="button" data-auto-import="{{ f.Name }}" data-size="{{ f.Size }}">导入…</button></span></li>{% endfor %}</ul>
-      </details>{% endif %}
-    </div>
-    <div class="panel is-column">
-      <div><h3>导入备份</h3><p>导入前会先完整校验，通过后才动用现有数据，并自动保留一份回退快照。</p></div>
-      <form class="restore-form" id="restore-form" data-total="{{ Total }}">
-        <label class="dropzone" data-dropzone><svg class="icon" aria-hidden="true"><use href="#upload"/></svg><div><b data-file-name>选择或拖入备份文件</b><span data-file-meta>.zip · 选好后可选择替换或合并</span></div><input type="file" name="backup" accept=".zip,application/zip" aria-label="选择备份文件"></label>
-      </form>
-    </div>
-    <div class="panel">
-    <div><h3>附件文件</h3><p>已入库 {{ Files.Stored }} 个 · 占用 {{ Files.Size }}，仅引用 {{ Files.Referenced }} 个。入库的文件随备份带走。</p></div>
-    <button class="btn" type="button" data-cleanup data-confirm-title="清理未使用的文件？" data-confirm-body="删除没有任何记忆关联、也不在回退快照里的附件文件。这不会影响任何记忆。" data-confirm-ok="清理"><svg class="icon" aria-hidden="true"><use href="#trash"/></svg>清理未使用的文件</button>
-    </div>
-    {% if Recovery %}<div class="panel">
-      <div><h3>回退快照</h3><p>上一次导入或合并之前自动保留的状态：{{ Recovery.Memories }} 条记忆、{{ Recovery.Entities }} 个实体、{{ Recovery.Attachments }} 个附件。</p></div>
-      <div class="restore-actions"><button class="btn" type="button" data-recovery-export><svg class="icon" aria-hidden="true"><use href="#download"/></svg>导出</button><button class="btn" type="button" data-rollback data-confirm-title="回到导入之前？" data-confirm-body="当前记忆库会被回退快照替换（当前状态也会保留为新的回退快照，可再换回来）。操作期间请勿关闭页面。" data-confirm-ok="回退" data-confirm-tone="danger"><svg class="icon" aria-hidden="true"><use href="#history"/></svg>回退到这个状态</button></div>
-    </div>{% endif %}
+
+{% if Busy %}<div class="banner banner-warn" role="status"><p>另一项耗时操作正在进行（可能是在别的页面里启动的）。它结束前，下面的备份、恢复和导入暂时不能用。<button type="button" class="link-btn" data-reload>刷新状态</button></p></div>{% endif %}
+
+<div class="adm-job card" data-job hidden>
+  <div class="adm-job-head"><strong data-job-title></strong><span class="adm-job-pct" data-job-pct></span></div>
+  <progress class="bar" data-job-bar max="1" aria-label="进度"></progress>
+  <p class="adm-job-phase" data-job-phase aria-live="polite"></p>
+  <div class="adm-job-result" data-job-result tabindex="-1"></div>
+</div>
+
+<section class="adm-sec" aria-labelledby="h-overview">
+  <div class="section-head"><div><h2 id="h-overview">概览</h2></div></div>
+  <div data-region="stats">
+    <dl class="adm-stats">
+      <div class="adm-stat"><dt>记忆节点</dt><dd>{{ Nodes }}</dd></div>
+      <div class="adm-stat"><dt>回收站</dt><dd>{{ Trash }}</dd><small>放满一个月后永久删除</small></div>
+      <div class="adm-stat"><dt>附件</dt><dd>{{ Stored + Referenced }}</dd><small>已入库 {{ Stored }} 个 · 仅引用 {{ Referenced }} 个 · 合计 {{ FilesSize }}</small></div>
+      <div class="adm-stat"><dt>最近改动</dt><dd class="adm-when">{% if LastChange %}{{ local_time(LastChange) }}{% else %}—{% endif %}</dd></div>
+    </dl>
+  </div>
+  <div class="adm-path card">
+    <span class="adm-path-label">数据文件夹</span>
+    <code id="adm-dir" class="adm-path-value">{{ Dir }}</code>
+    <button type="button" class="btn btn-sm" data-copy="{{ Dir }}" aria-label="复制数据文件夹的路径">复制路径</button>
   </div>
 </section>
 
-
-
-<section id="search-index" class="section" aria-labelledby="index-title" data-index-panel>
-  <div class="section-head"><div><h2 id="index-title">搜索索引 <span class="badge" data-index-overall data-state="{{ Index.Semantic.State }}"></span></h2><p>用于加速搜索，可随时重建，不会改动记忆本身。</p></div>
-    <form method="post" action="/reindex"><input type="hidden" name="kind" value="all"><button class="btn btn-sm" data-index-rebuild="all"><svg class="icon icon-sm" aria-hidden="true"><use href="#refresh"/></svg>全部重建</button></form>
-  </div>
-    <div class="lanes">
-      <section class="lane" data-index-lane="keyword" aria-labelledby="keyword-index-title">
-        <div class="lane-head"><div><h3 id="keyword-index-title"><svg class="icon" aria-hidden="true"><use href="#search"/></svg>关键词索引</h3><small>LanceDB BM25 · Jieba + 双字</small></div><span class="badge" data-index-state data-state="{{ Index.Keyword.State }}" role="status"></span></div>
-        <progress class="bar" data-index-bar hidden aria-label="关键词索引重建中"></progress>
-        <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Keyword.CheckedAt %}{{ local_time(Index.Keyword.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Keyword.RepairedAt %}{{ local_time(Index.Keyword.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
-        <p class="problem" data-index-problem {% if not Index.Keyword.Problem %}hidden{% endif %}>关键词索引出现异常，系统会自动重试，也可以手动重建。</p>
-      </section>
-      <section class="lane" data-index-lane="semantic" aria-labelledby="semantic-index-title">
-        <div class="lane-head"><div><h3 id="semantic-index-title"><svg class="icon" aria-hidden="true"><use href="#network"/></svg>语义向量</h3><small id="index-engine">{% if Index.Model %}LanceDB · {{ Index.Dimensions }} 维 · {% if Index.Ann %}IVF-HNSW-Flat{% else %}精确扫描{% endif %}{% else %}语义模型未启用{% endif %}</small></div><span class="badge" data-index-state data-state="{{ Index.Semantic.State }}" role="status"></span></div>
-        <div class="coverage" {% if not Index.Model %}hidden{% endif %}><div class="row"><span>向量覆盖</span><strong id="index-coverage">{{ Index.Indexed }} / {{ Index.Total }}</strong></div><progress class="bar" id="index-progress" max="{% if Index.Total %}{{ Index.Total }}{% else %}1{% endif %}" value="{{ Index.Indexed }}" aria-label="语义索引覆盖率"></progress><small class="muted" id="index-skipped" {% if not Index.Skipped %}hidden{% endif %}>跳过 {{ Index.Skipped }} 条</small></div>
-        <dl class="lane-facts"><div><dt>最近检查</dt><dd data-index-checked>{% if Index.Semantic.CheckedAt %}{{ local_time(Index.Semantic.CheckedAt, true) }}{% else %}未检查{% endif %}</dd></div><div><dt>最近修复或重建</dt><dd data-index-repaired>{% if Index.Semantic.RepairedAt %}{{ local_time(Index.Semantic.RepairedAt, true) }}{% else %}无{% endif %}</dd></div></dl>
-        <details class="model-id" {% if not Index.Model %}hidden{% endif %}><summary>模型标识</summary><code id="index-model">{{ Index.Model }}</code></details>
-        <p class="problem" data-index-problem {% if not Index.Semantic.Problem %}hidden{% endif %}>语义索引出现异常，系统会自动重试，也可以手动重建。</p>
-      </section>
-    </div>
+<div data-region="legacy">
+{% if Empty and Backups %}
+<section id="restore" class="adm-legacy card" aria-labelledby="h-legacy">
+  <h2 id="h-legacy">从备份恢复</h2>
+  <p>记忆库现在是空的，而备份文件夹里有 {{ Backups|length }} 份备份。RecallPort 1.0 读得懂 0.x 版本的备份（包括它的自动备份），并会自动转换：被更正过的记忆变成同一个节点的历史版本，汇总变成上一层的父节点，实体变成标签。原来的备份文件不会被改动。</p>
+  <ul class="adm-list">
+    {% for b in Backups[:5] %}{{ backup_row(b, false, Busy) }}{% endfor %}
+  </ul>
+  {% if Backups|length > 5 %}<p class="adm-hint">另外 {{ Backups|length - 5 }} 份在下面的备份列表里。</p>{% endif %}
 </section>
+{% else %}<span id="restore"></span>{% endif %}
+</div>
 
-
-{% if Settings %}
-<section id="general" class="section" aria-labelledby="general-title">
-  <div class="section-head"><div><h2 id="general-title">常规</h2><p>RecallPort 在系统托盘常驻，关闭网页不会停止服务。</p></div></div>
-  <div class="panel-list">
-    <div class="panel">
-      <div><h3>登录 Windows 时自动启动</h3><p>开机登录后在后台运行，AI 随时可以读写记忆。只对当前用户生效，不需要管理员权限。</p></div>
-      <label class="switch"><input type="checkbox" data-autostart {% if Settings.Autostart %}checked{% endif %} aria-label="登录时自动启动"><span class="switch-ui" aria-hidden="true"></span></label>
-    </div>
-    <div class="panel">
-      <div><h3>退出 RecallPort</h3><p>停止服务。AI 客户端将无法读写记忆，直到你再次启动。</p></div>
-      <button class="btn btn-danger-ghost" type="button" data-quit data-confirm-title="退出 RecallPort？" data-confirm-body="服务会停止，托盘图标也会消失。需要时再双击 RecallPort.exe 启动。" data-confirm-ok="退出" data-confirm-tone="danger"><svg class="icon" aria-hidden="true"><use href="#power"/></svg>退出</button>
-    </div>
+<section class="adm-sec" id="backups" aria-labelledby="h-backups">
+  <div class="section-head">
+    <div><h2 id="h-backups">备份</h2><p>一份备份是一个 ZIP：含全部节点和它们的修改历史、搜索用的向量，以及已入库的附件文件；不含语义模型。内容是明文，请妥善保管，不要放到公开的地方。</p></div>
+    <button type="button" class="btn btn-primary" data-job-action data-act="backup" {% if Busy %}disabled{% endif %}>立即备份</button>
+  </div>
+  <div data-region="backups">
+    {% if Backups %}
+    <ul class="adm-list">
+      {% for b in Backups[:8] %}{{ backup_row(b, true, Busy) }}{% endfor %}
+    </ul>
+    {% if Backups|length > 8 %}
+    <details class="adm-more">
+      <summary>显示更早的 {{ Backups|length - 8 }} 份</summary>
+      <ul class="adm-list">
+        {% for b in Backups[8:] %}{{ backup_row(b, true, Busy) }}{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+    {% else %}
+    <div class="adm-empty card"><h3>还没有备份</h3><p>点“立即备份”做第一份；打开下面的“自动备份”后，每天有改动时会自动做一份。</p></div>
+    {% endif %}
   </div>
 </section>
-{% endif %}
+
+<section class="adm-sec" id="import" aria-labelledby="h-import">
+  <div class="section-head"><div><h2 id="h-import">导入备份文件</h2><p>选择别处带来的 ZIP：RecallPort 1.0 的备份，或旧版（0.x）的备份，旧版的会自动转换。文件只在本机处理。</p></div></div>
+  <form class="adm-upload card" data-upload novalidate>
+    <label class="adm-drop" data-drop>
+      <input type="file" accept=".zip,application/zip" data-file aria-describedby="adm-drop-hint">
+      <span class="adm-drop-text"><strong data-file-name>选择或拖入一个 .zip 文件</strong><span id="adm-drop-hint" data-file-meta>选好文件后，再决定合并还是替换。</span></span>
+    </label>
+    <div class="adm-upload-progress" data-upload-progress hidden>
+      <progress class="bar" data-upload-bar max="1" aria-label="上传进度"></progress>
+      <span data-upload-pct aria-live="polite"></span>
+    </div>
+    <div class="adm-actions">
+      <button type="submit" class="btn btn-primary" data-job-action data-act="import" data-mode="merge" disabled>合并进来</button>
+      <button type="submit" class="btn" data-job-action data-act="import" data-mode="replace" data-confirm="把记忆库替换成这个文件？现在的记忆库会先另存为一份“恢复前的副本”。" disabled>替换现在的记忆库</button>
+    </div>
+    <p class="adm-hint"><b>合并</b>：文件里有、这里没有的节点会加进来；两边都改过的节点留下最后改动的那一版，两边的历史都保留。<b>替换</b>：记忆库变成这个文件的样子，现在的先另存为“恢复前的副本”（最多留 3 份），可以在上面的列表里恢复它。</p>
+  </form>
+</section>
+
+<section class="adm-sec" aria-labelledby="h-settings">
+  <div class="section-head"><div><h2 id="h-settings">自动化</h2></div></div>
+  <div class="adm-settings card">
+    <div class="adm-setting">
+      <div><h3 id="adm-auto-title">自动备份</h3><p id="adm-auto-desc">每天最多一次，而且只在有改动时才做；保留最近 {{ Keep }} 份。自动备份里不复制附件文件（它们本来就在数据文件夹里），换电脑请用上面的“立即备份”。</p></div>
+      <label class="adm-switch"><input type="checkbox" role="switch" data-toggle="auto" aria-labelledby="adm-auto-title" aria-describedby="adm-auto-desc" {% if Auto %}checked{% endif %}><span class="adm-switch-ui" aria-hidden="true"></span></label>
+    </div>
+    {% if AutostartSupported %}
+    <div class="adm-setting">
+      <div><h3 id="adm-boot-title">开机自启</h3><p id="adm-boot-desc">登录 Windows 后自动在后台运行，AI 随时可以读写记忆。只对当前用户生效，不需要管理员权限。</p></div>
+      <label class="adm-switch"><input type="checkbox" role="switch" data-toggle="autostart" data-autostart aria-labelledby="adm-boot-title" aria-describedby="adm-boot-desc" {% if Autostart %}checked{% endif %}><span class="adm-switch-ui" aria-hidden="true"></span></label>
+    </div>
+    {% endif %}
+    <p class="adm-inline-error" data-toggle-error role="alert" hidden></p>
+  </div>
+</section>
+</div>
+<script src="/data.js" defer></script>
