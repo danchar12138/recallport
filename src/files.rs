@@ -126,7 +126,9 @@ fn clean_name(name: &str) -> String {
 
 impl Files {
     pub fn new(dir: &Path) -> Self {
-        Self { dir: dir.to_owned() }
+        Self {
+            dir: dir.to_owned(),
+        }
     }
 
     fn folder(&self) -> PathBuf {
@@ -154,7 +156,13 @@ impl Files {
         self.path_of(a).is_file()
     }
 
-    fn store(&self, source: &Path, name: &str, caption: &str, reference: bool) -> Result<Attachment> {
+    fn store(
+        &self,
+        source: &Path,
+        name: &str,
+        caption: &str,
+        reference: bool,
+    ) -> Result<Attachment> {
         fs::create_dir_all(self.folder())?;
         fs::create_dir_all(self.tmp_dir())?;
         let name = clean_name(name);
@@ -162,7 +170,9 @@ impl Files {
             let (hash, size, head) = digest(source, None)?;
             (hash, size, head, Storage::Referenced)
         } else {
-            let tmp = self.tmp_dir().join(uuid::Uuid::new_v4().simple().to_string());
+            let tmp = self
+                .tmp_dir()
+                .join(uuid::Uuid::new_v4().simple().to_string());
             let (hash, size, head) = match digest(source, Some(&tmp)) {
                 Ok(done) => done,
                 Err(error) => {
@@ -185,12 +195,22 @@ impl Files {
             caption: caption.trim().chars().take(400).collect(),
             size,
             storage,
-            path: if reference { source.to_string_lossy().into_owned() } else { String::new() },
+            path: if reference {
+                source.to_string_lossy().into_owned()
+            } else {
+                String::new()
+            },
         })
     }
 
     /// Take a file by its path: copied into the data folder, or (with `reference`) only remembered.
-    pub fn ingest_path(&self, raw: &str, name: Option<&str>, caption: &str, reference: bool) -> Result<Attachment> {
+    pub fn ingest_path(
+        &self,
+        raw: &str,
+        name: Option<&str>,
+        caption: &str,
+        reference: bool,
+    ) -> Result<Attachment> {
         let path = check_path(raw)?;
         let name = name
             .filter(|n| !n.trim().is_empty())
@@ -209,9 +229,14 @@ impl Files {
     }
 
     pub fn ingest_bytes(&self, name: &str, bytes: &[u8], caption: &str) -> Result<Attachment> {
-        ensure!(bytes.len() <= MAX_INLINE, "内联数据最多 8 MiB，更大的文件请给出路径");
+        ensure!(
+            bytes.len() <= MAX_INLINE,
+            "内联数据最多 8 MiB，更大的文件请给出路径"
+        );
         fs::create_dir_all(self.tmp_dir())?;
-        let tmp = self.tmp_dir().join(uuid::Uuid::new_v4().simple().to_string());
+        let tmp = self
+            .tmp_dir()
+            .join(uuid::Uuid::new_v4().simple().to_string());
         fs::write(&tmp, bytes)?;
         let done = self.store(&tmp, name, caption, false);
         let _ = fs::remove_file(&tmp);
@@ -245,21 +270,29 @@ mod tests {
         let files = Files::new(dir.path());
         let original = dir.path().join("note.txt");
         fs::write(&original, "hello").unwrap();
-        let a = files.ingest_path(original.to_str().unwrap(), None, " 备忘 ", false).unwrap();
+        let a = files
+            .ingest_path(original.to_str().unwrap(), None, " 备忘 ", false)
+            .unwrap();
         let b = files.ingest_bytes("same.txt", b"hello", "").unwrap();
         assert_eq!(a.hash, b.hash);
         assert_eq!(a.storage, Storage::Stored);
         assert_eq!(a.caption, "备忘");
         assert_eq!(a.mime, "text/plain");
         assert!(files.available(&a) && files.blob(&a.hash).is_file());
-        let r = files.ingest_path(original.to_str().unwrap(), None, "", true).unwrap();
+        let r = files
+            .ingest_path(original.to_str().unwrap(), None, "", true)
+            .unwrap();
         assert_eq!(r.storage, Storage::Referenced);
         assert_eq!(files.path_of(&r), original);
         fs::remove_file(&original).unwrap();
         assert!(!files.available(&r) && files.available(&a));
         // relative and network paths are refused
         assert!(files.ingest_path("a.png", None, "", false).is_err());
-        assert!(files.ingest_path(r"\\server\share\a.png", None, "", false).is_err());
+        assert!(
+            files
+                .ingest_path(r"\\server\share\a.png", None, "", false)
+                .is_err()
+        );
         // unused copies are swept away
         files.sweep(&HashSet::new());
         assert!(!files.available(&a));

@@ -84,20 +84,27 @@ struct Settings {
 
 /// `RecallPort-<kind>-YYYYMMDD-HHMM.zip`, the only names the backups folder serves or deletes.
 pub fn valid_name(name: &str) -> bool {
-    let Some(rest) = name.strip_prefix("RecallPort-").and_then(|r| r.strip_suffix(".zip")) else {
+    let Some(rest) = name
+        .strip_prefix("RecallPort-")
+        .and_then(|r| r.strip_suffix(".zip"))
+    else {
         return false;
     };
     let Some((kind, stamp)) = rest.rsplit_once('-').and_then(|(head, time)| {
-        head.rsplit_once('-').map(|(kind, day)| (kind, format!("{day}-{time}")))
+        head.rsplit_once('-')
+            .map(|(kind, day)| (kind, format!("{day}-{time}")))
     }) else {
         return false;
     };
     matches!(kind, "auto" | "backup" | "before-restore")
         && stamp.len() == 13
-        && stamp
-            .bytes()
-            .enumerate()
-            .all(|(i, b)| if i == 8 { b == b'-' } else { b.is_ascii_digit() })
+        && stamp.bytes().enumerate().all(|(i, b)| {
+            if i == 8 {
+                b == b'-'
+            } else {
+                b.is_ascii_digit()
+            }
+        })
 }
 
 fn kind_of(name: &str) -> &'static str {
@@ -126,7 +133,9 @@ struct Loaded {
 }
 
 fn read_entry(zip: &mut ZipArchive<BufReader<File>>, name: &str, limit: u64) -> Result<Vec<u8>> {
-    let entry = zip.by_name(name).with_context(|| format!("备份缺少 {name}"))?;
+    let entry = zip
+        .by_name(name)
+        .with_context(|| format!("备份缺少 {name}"))?;
     ensure!(entry.size() <= limit, "备份里的 {name} 太大");
     let mut out = Vec::with_capacity(entry.size() as usize);
     entry.take(limit).read_to_end(&mut out)?;
@@ -134,11 +143,17 @@ fn read_entry(zip: &mut ZipArchive<BufReader<File>>, name: &str, limit: u64) -> 
 }
 
 fn load(path: &Path) -> Result<(Loaded, ZipArchive<BufReader<File>>)> {
-    let mut zip = ZipArchive::new(BufReader::new(File::open(path)?)).context("不是有效的 ZIP 文件")?;
+    let mut zip =
+        ZipArchive::new(BufReader::new(File::open(path)?)).context("不是有效的 ZIP 文件")?;
     ensure!(zip.len() <= MAX_ENTRIES, "备份里的文件太多");
-    let manifest_bytes = read_entry(&mut zip, "manifest.json", MAX_TEXT).context("不是 RecallPort 备份（没有 manifest.json）")?;
-    let head: serde_json::Value = serde_json::from_slice(&manifest_bytes).context("manifest.json 无法解析")?;
-    let format = head.get("format").and_then(|f| f.as_str()).unwrap_or_default();
+    let manifest_bytes = read_entry(&mut zip, "manifest.json", MAX_TEXT)
+        .context("不是 RecallPort 备份（没有 manifest.json）")?;
+    let head: serde_json::Value =
+        serde_json::from_slice(&manifest_bytes).context("manifest.json 无法解析")?;
+    let format = head
+        .get("format")
+        .and_then(|f| f.as_str())
+        .unwrap_or_default();
     if format == legacy::FORMAT {
         let archive: legacy::Archive = serde_json::from_value(head)?;
         let vectors = zip
@@ -169,7 +184,10 @@ fn load(path: &Path) -> Result<(Loaded, ZipArchive<BufReader<File>>)> {
     let mut events = vec![];
     for (n, line) in String::from_utf8(log)?.lines().enumerate() {
         if !line.trim().is_empty() {
-            events.push(serde_json::from_str::<Event>(line).with_context(|| format!("备份的 nodes.jsonl 第 {} 行无法解析", n + 1))?);
+            events.push(
+                serde_json::from_str::<Event>(line)
+                    .with_context(|| format!("备份的 nodes.jsonl 第 {} 行无法解析", n + 1))?,
+            );
         }
     }
     let vectors = zip
@@ -187,11 +205,22 @@ fn load(path: &Path) -> Result<(Loaded, ZipArchive<BufReader<File>>)> {
         .filter(|a| a.storage == Storage::Stored)
         .map(|a| a.hash.clone())
         .collect();
-    Ok((Loaded { events, vectors, wanted, legacy: false }, zip))
+    Ok((
+        Loaded {
+            events,
+            vectors,
+            wanted,
+            legacy: false,
+        },
+        zip,
+    ))
 }
 
 fn valid_hash(hash: &str) -> bool {
-    hash.len() == 64 && hash.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    hash.len() == 64
+        && hash
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
 }
 
 impl Service {
@@ -201,7 +230,9 @@ impl Service {
 
     /// A file in the backups folder, by a name from `backups()`.
     pub fn backup_path(&self, name: &str) -> Option<PathBuf> {
-        valid_name(name).then(|| self.backup_dir().join(name)).filter(|p| p.is_file())
+        valid_name(name)
+            .then(|| self.backup_dir().join(name))
+            .filter(|p| p.is_file())
     }
 
     pub fn backups(&self) -> Vec<BackupFile> {
@@ -248,7 +279,11 @@ impl Service {
     /// Write the library as a ZIP. `files` false lists the attachments but leaves their bytes out.
     fn write_zip(&self, dest: &Path, files: bool, job: &Job) -> Result<usize> {
         let (events, vector_bytes) = self.export_events();
-        let nodes = events.iter().map(|e| &e.node.id).collect::<HashSet<_>>().len();
+        let nodes = events
+            .iter()
+            .map(|e| &e.node.id)
+            .collect::<HashSet<_>>()
+            .len();
         let tmp = dest.with_extension("part");
         let result = (|| -> Result<()> {
             let mut zip = ZipWriter::new(BufWriter::new(File::create(&tmp)?));
@@ -325,7 +360,12 @@ impl Service {
     pub fn import_archive(&self, path: &Path, mode: Mode, job: &Job) -> Result<ImportReport> {
         job.phase("读取备份", 0.0, 0.2);
         let (loaded, mut zip) = load(path)?;
-        let nodes = loaded.events.iter().map(|e| &e.node.id).collect::<HashSet<_>>().len();
+        let nodes = loaded
+            .events
+            .iter()
+            .map(|e| &e.node.id)
+            .collect::<HashSet<_>>()
+            .len();
         // the backup's files first: they are only put in place when they are really what their name says
         job.phase("复制附件", 0.2, 0.5);
         let mut missing = 0;
@@ -341,7 +381,10 @@ impl Service {
                 continue;
             };
             fs::create_dir_all(self.files.blob(hash).parent().context("附件目录")?)?;
-            let tmp = self.files.tmp_dir().join(uuid::Uuid::new_v4().simple().to_string());
+            let tmp = self
+                .files
+                .tmp_dir()
+                .join(uuid::Uuid::new_v4().simple().to_string());
             let mut out = File::create(&tmp)?;
             let mut hasher = <sha2::Sha256 as sha2::Digest>::new();
             let mut limited = entry.take(crate::files::MAX_ATTACHMENT);
@@ -386,7 +429,11 @@ impl Service {
         self.files.clean_temporary();
         Ok(ImportReport {
             nodes,
-            mode: if mode == Mode::Replace { "replace" } else { "merge" },
+            mode: if mode == Mode::Replace {
+                "replace"
+            } else {
+                "merge"
+            },
             legacy: loaded.legacy,
             merge,
             missing_files: missing,
@@ -396,7 +443,12 @@ impl Service {
 
     /// Keep only the newest `keep` backups of a kind.
     fn trim(&self, kind: &str, keep: usize) {
-        for old in self.backups().into_iter().filter(|b| b.kind == kind).skip(keep) {
+        for old in self
+            .backups()
+            .into_iter()
+            .filter(|b| b.kind == kind)
+            .skip(keep)
+        {
             let _ = fs::remove_file(self.backup_dir().join(old.name));
         }
     }

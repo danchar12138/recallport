@@ -1,6 +1,6 @@
+use super::lexicon::terms;
 use super::{model, search::Hit, *};
 use crate::embedding;
-use super::lexicon::terms;
 use std::sync::Arc;
 
 /// A bag-of-words "model": every word of the text lights one direction, so texts that share words are close.

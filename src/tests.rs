@@ -4,9 +4,7 @@ use crate::{
     data::Mode,
     embedding::{self, Embed},
     jobs::Job,
-    service::{
-        AttachInput, ListQuery, Order, Parent, Service, UpdateInput, WriteInput,
-    },
+    service::{AttachInput, ListQuery, Order, Parent, Service, UpdateInput, WriteInput},
     tree::SearchOpts,
 };
 use anyhow::Result;
@@ -17,8 +15,13 @@ struct Words;
 impl Embed for Words {
     fn encode(&self, input: &str) -> Result<Vec<f32>> {
         let mut v = vec![0.0f32; embedding::DIMENSIONS as usize];
-        for w in input.split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()) {
-            let h = w.bytes().fold(7usize, |h, b| h.wrapping_mul(31).wrapping_add(usize::from(b)));
+        for w in input
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|w| !w.is_empty())
+        {
+            let h = w.bytes().fold(7usize, |h, b| {
+                h.wrapping_mul(31).wrapping_add(usize::from(b))
+            });
             let at = h % v.len();
             v[at] += 1.0;
         }
@@ -43,7 +46,9 @@ fn say(text: &str) -> WriteInput {
 fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
     let dir = tempfile::tempdir().unwrap();
     let s = open(dir.path());
-    let a = s.write(say("备份每天凌晨三点跑\n细节在后面"), "codex").unwrap();
+    let a = s
+        .write(say("备份每天凌晨三点跑\n细节在后面"), "codex")
+        .unwrap();
     let b = s.write(say("备份保留最近七份"), "codex").unwrap();
     let sum = s
         .write(
@@ -60,42 +65,119 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
     assert_eq!(sum.descendants, 2);
     assert_eq!(sum.children.len(), 2);
     let a = s.get(&a.id).unwrap();
-    assert_eq!(a.path.iter().map(|p| p.id.as_str()).collect::<Vec<_>>(), vec![sum.id.as_str()]);
+    assert_eq!(
+        a.path.iter().map(|p| p.id.as_str()).collect::<Vec<_>>(),
+        vec![sum.id.as_str()]
+    );
     assert_eq!(a.children.len(), 0);
     // the list shows the first line only
-    assert_eq!(s.list(&ListQuery::default()).items.iter().find(|n| n.id == a.id).unwrap().text, "备份每天凌晨三点跑");
+    assert_eq!(
+        s.list(&ListQuery::default())
+            .items
+            .iter()
+            .find(|n| n.id == a.id)
+            .unwrap()
+            .text,
+        "备份每天凌晨三点跑"
+    );
     // an update without a version uses the latest; an old version is refused
     let changed = s
-        .update(&a.id, None, UpdateInput { content: Some("备份每天凌晨四点跑".into()), ..Default::default() }, "web")
+        .update(
+            &a.id,
+            None,
+            UpdateInput {
+                content: Some("备份每天凌晨四点跑".into()),
+                ..Default::default()
+            },
+            "web",
+        )
         .unwrap();
     assert_eq!(changed.version, a.version + 1);
     let err = s
-        .update(&a.id, Some(a.version), UpdateInput { tags: Some(vec!["x".into()]), ..Default::default() }, "web")
+        .update(
+            &a.id,
+            Some(a.version),
+            UpdateInput {
+                tags: Some(vec!["x".into()]),
+                ..Default::default()
+            },
+            "web",
+        )
         .unwrap_err();
     assert!(err.to_string().contains("已被改动"), "{err}");
     assert_eq!(changed.revisions[0].actor, "web");
-    assert_eq!(changed.revisions.last().unwrap().content, "备份每天凌晨三点跑\n细节在后面");
+    assert_eq!(
+        changed.revisions.last().unwrap().content,
+        "备份每天凌晨三点跑\n细节在后面"
+    );
     // references show in both directions
-    s.update(&b.id, None, UpdateInput { refs: Some(vec![a.id.clone()]), ..Default::default() }, "codex").unwrap();
+    s.update(
+        &b.id,
+        None,
+        UpdateInput {
+            refs: Some(vec![a.id.clone()]),
+            ..Default::default()
+        },
+        "codex",
+    )
+    .unwrap();
     assert_eq!(s.get(&a.id).unwrap().referenced_by[0].id, b.id);
     // search finds the new text and brings the context
-    let found = s.search(&SearchOpts { query: "凌晨四点".into(), ..Default::default() }).unwrap();
+    let found = s
+        .search(&SearchOpts {
+            query: "凌晨四点".into(),
+            ..Default::default()
+        })
+        .unwrap();
     assert_eq!(found.hits[0].id, a.id);
     assert_eq!(found.hits[0].path[0].id, sum.id);
     assert!(!found.no_strong_match);
-    assert!(s.search(&SearchOpts { query: "红烧肉的做法".into(), ..Default::default() }).unwrap().no_strong_match);
+    assert!(
+        s.search(&SearchOpts {
+            query: "红烧肉的做法".into(),
+            ..Default::default()
+        })
+        .unwrap()
+        .no_strong_match
+    );
     // filters of the list
-    let roots = s.list(&ListQuery { parent: Parent::Root, ..Default::default() });
-    assert_eq!((roots.total, roots.items[0].id.as_str()), (1, sum.id.as_str()));
-    let tagged = s.list(&ListQuery { tag: Some("家庭服务器".into()), order: Order::Created, ..Default::default() });
+    let roots = s.list(&ListQuery {
+        parent: Parent::Root,
+        ..Default::default()
+    });
+    assert_eq!(
+        (roots.total, roots.items[0].id.as_str()),
+        (1, sum.id.as_str())
+    );
+    let tagged = s.list(&ListQuery {
+        tag: Some("家庭服务器".into()),
+        order: Order::Created,
+        ..Default::default()
+    });
     assert_eq!(tagged.total, 1);
-    assert_eq!(s.list(&ListQuery { min_layer: Some(1), ..Default::default() }).total, 1);
+    assert_eq!(
+        s.list(&ListQuery {
+            min_layer: Some(1),
+            ..Default::default()
+        })
+        .total,
+        1
+    );
     // stats, outline, activity
     let st = s.stats();
     assert_eq!((st.nodes, st.roots), (3, 1));
-    assert_eq!(st.layers.iter().map(|l| (l.layer, l.count, l.covered)).collect::<Vec<_>>(), vec![(0, 2, 2), (1, 1, 0)]);
+    assert_eq!(
+        st.layers
+            .iter()
+            .map(|l| (l.layer, l.count, l.covered))
+            .collect::<Vec<_>>(),
+        vec![(0, 2, 2), (1, 1, 0)]
+    );
     let outline = s.outline();
-    assert_eq!((outline.len(), outline[0].size, outline[0].children.len()), (1, 3, 2));
+    assert_eq!(
+        (outline.len(), outline[0].size, outline[0].children.len()),
+        (1, 3, 2)
+    );
     assert_eq!(s.activity(3).len(), 3);
     // delete: children move up, the node goes to the trash and can come back
     assert_eq!(s.delete(&sum.id, None, "并入别处", "codex").unwrap(), 2);
@@ -105,9 +187,13 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
     s.restore(&sum.id, "web").unwrap();
     assert!(!s.get(&sum.id).unwrap().deleted);
     // moving
-    s.move_nodes(&[a.id.clone(), b.id.clone()], Some(&sum.id), "web").unwrap();
+    s.move_nodes(&[a.id.clone(), b.id.clone()], Some(&sum.id), "web")
+        .unwrap();
     assert_eq!(s.get(&sum.id).unwrap().children.len(), 2);
-    assert!(s.move_nodes(&[sum.id.clone()], Some(&a.id), "web").is_err(), "no loops");
+    assert!(
+        s.move_nodes(&[sum.id.clone()], Some(&a.id), "web").is_err(),
+        "no loops"
+    );
 }
 
 #[test]
@@ -120,8 +206,16 @@ fn attachments_are_copied_travel_in_backups_and_are_swept_with_the_node() {
         .write(
             WriteInput {
                 attachments: vec![
-                    AttachInput { path: Some(file.to_string_lossy().into_owned()), caption: "备忘".into(), ..Default::default() },
-                    AttachInput { data_base64: Some("aGk=".into()), name: Some("hi.txt".into()), ..Default::default() },
+                    AttachInput {
+                        path: Some(file.to_string_lossy().into_owned()),
+                        caption: "备忘".into(),
+                        ..Default::default()
+                    },
+                    AttachInput {
+                        data_base64: Some("aGk=".into()),
+                        name: Some("hi.txt".into()),
+                        ..Default::default()
+                    },
                 ],
                 ..say("带附件的节点")
             },
@@ -136,26 +230,46 @@ fn attachments_are_copied_travel_in_backups_and_are_swept_with_the_node() {
     let backup = s.backup_path(&name).unwrap();
     let other = tempfile::tempdir().unwrap();
     let t = open(other.path());
-    let report = t.import_archive(&backup, Mode::Replace, &Job::detached()).unwrap();
+    let report = t
+        .import_archive(&backup, Mode::Replace, &Job::detached())
+        .unwrap();
     assert_eq!((report.nodes, report.missing_files), (1, 0));
     let copy = t.get(&n.id).unwrap();
     assert!(copy.attachments.iter().all(|a| a.available));
-    assert_eq!(std::fs::read(t.files.path_of(&crate::tree::Attachment {
-        hash: copy.attachments[0].hash.clone(),
-        name: String::new(),
-        caption: String::new(),
-        mime: String::new(),
-        size: 0,
-        storage: crate::tree::Storage::Stored,
-        path: String::new(),
-    })).unwrap().len() <= 5, true);
+    assert_eq!(
+        std::fs::read(t.files.path_of(&crate::tree::Attachment {
+            hash: copy.attachments[0].hash.clone(),
+            name: String::new(),
+            caption: String::new(),
+            mime: String::new(),
+            size: 0,
+            storage: crate::tree::Storage::Stored,
+            path: String::new(),
+        }))
+        .unwrap()
+        .len()
+            <= 5,
+        true
+    );
     // removing an attachment and deleting + purging the node sweeps the copies
     let first = n.attachments[0].hash.clone();
-    s.update(&n.id, None, UpdateInput { remove_attachments: vec![first], ..Default::default() }, "web").unwrap();
+    s.update(
+        &n.id,
+        None,
+        UpdateInput {
+            remove_attachments: vec![first],
+            ..Default::default()
+        },
+        "web",
+    )
+    .unwrap();
     s.delete(&n.id, None, "不要了", "web").unwrap();
     assert_eq!(s.purge(&[n.id.clone()]).unwrap(), 1);
     assert!(s.get(&n.id).is_err());
-    assert_eq!(std::fs::read_dir(dir.path().join("files")).unwrap().count(), 0);
+    assert_eq!(
+        std::fs::read_dir(dir.path().join("files")).unwrap().count(),
+        0
+    );
 }
 
 #[test]
@@ -166,33 +280,74 @@ fn a_backup_replaces_or_merges_and_a_copy_is_kept_before_replacing() {
     let b = open(two.path());
     let shared = a.write(say("两边都有的节点"), "codex").unwrap();
     let mine = a.write(say("只在这边的节点"), "codex").unwrap();
-    let backup = a.backup_path(&a.make_backup(&Job::detached()).unwrap()).unwrap();
+    let backup = a
+        .backup_path(&a.make_backup(&Job::detached()).unwrap())
+        .unwrap();
     // merge into a library that only has one other node
     let other = b.write(say("另一个库里的节点"), "codex").unwrap();
-    let report = b.import_archive(&backup, Mode::Merge, &Job::detached()).unwrap();
+    let report = b
+        .import_archive(&backup, Mode::Merge, &Job::detached())
+        .unwrap();
     assert_eq!(report.merge.as_ref().unwrap().added, 2);
     assert_eq!(b.stats().nodes, 3);
     // merging the same backup again changes nothing
-    let again = b.import_archive(&backup, Mode::Merge, &Job::detached()).unwrap();
-    assert_eq!(again.merge.as_ref().unwrap().added + again.merge.as_ref().unwrap().updated, 0);
+    let again = b
+        .import_archive(&backup, Mode::Merge, &Job::detached())
+        .unwrap();
+    assert_eq!(
+        again.merge.as_ref().unwrap().added + again.merge.as_ref().unwrap().updated,
+        0
+    );
     // a node both libraries changed ends up as the newer one, with both histories
-    a.update(&shared.id, None, UpdateInput { content: Some("在 A 里改过的内容".into()), ..Default::default() }, "codex").unwrap();
-    let newer = a.backup_path(&a.make_backup(&Job::detached()).unwrap()).unwrap();
-    b.import_archive(&newer, Mode::Merge, &Job::detached()).unwrap();
+    a.update(
+        &shared.id,
+        None,
+        UpdateInput {
+            content: Some("在 A 里改过的内容".into()),
+            ..Default::default()
+        },
+        "codex",
+    )
+    .unwrap();
+    let newer = a
+        .backup_path(&a.make_backup(&Job::detached()).unwrap())
+        .unwrap();
+    b.import_archive(&newer, Mode::Merge, &Job::detached())
+        .unwrap();
     let merged = b.get(&shared.id).unwrap();
     assert_eq!(merged.content, "在 A 里改过的内容");
     assert!(merged.revisions.len() >= 2);
     // replacing makes the library exactly the backup and keeps what was there
-    let report = b.import_archive(&backup, Mode::Replace, &Job::detached()).unwrap();
+    let report = b
+        .import_archive(&backup, Mode::Replace, &Job::detached())
+        .unwrap();
     assert_eq!(b.stats().nodes, 2);
     assert!(b.get(&other.id).is_err());
     let kept = report.kept_as.unwrap();
-    assert!(b.backups().iter().any(|f| f.name == kept && f.kind == "before-restore"));
+    assert!(
+        b.backups()
+            .iter()
+            .any(|f| f.name == kept && f.kind == "before-restore")
+    );
     // going back is restoring that copy
-    b.import_archive(&b.backup_path(&kept).unwrap(), Mode::Replace, &Job::detached()).unwrap();
+    b.import_archive(
+        &b.backup_path(&kept).unwrap(),
+        Mode::Replace,
+        &Job::detached(),
+    )
+    .unwrap();
     assert!(b.get(&other.id).is_ok() && b.get(&mine.id).is_ok());
     // searches work on the restored library without computing vectors again
-    assert_eq!(b.search(&SearchOpts { query: "另一个库里的节点".into(), ..Default::default() }).unwrap().hits[0].id, other.id);
+    assert_eq!(
+        b.search(&SearchOpts {
+            query: "另一个库里的节点".into(),
+            ..Default::default()
+        })
+        .unwrap()
+        .hits[0]
+            .id,
+        other.id
+    );
 }
 
 #[test]
@@ -214,12 +369,15 @@ fn a_backup_of_the_old_series_comes_along_with_corrections_summaries_and_tags() 
     });
     let zip_path = dir.path().join("old.zip");
     let mut zip = zip::ZipWriter::new(std::fs::File::create(&zip_path).unwrap());
-    zip.start_file("manifest.json", zip::write::SimpleFileOptions::default()).unwrap();
+    zip.start_file("manifest.json", zip::write::SimpleFileOptions::default())
+        .unwrap();
     zip.write_all(manifest.to_string().as_bytes()).unwrap();
     zip.finish().unwrap();
     let lib = tempfile::tempdir().unwrap();
     let s = open(lib.path());
-    let report = s.import_archive(&zip_path, Mode::Replace, &Job::detached()).unwrap();
+    let report = s
+        .import_archive(&zip_path, Mode::Replace, &Job::detached())
+        .unwrap();
     assert!(report.legacy);
     assert_eq!(s.stats().nodes, 2);
     let node = s.get(&b).unwrap();
@@ -231,7 +389,10 @@ fn a_backup_of_the_old_series_comes_along_with_corrections_summaries_and_tags() 
     // not a backup at all
     let junk = lib.path().join("junk.zip");
     std::fs::write(&junk, b"nope").unwrap();
-    assert!(s.import_archive(&junk, Mode::Merge, &Job::detached()).is_err());
+    assert!(
+        s.import_archive(&junk, Mode::Merge, &Job::detached())
+            .is_err()
+    );
 }
 
 #[test]
@@ -248,15 +409,22 @@ fn the_daily_backup_runs_once_and_only_when_something_changed() {
     assert_eq!(s.backups().len(), 1);
     // only names of this shape are served
     assert!(s.backup_path(&name).is_some());
-    assert!(s.backup_path("../nodes.jsonl").is_none() && s.backup_path("RecallPort-x-1.zip").is_none());
+    assert!(
+        s.backup_path("../nodes.jsonl").is_none() && s.backup_path("RecallPort-x-1.zip").is_none()
+    );
 }
 
 #[test]
 fn a_second_process_cannot_open_the_same_library() {
     let dir = tempfile::tempdir().unwrap();
     let _first = open(dir.path());
-    let err = Service::open(dir.path(), Arc::new(Words)).err().expect("locked");
-    assert!(err.to_string().contains("已被另一个 RecallPort 进程打开"), "{err}");
+    let err = Service::open(dir.path(), Arc::new(Words))
+        .err()
+        .expect("locked");
+    assert!(
+        err.to_string().contains("已被另一个 RecallPort 进程打开"),
+        "{err}"
+    );
 }
 
 #[test]
@@ -267,7 +435,10 @@ fn the_library_survives_a_restart_and_a_half_written_last_line() {
         s.write(say("重启之后还在"), "codex").unwrap().id
     };
     // a crash in the middle of writing the next line
-    let mut log = std::fs::OpenOptions::new().append(true).open(dir.path().join("nodes.jsonl")).unwrap();
+    let mut log = std::fs::OpenOptions::new()
+        .append(true)
+        .open(dir.path().join("nodes.jsonl"))
+        .unwrap();
     log.write_all(b"{\"at\":\"2026").unwrap();
     drop(log);
     let s = open(dir.path());

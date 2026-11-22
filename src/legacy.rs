@@ -103,12 +103,15 @@ struct File {
     path: String,
 }
 
+/// The text of a node: the memory and its context. A text beyond the node limit (more than 0.x ever accepted)
+/// is cut instead of making the whole backup unreadable.
 fn joined(text: &str, context: &str) -> String {
-    if context.is_empty() {
+    let all = if context.is_empty() {
         text.to_owned()
     } else {
         format!("{text}\n{context}")
-    }
+    };
+    all.chars().take(MAX_CONTENT).collect()
 }
 
 impl Archive {
@@ -127,14 +130,17 @@ impl Archive {
 
     /// The events of the library and the text each node's vector was made from, by node id.
     pub fn events(&self) -> Vec<Event> {
-        let by_id: HashMap<&str, &Memory> = self.memories.iter().map(|m| (m.id.as_str(), m)).collect();
+        let by_id: HashMap<&str, &Memory> =
+            self.memories.iter().map(|m| (m.id.as_str(), m)).collect();
         // old -> the newest memory that corrects it
         let mut next: HashMap<&str, &Memory> = HashMap::new();
         for m in &self.memories {
             for r in m.references.iter().filter(|r| r.kind == "corrects") {
                 if by_id.contains_key(r.id.as_str())
                     && r.id != m.id
-                    && next.get(r.id.as_str()).is_none_or(|have| have.recorded < m.recorded)
+                    && next
+                        .get(r.id.as_str())
+                        .is_none_or(|have| have.recorded < m.recorded)
                 {
                     next.insert(r.id.as_str(), m);
                 }
@@ -156,7 +162,9 @@ impl Archive {
             for r in m.references.iter().filter(|r| r.kind == "summarizes") {
                 if by_id.contains_key(r.id.as_str())
                     && r.id != m.id
-                    && summary_of.get(r.id.as_str()).is_none_or(|have| have.recorded < m.recorded)
+                    && summary_of
+                        .get(r.id.as_str())
+                        .is_none_or(|have| have.recorded < m.recorded)
                 {
                     summary_of.insert(r.id.as_str(), m);
                 }
@@ -167,18 +175,29 @@ impl Archive {
             chains.entry(end_of(&m.id)).or_default().push(m);
         }
         let live: HashSet<String> = chains.keys().cloned().collect();
-        let entity_name: HashMap<&str, &Entity> = self.entities.iter().map(|e| (e.id.as_str(), e)).collect();
+        let entity_name: HashMap<&str, &Entity> =
+            self.entities.iter().map(|e| (e.id.as_str(), e)).collect();
         let name_of = |m: &Mention| -> String {
-            let mut at = m.entity.as_deref().and_then(|id| entity_name.get(id).copied());
+            let mut at = m
+                .entity
+                .as_deref()
+                .and_then(|id| entity_name.get(id).copied());
             for _ in 0..16 {
-                match at.and_then(|e| e.merged_into.as_deref()).and_then(|id| entity_name.get(id).copied()) {
+                match at
+                    .and_then(|e| e.merged_into.as_deref())
+                    .and_then(|id| entity_name.get(id).copied())
+                {
                     Some(next) => at = Some(next),
                     None => break,
                 }
             }
             at.map_or_else(|| m.name.clone(), |e| e.name.clone())
         };
-        let file_of: HashMap<&str, &File> = self.attachments.iter().map(|f| (f.hash.as_str(), f)).collect();
+        let file_of: HashMap<&str, &File> = self
+            .attachments
+            .iter()
+            .map(|f| (f.hash.as_str(), f))
+            .collect();
         // parent of each chain: the newest summarizer of any member
         let mut parent: HashMap<String, String> = HashMap::new();
         for (id, chain) in &chains {
@@ -224,11 +243,20 @@ impl Archive {
                     let f = file_of.get(r.hash.as_str());
                     Attachment {
                         hash: r.hash.clone(),
-                        name: if r.name.is_empty() { f.map_or("file".into(), |f| f.name.clone()) } else { r.name.clone() },
+                        name: if r.name.is_empty() {
+                            f.map_or("file".into(), |f| f.name.clone())
+                        } else {
+                            r.name.clone()
+                        },
                         caption: r.caption.clone(),
-                        mime: f.map_or_else(|| "application/octet-stream".into(), |f| f.mime.clone()),
+                        mime: f
+                            .map_or_else(|| "application/octet-stream".into(), |f| f.mime.clone()),
                         size: f.map_or(0, |f| f.size),
-                        storage: if f.is_some_and(|f| f.storage == "referenced") { Storage::Referenced } else { Storage::Stored },
+                        storage: if f.is_some_and(|f| f.storage == "referenced") {
+                            Storage::Referenced
+                        } else {
+                            Storage::Stored
+                        },
                         path: f.map_or_else(String::new, |f| f.path.clone()),
                     }
                 })
@@ -240,11 +268,25 @@ impl Archive {
                 revs.sort_by(|a, b| a.replaced_at.cmp(&b.replaced_at));
                 let mut at = m.recorded.clone();
                 for r in revs {
-                    versions.push((at.clone(), r.replaced_by.clone(), joined(&r.text, &r.context), r.occurred.clone()));
+                    versions.push((
+                        at.clone(),
+                        r.replaced_by.clone(),
+                        joined(&r.text, &r.context),
+                        r.occurred.clone(),
+                    ));
                     at = r.replaced_at.clone();
                 }
-                let stamp = if m.updated.is_empty() { at } else { m.updated.clone() };
-                versions.push((stamp, m.source.clone(), joined(&m.text, &m.context), m.occurred.clone()));
+                let stamp = if m.updated.is_empty() {
+                    at
+                } else {
+                    m.updated.clone()
+                };
+                versions.push((
+                    stamp,
+                    m.source.clone(),
+                    joined(&m.text, &m.context),
+                    m.occurred.clone(),
+                ));
             }
             let created = chain[0].recorded.clone();
             let total = versions.len();
@@ -254,7 +296,11 @@ impl Archive {
                     at,
                     actor,
                     op: if n == 0 { "import" } else { "update" }.into(),
-                    reason: if n == 0 { String::new() } else { "来自旧版的修改或更正".into() },
+                    reason: if n == 0 {
+                        String::new()
+                    } else {
+                        "来自旧版的修改或更正".into()
+                    },
                     node: Node {
                         id: id.clone(),
                         content,
@@ -270,19 +316,36 @@ impl Archive {
                         } else {
                             vec![]
                         },
-                        sources: if last.source.is_empty() { vec![] } else { vec![last.source.clone()] },
-                        attachments: if last_version { attachments.clone() } else { vec![] },
+                        sources: if last.source.is_empty() {
+                            vec![]
+                        } else {
+                            vec![last.source.clone()]
+                        },
+                        attachments: if last_version {
+                            attachments.clone()
+                        } else {
+                            vec![]
+                        },
                         version: n as u32 + 1,
                         occurred,
                         created: created.clone(),
-                        updated: if last.updated.is_empty() { last.recorded.clone() } else { last.updated.clone() },
+                        updated: if last.updated.is_empty() {
+                            last.recorded.clone()
+                        } else {
+                            last.updated.clone()
+                        },
                         status: Status::Live,
                     },
                 });
             }
         }
         // the parts of a node's history must follow each other in time
-        out.sort_by(|a, b| a.node.id.cmp(&b.node.id).then_with(|| a.node.version.cmp(&b.node.version)));
+        out.sort_by(|a, b| {
+            a.node
+                .id
+                .cmp(&b.node.id)
+                .then_with(|| a.node.version.cmp(&b.node.version))
+        });
         let mut previous: Option<(String, String)> = None;
         for e in &mut out {
             if let Some((id, at)) = &previous
@@ -335,5 +398,18 @@ mod tests {
         assert!(events.iter().all(|e| e.node.id != a && e.node.id != s));
         // the first summary corrected by the second: the memory sits under the second one
         assert_eq!(mine[1].node.parent.as_deref(), Some(s2.as_str()));
+    }
+
+    #[test]
+    fn the_longest_memories_of_the_old_series_fit_and_nothing_longer_breaks_the_import() {
+        let long = "字".repeat(12_000);
+        let id = "e".repeat(32);
+        let archive: Archive = serde_json::from_value(serde_json::json!({
+            "memories": [{"id": id, "text": long, "context": "背".repeat(20_000), "recorded": "2024-01-01T00:00:00Z"}]
+        }))
+        .unwrap();
+        let events = archive.events();
+        assert_eq!(events[0].node.content.chars().count(), MAX_CONTENT);
+        assert!(events[0].node.content.starts_with(&long));
     }
 }

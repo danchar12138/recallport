@@ -13,7 +13,7 @@ pub use search::{Hit, SearchOpts, no_strong_match};
 use crate::{embedding::Embed, vectors};
 use anyhow::{Context, Result, bail, ensure};
 use lexicon::Lexicon;
-use model::{MAX_ATTACHMENTS, MAX_CONTENT, MAX_LINKS, MAX_SOURCES, MAX_TAGS};
+use model::{MAX_ATTACHMENTS, MAX_LINKS, MAX_SOURCES, MAX_TAGS};
 use std::{
     collections::{HashMap, HashSet},
     fs::{self, File, OpenOptions},
@@ -72,7 +72,10 @@ fn clean_attachments(list: &[Attachment]) -> Result<Vec<Attachment>> {
             out.push(a.clone());
         }
     }
-    ensure!(out.len() <= MAX_ATTACHMENTS, "附件最多 {MAX_ATTACHMENTS} 个");
+    ensure!(
+        out.len() <= MAX_ATTACHMENTS,
+        "附件最多 {MAX_ATTACHMENTS} 个"
+    );
     Ok(out)
 }
 
@@ -364,10 +367,8 @@ impl Tree {
                 *counts.entry(t).or_default() += 1;
             }
         }
-        let mut out: Vec<(String, usize)> = counts
-            .into_iter()
-            .map(|(t, n)| (t.to_owned(), n))
-            .collect();
+        let mut out: Vec<(String, usize)> =
+            counts.into_iter().map(|(t, n)| (t.to_owned(), n)).collect();
         out.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
         out
     }

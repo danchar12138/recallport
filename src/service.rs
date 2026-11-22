@@ -267,7 +267,11 @@ pub struct UpdateInput {
 }
 
 fn first_line(text: &str) -> String {
-    let line = text.lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
+    let line = text
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .unwrap_or("")
+        .trim();
     let mut out: String = line.chars().take(100).collect();
     if line.chars().count() > 100 {
         out.push('…');
@@ -396,7 +400,11 @@ impl Service {
             refs: self.briefs(&t, &n.refs),
             referenced_by: self.briefs(&t, &referenced_by),
             sources: n.sources.clone(),
-            attachments: n.attachments.iter().map(|a| self.attachment_view(a)).collect(),
+            attachments: n
+                .attachments
+                .iter()
+                .map(|a| self.attachment_view(a))
+                .collect(),
             revisions,
         })
     }
@@ -462,9 +470,15 @@ impl Service {
             })
             .collect();
         match q.order {
-            Order::Updated => nodes.sort_by(|a, b| b.updated.cmp(&a.updated).then_with(|| a.id.cmp(&b.id))),
-            Order::Created => nodes.sort_by(|a, b| b.created.cmp(&a.created).then_with(|| a.id.cmp(&b.id))),
-            Order::Occurred => nodes.sort_by(|a, b| b.occurred.cmp(&a.occurred).then_with(|| a.id.cmp(&b.id))),
+            Order::Updated => {
+                nodes.sort_by(|a, b| b.updated.cmp(&a.updated).then_with(|| a.id.cmp(&b.id)))
+            }
+            Order::Created => {
+                nodes.sort_by(|a, b| b.created.cmp(&a.created).then_with(|| a.id.cmp(&b.id)))
+            }
+            Order::Occurred => {
+                nodes.sort_by(|a, b| b.occurred.cmp(&a.occurred).then_with(|| a.id.cmp(&b.id)))
+            }
         }
         let total = nodes.len();
         let limit = if q.limit == 0 { 30 } else { q.limit };
@@ -507,10 +521,13 @@ impl Service {
     pub fn stats(&self) -> Stats {
         let t = self.read();
         let layers = t.layers();
-        let mut counts: std::collections::BTreeMap<u32, (usize, usize)> = std::collections::BTreeMap::new();
+        let mut counts: std::collections::BTreeMap<u32, (usize, usize)> =
+            std::collections::BTreeMap::new();
         let mut roots = 0;
         for n in t.nodes() {
-            let at = counts.entry(layers.get(&n.id).copied().unwrap_or(0)).or_default();
+            let at = counts
+                .entry(layers.get(&n.id).copied().unwrap_or(0))
+                .or_default();
             at.0 += 1;
             if n.parent.is_some() {
                 at.1 += 1;
@@ -536,7 +553,11 @@ impl Service {
             roots,
             layers: counts
                 .into_iter()
-                .map(|(layer, (count, covered))| LayerStat { layer, count, covered })
+                .map(|(layer, (count, covered))| LayerStat {
+                    layer,
+                    count,
+                    covered,
+                })
                 .collect(),
             tags: t.tags().into_iter().take(30).collect(),
             files,
@@ -578,13 +599,23 @@ impl Service {
             stale: m
                 .stale
                 .iter()
-                .filter_map(|(id, newer)| Some(StaleView { summary: b(id)?, newer: many(newer) }))
+                .filter_map(|(id, newer)| {
+                    Some(StaleView {
+                        summary: b(id)?,
+                        newer: many(newer),
+                    })
+                })
                 .collect(),
             gaps: m.gaps.map(|(layer, extend, groups)| GapsView {
                 layer,
                 extend: extend
                     .iter()
-                    .filter_map(|(id, nodes)| Some(ExtendView { summary: b(id)?, nodes: many(nodes) }))
+                    .filter_map(|(id, nodes)| {
+                        Some(ExtendView {
+                            summary: b(id)?,
+                            nodes: many(nodes),
+                        })
+                    })
                     .collect(),
                 groups: groups.iter().map(|g| many(g)).collect(),
             }),
@@ -623,9 +654,12 @@ impl Service {
 
     fn ingest(&self, input: &AttachInput) -> Result<Attachment> {
         if let Some(path) = &input.path {
-            return self
-                .files
-                .ingest_path(path, input.name.as_deref(), &input.caption, input.reference);
+            return self.files.ingest_path(
+                path,
+                input.name.as_deref(),
+                &input.caption,
+                input.reference,
+            );
         }
         let name = input.name.clone().unwrap_or_else(|| "file".into());
         if let Some(bytes) = &input.bytes {
@@ -660,7 +694,13 @@ impl Service {
     }
 
     /// `expect` is the version the caller read; without it the latest one is assumed.
-    pub fn update(&self, id: &str, expect: Option<u32>, input: UpdateInput, actor: &str) -> Result<NodeView> {
+    pub fn update(
+        &self,
+        id: &str,
+        expect: Option<u32>,
+        input: UpdateInput,
+        actor: &str,
+    ) -> Result<NodeView> {
         let added = input
             .add_attachments
             .iter()
@@ -668,17 +708,21 @@ impl Service {
             .collect::<Result<Vec<_>>>()?;
         {
             let mut t = self.write_lock();
-            let node = t.live(id).with_context(|| format!("没有这个节点：{id}"))?.clone();
-            let attachments = (!added.is_empty() || !input.remove_attachments.is_empty()).then(|| {
-                let mut list: Vec<Attachment> = node
-                    .attachments
-                    .iter()
-                    .filter(|a| !input.remove_attachments.contains(&a.hash))
-                    .cloned()
-                    .collect();
-                list.extend(added);
-                list
-            });
+            let node = t
+                .live(id)
+                .with_context(|| format!("没有这个节点：{id}"))?
+                .clone();
+            let attachments =
+                (!added.is_empty() || !input.remove_attachments.is_empty()).then(|| {
+                    let mut list: Vec<Attachment> = node
+                        .attachments
+                        .iter()
+                        .filter(|a| !input.remove_attachments.contains(&a.hash))
+                        .cloned()
+                        .collect();
+                    list.extend(added);
+                    list
+                });
             t.update(
                 id,
                 expect.unwrap_or(node.version),
@@ -706,11 +750,21 @@ impl Service {
     }
 
     /// Returns how many children moved up.
-    pub fn delete(&self, id: &str, expect: Option<u32>, reason: &str, actor: &str) -> Result<usize> {
+    pub fn delete(
+        &self,
+        id: &str,
+        expect: Option<u32>,
+        reason: &str,
+        actor: &str,
+    ) -> Result<usize> {
         let mut t = self.write_lock();
         let version = match expect {
             Some(v) => v,
-            None => t.live(id).with_context(|| format!("没有这个节点：{id}"))?.version,
+            None => {
+                t.live(id)
+                    .with_context(|| format!("没有这个节点：{id}"))?
+                    .version
+            }
         };
         Ok(t.delete(id, version, reason, actor)?.len())
     }
@@ -729,7 +783,12 @@ impl Service {
     }
 
     pub fn empty_trash(&self) -> Result<usize> {
-        let ids: Vec<String> = self.read().trash().into_iter().map(|n| n.id.clone()).collect();
+        let ids: Vec<String> = self
+            .read()
+            .trash()
+            .into_iter()
+            .map(|n| n.id.clone())
+            .collect();
         self.purge(&ids)
     }
 

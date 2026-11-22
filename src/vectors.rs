@@ -73,7 +73,11 @@ fn unit(raw: &[u8]) -> Option<Vec<f32>> {
         .iter()
         .map(|c| from_half(u16::from_le_bytes(*c)))
         .collect();
-    let norm = out.iter().map(|x| f64::from(*x).powi(2)).sum::<f64>().sqrt();
+    let norm = out
+        .iter()
+        .map(|x| f64::from(*x).powi(2))
+        .sum::<f64>()
+        .sqrt();
     (out.len() == dims() && norm.is_finite() && norm > 0.0).then(|| {
         out.iter_mut().for_each(|x| *x /= norm as f32);
         out
@@ -180,11 +184,20 @@ impl Log {
             let size = ID_BYTES + 8 + dims() * 2;
             let whole = header().len() + (bytes.len() - header().len()) / size * size;
             if whole != bytes.len() {
-                OpenOptions::new().write(true).open(path)?.set_len(whole as u64)?;
+                OpenOptions::new()
+                    .write(true)
+                    .open(path)?
+                    .set_len(whole as u64)?;
             }
         }
         let file = OpenOptions::new().append(true).open(path)?;
-        Ok((Self { path: path.to_owned(), file }, known))
+        Ok((
+            Self {
+                path: path.to_owned(),
+                file,
+            },
+            known,
+        ))
     }
 
     pub fn append(&mut self, id: &str, key: u64, vector: &[f32]) -> Result<()> {
@@ -238,7 +251,8 @@ mod tests {
         assert_eq!(*k, key("two"));
         assert!(v[2] > 0.99 && v[1] < 0.01);
         // appending after a torn tail still lines up
-        log.append(&"b".repeat(32), key("three"), &vector(3)).unwrap();
+        log.append(&"b".repeat(32), key("three"), &vector(3))
+            .unwrap();
         drop(log);
         assert_eq!(read(&fs::read(&path).unwrap()).len(), 2);
     }

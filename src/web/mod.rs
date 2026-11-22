@@ -131,7 +131,8 @@ async fn local_only(State(w): State<Web>, req: Request, next: Next) -> Response 
             return (
                 StatusCode::PAYLOAD_TOO_LARGE,
                 [(header::CONTENT_TYPE, "application/json")],
-                json!({"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":reason}}).to_string(),
+                json!({"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":reason}})
+                    .to_string(),
             )
                 .into_response();
         };
@@ -144,7 +145,11 @@ async fn local_only(State(w): State<Web>, req: Request, next: Next) -> Response 
         let name = serde_json::from_slice::<Value>(&body)
             .ok()
             .filter(|v| v["method"] == "initialize")
-            .and_then(|v| v["params"]["clientInfo"]["name"].as_str().map(str::to_owned))
+            .and_then(|v| {
+                v["params"]["clientInfo"]["name"]
+                    .as_str()
+                    .map(str::to_owned)
+            })
             .unwrap_or_default();
         w.app.saw_client(&name, agent);
         return headers(next.run(Request::from_parts(parts, Body::from(body))).await);

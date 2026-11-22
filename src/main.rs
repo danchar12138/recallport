@@ -23,6 +23,7 @@ mod web;
 use anyhow::{Context, Result, bail, ensure};
 use app::App;
 use clap::Parser;
+use service::Service;
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
@@ -30,7 +31,6 @@ use std::{
     sync::{Arc, mpsc},
     time::Duration,
 };
-use service::Service;
 
 const DEFAULT_PORT: u16 = 3765;
 
@@ -119,7 +119,11 @@ fn import(path: PathBuf, dir: PathBuf, model: PathBuf) -> Result<()> {
     println!(
         "已导入 {} 个节点{}：{}",
         report.nodes,
-        if report.legacy { "（来自旧版备份）" } else { "" },
+        if report.legacy {
+            "（来自旧版备份）"
+        } else {
+            ""
+        },
         dir.display()
     );
     Ok(())
