@@ -21,6 +21,7 @@ mod shell;
 mod store;
 #[cfg(test)]
 mod tests;
+mod tree;
 mod vectors;
 mod web;
 mod web_admin;
@@ -54,6 +55,12 @@ struct Args {
     /// 把备份（ZIP）导入空库后退出
     #[arg(long, value_name = "BACKUP")]
     import: Option<PathBuf>,
+    /// 实验：用这份问题（JSON）比较 v0.6 的检索和节点树的检索，需要同时给 --keys
+    #[arg(long, value_name = "QUESTIONS", requires = "keys")]
+    tree_eval: Option<PathBuf>,
+    /// 实验：问题里的答案名对应的记忆编号（JSON）
+    #[arg(long, value_name = "KEYS")]
+    keys: Option<PathBuf>,
     /// 后台运行：启动时不自动打开管理页（开机自启使用）
     #[arg(long)]
     background: bool,
@@ -142,6 +149,10 @@ fn run(args: Args) -> Result<()> {
     let model = args.model.clone().unwrap_or_else(|| root.join("model"));
     if let Some(path) = args.import.clone() {
         return import(path, dir, model);
+    }
+    if let (Some(questions), Some(keys)) = (args.tree_eval.clone(), args.keys.clone()) {
+        return tokio::runtime::Runtime::new()?
+            .block_on(tree::eval::run(&dir, &model, &questions, &keys));
     }
     let explicit = args.listen.is_some();
     let want = args

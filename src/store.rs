@@ -327,7 +327,7 @@ fn han(c: char) -> bool {
     matches!(c, '\u{3400}'..='\u{4dbf}' | '\u{4e00}'..='\u{9fff}' | '\u{20000}'..='\u{323af}')
 }
 
-fn terms(text: &str, limit: usize) -> String {
+pub(crate) fn terms(text: &str, limit: usize) -> String {
     static JIEBA: OnceLock<jieba_rs::Jieba> = OnceLock::new();
     let lower = text.to_lowercase();
     let mut words: Vec<_> = JIEBA
