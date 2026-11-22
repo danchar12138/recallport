@@ -7,6 +7,7 @@ mod app;
 mod archive;
 mod autobackup;
 mod clients;
+mod clusters;
 mod detail;
 mod embedding;
 mod entities;

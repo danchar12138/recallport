@@ -1035,6 +1035,377 @@ async fn a_map_territory_comes_in_pages_and_search_hits_know_their_territory() -
 }
 
 #[tokio::test]
+async fn summaries_make_a_tree_and_a_page_brings_the_whole_tree() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let first = s
+        .remember(
+            Draft {
+                entities: vec![entity("项目")],
+                occurred: "2000-01-01".into(),
+                ..say("旧细节 0")
+            },
+            "t",
+            "T",
+        )
+        .await?;
+    let project = first.entry.mentions[0].entity.clone().unwrap();
+    let about = |text: &str, occurred: &str, refs: Vec<&str>| Draft {
+        entities: vec![EntityInput {
+            id: project.clone(),
+            ..entity("项目")
+        }],
+        occurred: occurred.into(),
+        references: refs
+            .into_iter()
+            .map(|id| Reference {
+                id: id.into(),
+                reason: "汇总".into(),
+                kind: RefKind::Summarizes,
+            })
+            .collect(),
+        ..say(text)
+    };
+    let mut old = vec![first.entry.id.clone()];
+    for i in 1..4 {
+        old.push(
+            s.remember(
+                about(&format!("旧细节 {i}"), "2000-02-01", vec![]),
+                "t",
+                "T",
+            )
+            .await?
+            .entry
+            .id,
+        );
+    }
+    // Plenty of newer memories, so the old ones fall off the first page...
+    for i in 0..205 {
+        s.remember(
+            about(
+                &format!("后来的经历第 {i} 条各不相同"),
+                "2024-01-01",
+                vec![],
+            ),
+            "t",
+            "T",
+        )
+        .await?;
+    }
+    // ...then a summary of the old ones, itself summarized by a top summary.
+    let refs: Vec<&str> = old.iter().map(String::as_str).collect();
+    let low = s
+        .remember(about("这四条旧细节的汇总", "2024-06-01", refs), "t", "T")
+        .await?
+        .entry
+        .id;
+    let top = s
+        .remember(about("再往上的总汇总", "2024-07-01", vec![&low]), "t", "T")
+        .await?
+        .entry
+        .id;
+    let page = s.graph(&project, 0, false).await?;
+    let nodes = page["nodes"].as_array().unwrap();
+    let find = |id: &str| {
+        nodes
+            .iter()
+            .find(|n| n["id"] == id)
+            .unwrap_or_else(|| panic!("{id} missing"))
+    };
+    // the page is the newest 200, and the four old details came along as extras with their parent
+    assert_eq!(nodes.iter().filter(|n| n["extra"] == true).count(), 4);
+    assert_eq!(nodes.len(), 204);
+    assert_eq!(find(&old[0])["extra"], true);
+    assert_eq!(find(&top)["level"], 2);
+    assert_eq!(find(&top)["desc"], 5);
+    assert_eq!(find(&low)["level"], 1);
+    assert_eq!(find(&low)["summary"], top.as_str());
+    assert_eq!(find(&low)["kids"].as_array().unwrap().len(), 4);
+    assert_eq!(find(&old[2])["summary"], low.as_str());
+    assert_eq!(find(&old[2])["level"], 0);
+    // a memory summarized twice belongs to the newest summary
+    let newest = s
+        .remember(
+            about("更新的汇总只汇总了一条", "2024-08-01", vec![&old[1]]),
+            "t",
+            "T",
+        )
+        .await?
+        .entry
+        .id;
+    let lanes = s.lane_memories(1000).await?;
+    let lane = |id: &str| {
+        lanes
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|n| n["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(lane(&old[1])["summary"], newest.as_str());
+    assert_eq!(lane(&old[0])["summary"], low.as_str());
+    assert_eq!(lane(&low)["kids"].as_array().unwrap().len(), 3);
+    Ok(())
+}
+
+#[test]
+fn partition_puts_every_memory_in_a_group_that_follows_its_topic() {
+    // Three topics with their own directions, six memories each and a little different from one another;
+    // plus three loners that point somewhere else entirely.
+    let mut vectors: Vec<Vec<f32>> = vec![];
+    for topic in 0..3 {
+        for k in 0..6 {
+            let mut v = vec![0.0; 16];
+            v[topic * 4] = 1.0;
+            v[topic * 4 + 1 + k % 3] = 0.1 + 0.02 * k as f32;
+            vectors.push(v);
+        }
+    }
+    for loner in 0..3 {
+        let mut v = vec![0.0; 16];
+        v[12 + loner] = 1.0;
+        vectors.push(v);
+    }
+    let groups = crate::clusters::partition(&vectors, 3, 8);
+    let mut all: Vec<usize> = groups.iter().flatten().copied().collect();
+    all.sort_unstable();
+    assert_eq!(all, (0..21).collect::<Vec<_>>(), "{groups:?}");
+    assert!(groups.iter().all(|g| g.len() >= 3), "{groups:?}");
+    for topic in 0..3 {
+        let home = groups.iter().find(|g| g.contains(&(topic * 6))).unwrap();
+        assert!(
+            (0..6).all(|k| home.contains(&(topic * 6 + k))),
+            "{topic}: {groups:?}"
+        );
+    }
+    // few enough to summarize in one go: one group; a single memory has nobody to be grouped with
+    assert_eq!(
+        crate::clusters::partition(&vectors[..5], 3, 8),
+        vec![vec![0, 1, 2, 3, 4]]
+    );
+    assert!(crate::clusters::partition(&vectors[..1], 3, 8).is_empty());
+}
+
+#[tokio::test]
+async fn corrections_keep_their_place_in_the_tree_and_old_summaries_are_flagged() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let cite = |kind: RefKind, ids: &[&str]| -> Vec<Reference> {
+        ids.iter()
+            .map(|id| Reference {
+                id: (*id).into(),
+                reason: "测试".into(),
+                kind,
+            })
+            .collect()
+    };
+    let mut leaves = vec![];
+    for i in 0..4 {
+        leaves.push(
+            s.remember(say(&format!("细节 {i}")), "t", "T")
+                .await?
+                .entry
+                .id,
+        );
+    }
+    let refs: Vec<&str> = leaves.iter().map(String::as_str).collect();
+    let summary = s
+        .remember(
+            Draft {
+                references: cite(RefKind::Summarizes, &refs),
+                ..say("四条细节的汇总")
+            },
+            "t",
+            "T",
+        )
+        .await?
+        .entry
+        .id;
+    let health = s.health().await?;
+    assert!(health.issues.iter().all(|i| i.kind != "stale_summaries"));
+    // two details are corrected: each correction takes the old one's place under the summary
+    let mut fixes = vec![];
+    for (i, leaf) in leaves.iter().enumerate().take(2) {
+        let fixed = s
+            .remember(
+                Draft {
+                    references: cite(RefKind::Corrects, &[leaf]),
+                    ..say(&format!("更正后的细节 {i}"))
+                },
+                "t",
+                "T",
+            )
+            .await?;
+        fixes.push(fixed.entry.id);
+    }
+    let lanes = s.lane_memories(1000).await?;
+    let lane = |id: &str| {
+        lanes
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|n| n["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(lane(&fixes[0])["summary"], summary.as_str());
+    assert_eq!(lane(&fixes[1])["level"], 0);
+    // the summary was written before half of what is under it: it is flagged, and the layers are counted
+    // without the replaced memories
+    let health = s.health().await?;
+    let stale = health
+        .issues
+        .iter()
+        .find(|i| i.kind == "stale_summaries")
+        .unwrap();
+    assert!(
+        stale.examples[0].starts_with(&summary),
+        "{:?}",
+        stale.examples
+    );
+    assert_eq!(
+        health
+            .layers
+            .iter()
+            .map(|l| (l.layer, l.count, l.covered))
+            .collect::<Vec<_>>(),
+        vec![(0, 4, 4), (1, 1, 0)]
+    );
+    // a new summary that corrects it takes over all its children (and its place)
+    let newer = s
+        .remember(
+            Draft {
+                references: cite(RefKind::Corrects, &[&summary]),
+                ..say("更新后的汇总")
+            },
+            "t",
+            "T",
+        )
+        .await?
+        .entry
+        .id;
+    let lanes = s.lane_memories(1000).await?;
+    let lane = |id: &str| {
+        lanes
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|n| n["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(lane(&leaves[2])["summary"], newer.as_str());
+    assert_eq!(lane(&fixes[1])["summary"], newer.as_str());
+    assert_eq!(lane(&newer)["level"], 1);
+    assert!(
+        s.health()
+            .await?
+            .issues
+            .iter()
+            .all(|i| i.kind != "stale_summaries")
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn health_hands_out_summary_work_one_layer_at_a_time() -> Result<()> {
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let cite = |ids: &[String]| -> Vec<Reference> {
+        ids.iter()
+            .map(|id| Reference {
+                id: id.clone(),
+                reason: "汇总".into(),
+                kind: RefKind::Summarizes,
+            })
+            .collect()
+    };
+    let mut leaves = vec![];
+    for i in 0..30 {
+        leaves.push(
+            s.remember(say(&format!("经历 {i}")), "t", "T")
+                .await?
+                .entry
+                .id,
+        );
+    }
+    let gaps =
+        |h: &crate::health::Health| h.issues.iter().find(|i| i.kind == "summary_gaps").cloned();
+    // thirty loose memories: layer 0 needs summaries, in batches that together cover all of them
+    let first = gaps(&s.health().await?).expect("work for layer 0");
+    assert!(first.detail.contains("第 0 层"), "{}", first.detail);
+    let batched: usize = first
+        .examples
+        .iter()
+        .map(|e| e.split(' ').count() - 1)
+        .sum();
+    assert_eq!(batched, 30, "{:?}", first.examples);
+    assert!(first.examples.iter().all(|e| e.starts_with("new ")));
+    // three summaries of ten cover the layer; the next layer is already few enough to be the top
+    let mut tops = vec![];
+    for chunk in leaves.chunks(10) {
+        tops.push(
+            s.remember(
+                Draft {
+                    references: cite(chunk),
+                    ..say("十条的汇总")
+                },
+                "t",
+                "T",
+            )
+            .await?
+            .entry
+            .id,
+        );
+    }
+    assert!(gaps(&s.health().await?).is_none());
+    // a late memory resembles the existing summaries (identical vectors here): it is sent to one of them
+    let late = s.remember(say("后来的经历"), "t", "T").await?.entry.id;
+    let work = gaps(&s.health().await?).expect("the late memory has no summary");
+    let line = &work.examples[0];
+    assert!(
+        line.starts_with("extend ") && line.ends_with(&late),
+        "{line}"
+    );
+    assert!(tops.iter().any(|t| line.contains(t.as_str())));
+    // ten summaries are too many at the top: they get a layer above them, which starts as one batch of ten
+    let dir = tempfile::tempdir()?;
+    let s = open(dir.path()).await?;
+    let mut leaves = vec![];
+    for i in 0..30 {
+        leaves.push(
+            s.remember(say(&format!("经历 {i}")), "t", "T")
+                .await?
+                .entry
+                .id,
+        );
+    }
+    let mut mids = vec![];
+    for chunk in leaves.chunks(3) {
+        mids.push(
+            s.remember(
+                Draft {
+                    references: cite(chunk),
+                    ..say("三条的汇总")
+                },
+                "t",
+                "T",
+            )
+            .await?
+            .entry
+            .id,
+        );
+    }
+    let work = gaps(&s.health().await?).expect("work for layer 1");
+    assert!(work.detail.contains("第 1 层"), "{}", work.detail);
+    assert_eq!(work.examples.len(), 1);
+    assert!(work.examples[0].starts_with("new ") && work.examples[0].split(' ').count() == 11);
+    assert!(mids.iter().all(|m| work.examples[0].contains(m.as_str())));
+    Ok(())
+}
+
+#[tokio::test]
 async fn results_say_which_fields_matched() -> Result<()> {
     let dir = tempfile::tempdir()?;
     let s = open(dir.path()).await?;

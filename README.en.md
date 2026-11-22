@@ -39,7 +39,7 @@ RecallPort is a memory service that runs on your machine and connects to AI clie
 - **Local and private, no network.** Memories, indexes, attachments and the semantic model all live on your computer. No account, no cloud, no network access at runtime, no telemetry.
 - **One memory, every AI.** Standard MCP over Streamable HTTP. The Connect page detects Codex and Claude Code on this machine, writes the config in one click, and tells you whether they actually connected.
 - **Finds what you mean, and says when it did not.** Keyword search (BM25 with Jieba Chinese tokenization) and semantic search (IBM Granite multilingual embeddings) are fused by rank. Rephrasings still match, and paths and proper nouns still hit exactly; one call can carry several phrasings (synonyms, another language, the error text). Every hit says whether it is a literal, strong or weak match, and when nothing matches well the model is told the results are only clues.
-- **Memory changes, the trail stays.** It separates "when it happened" from "when it was recorded". When things change, the AI appends a record marked as a **correction** of the old one; scattered memories can be **summarized**; originals are always kept. In a search, a corrected memory gives way to its correction (the old text stays in the `trail` and can be asked for), with when and by whom, and a newer record is not assumed to be more right. Edits made in the web UI keep their previous text too. The Overview page shows the latest corrections and summaries with old and new side by side.
+- **Memory changes, the trail stays.** It separates "when it happened" from "when it was recorded". When things change, the AI appends a record marked as a **correction** of the old one; scattered memories can be **summarized** (and summaries summarized, as many levels as there are); originals are always kept. In a search, a corrected memory gives way to its correction (the old text stays in the `trail` and can be asked for), with when and by whom, and a newer record is not assumed to be more right. Edits made in the web UI keep their previous text too. The Overview page shows the latest corrections and summaries with old and new side by side.
 - **Entities come from the AI, never guessed.** While reading and writing, the AI submits what a memory is about: projects, devices, tools, people. The server never merges by name or vector similarity; on a name clash it hands the choice back to the AI. Every link leads back to its source memory, and entities get a directory, a timeline and a graph.
 - **Attachments are part of memory.** The AI files images, audio, video and documents; they are de-duplicated by content hash and can be previewed and downloaded in the web UI. "Stored" files travel with backups; "referenced" files only remember a location, and the UI says so.
 - **Guides the model to maintain its own memory.** Built-in instructions say when to recall and when to remember; every session starts with what the library holds now (counts, most mentioned entities, whether anything needs tidying); `remember` returns similar memories to avoid duplicates; the `health` tool lists duplicates, unsettled entity names, memories about nothing in particular and forked or looping correction chains so the model can fix them; two prompts, `brief` (look before starting) and `wrap_up` (save what you learned), can be offered as commands by the client.
@@ -86,7 +86,7 @@ The server already ships usage instructions, but some clients ignore them. One-c
 ## Long-term memory (RecallPort)
 - Before a non-trivial task, a technical choice or a config change, call `recall` for related past experience. If nothing comes back, rephrase once or retry with strategy=semantic.
 - Right after a decision with reasons, a root cause, a fix that worked, a failed attempt and why, one of my preferences or constraints, a change in how things are, or a correction from me, call `remember`. Do not wait for me to ask. Keep accounts, passwords and other private details verbatim when I ask; do not mask them.
-- When things change, remember the new situation and cite the old memory in `references` with kind=corrects; never rewrite the past. When several scattered memories are one story, remember a summary with kind=summarizes and keep the originals.
+- When things change, remember the new situation and cite the old memory in `references` with kind=corrects; never rewrite the past. When several scattered memories are one story, remember a summary with kind=summarizes and keep the originals; when summaries pile up, summarize those too, layer by layer (layer 0 is the memories themselves); when `health` says a layer lacks summaries or a summary is stale, you fix it.
 - Notice the projects, devices, tools and people involved and submit them as `entities` (search with the `entity` tool first and reuse by id); use `new` when it is a different thing with the same name.
 - If I give you a file, image, audio, video or document that belongs with a memory and you can read it, file it with `attachments` (absolute path and a one-line caption).
 - Recall before you remember so you do not add duplicates, and `link` related memories.
@@ -122,7 +122,7 @@ The server already ships usage instructions, but some clients ignore them. One-c
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-zoom-dark.png"><img src="docs/images/graph-zoom-light.png" alt="Zoomed into an entity"></picture>
-      <p align="center"><sub><b>Zoomed into an entity</b>: memories that belong only to it are seated by time (newer is closer to the middle) and meaning (similar ones on the same side), then turn into readable cards; a memory that mentions several entities is a "bridge" between their territories</sub></p>
+      <p align="center"><sub><b>Zoomed into an entity</b>: memories that belong only to it are seated by time (newer is closer to the middle) and meaning (similar ones on the same side), then turn into readable cards; a memory that mentions several entities is a "bridge" between their territories; the AI's summaries form a ring around everything they summarize: one numbered circle when zoomed out, unfolding one level at a time as you zoom in</sub></p>
     </td>
   </tr>
   <tr>
@@ -138,7 +138,7 @@ The server already ships usage instructions, but some clients ignore them. One-c
   <tr>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-dark.png"><img src="docs/images/graph-lanes-light.png" alt="Swim lanes"></picture>
-      <p align="center"><sub><b>Swim lanes</b>：time runs left to right, one lane per entity; a memory is one dot and a vertical line joins the entities it mentions</sub></p>
+      <p align="center"><sub><b>Swim lanes</b>：time runs left to right, one lane per entity; a memory is one dot and a vertical line joins the entities it mentions; a summary is a bracket over the stretch of time it summarizes</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-card-dark.png"><img src="docs/images/graph-lanes-card-light.png" alt="Details in the lanes"></picture>
@@ -166,7 +166,7 @@ The server already ships usage instructions, but some clients ignore them. One-c
 | `remember` | After a decision, root cause, working fix, failed attempt, preference, change or correction | Append a memory, optionally with `entities`, `attachments` and `references` carrying a `kind`; returns `related`, `entity_choices` (name clashes) and a `hint` |
 | `link` | When two memories belong together, a memory is about something, or a file belongs with it | Exactly one of `to` / `entity` / `attachment`; also settles unresolved names; `remove` only cuts the connection |
 | `entity` | Before submitting entities, when tidying them | `search`, `get` (memories over time and what appears alongside), `update` (rename, aliases), `merge` |
-| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, with what to do about each; the AI has full authority and fixes them itself, no approval needed |
+| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, memories not yet under a summary in the summary tree (layer by layer, in batches of ids) and summaries that have fallen behind, with what to do about each; the AI has full authority and fixes them itself, no approval needed |
 | `forget` | When tidying finds an exact duplicate or an obvious mistake | Deletes a memory for good; not for things that changed, use `corrects` so the trail stays |
 
 Two MCP prompts are also offered: `brief` (look before starting a task) and `wrap_up` (save what you learned and tidy up).
@@ -293,7 +293,8 @@ src/
   archive.rs     ZIP backup: export, validate, replace, merge, rollback, crash recovery
   autobackup.rs  the daily automatic backup and its retention
   vectors.rs     semantic vectors kept with a backup (half precision)
-  health.rs      library check-up (duplicates, unsettled names, forked or looping corrections) and the session summary
+  health.rs      library check-up (duplicates, unsettled names, forked or looping corrections, similar memories awaiting a summary) and the session summary
+  clusters.rs    batches the memories of one layer by meaning (average-linkage clustering), only to tell the AI where the summary tree still lacks something
   detail.rs      one memory in full (links, entities, attachments, correction trail)
   mcp.rs         MCP tools and usage instructions
   web.rs         web UI (server-rendered)

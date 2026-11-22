@@ -54,6 +54,8 @@ const FTS: &str = "search_text_idx";
 const MAP_ENTITIES: usize = 80;
 /// Memories drawn inside one entity's territory (newest first).
 const MAP_LAND: usize = 200;
+/// The most memories the rest of a summary tree may add to a territory's page.
+const MAP_TREE: usize = 600;
 /// The id of the map's stand-in for memories that belong to no drawn entity.
 pub const LOOSE: &str = "~loose";
 const ANN: &str = "vector_idx";
@@ -1560,13 +1562,14 @@ impl Store {
         let entries = self.all().await?;
         let by_id: HashMap<&str, &Entry> = entries.iter().map(|e| (e.id.as_str(), e)).collect();
         let cites = cite_map(&entries);
+        let hier = hierarchy(&entries, &by_id);
         let idx = self.idx.read().await;
         let mut list: Vec<&Entry> = entries.iter().collect();
         list.sort_by_key(|e| std::cmp::Reverse((e.occurred.clone(), e.recorded.clone())));
         list.truncate(limit);
         Ok(serde_json::json!(
             list.iter()
-                .map(|e| memory_brief(e, &idx, &cites, &by_id, false))
+                .map(|e| memory_brief(e, &idx, &cites, &by_id, &hier, false))
                 .collect::<Vec<_>>()
         ))
     }
@@ -1616,7 +1619,8 @@ impl Store {
         let idx = self.idx.read().await;
         // `text` labels the node; `full` and the entity names let the page show the memory without opening it.
         let cites = cite_map(&entries);
-        let memory_node = |e: &Entry| memory_brief(e, &idx, &cites, &by_id, true);
+        let hier = hierarchy(&entries, &by_id);
+        let memory_node = |e: &Entry| memory_brief(e, &idx, &cites, &by_id, &hier, true);
         let entity_node = |id: &str, count: usize, own: usize, last: &str| {
             idx.entities.get(id).map(|e| {
                 json!({"id": e.id, "kind": "entity", "text": e.name, "hint": e.hint, "aliases": e.aliases, "count": count, "own": own, "last": last})
@@ -1764,13 +1768,42 @@ impl Store {
             let start = page.saturating_mul(MAP_LAND).min(total);
             ids = ids[start..(start + MAP_LAND).min(total)].to_vec();
             more = total > start + ids.len();
+            // A page can hold part of a summary tree: bring the rest of that tree along (parents and children,
+            // however far), so the map can draw each summary with everything under it. They are marked `extra`
+            // and do not count towards the page.
+            let page_len = ids.len();
+            let mut have: HashSet<&str> = ids.iter().map(|e| e.id.as_str()).collect();
+            let mut stack: Vec<&str> = ids.iter().map(|e| e.id.as_str()).collect();
+            while let Some(id) = stack.pop() {
+                if ids.len() - page_len >= MAP_TREE {
+                    break;
+                }
+                let near: Vec<&str> = hier
+                    .parent
+                    .get(id)
+                    .copied()
+                    .into_iter()
+                    .chain(hier.kids.get(id).into_iter().flatten().copied())
+                    .collect();
+                for other in near {
+                    if let Some(e) = by_id.get(other).copied()
+                        && have.insert(other)
+                    {
+                        ids.push(e);
+                        stack.push(other);
+                    }
+                }
+            }
             let visible: HashSet<&str> = ids.iter().map(|e| e.id.as_str()).collect();
             let wanted: Vec<&str> = ids.iter().map(|e| e.id.as_str()).collect();
             let angles = self.layout_angles(&wanted).await;
-            for e in &ids {
+            for (at, e) in ids.iter().enumerate() {
                 let mut node = memory_node(e);
                 if let Some(angle) = angles.get(&e.id) {
                     node["sa"] = json!(angle);
+                }
+                if at >= page_len {
+                    node["extra"] = json!(true);
                 }
                 nodes.push(node);
                 for r in &e.references {
@@ -1802,6 +1835,133 @@ fn cite_map(entries: &[Entry]) -> HashMap<&str, Vec<(&Entry, RefKind)>> {
     map
 }
 
+/// The tree the summaries make: a summary's children are the memories it summarizes. A memory that was
+/// summarized more than once belongs to the newest summary, so every memory has at most one parent. A memory
+/// that corrects another takes its place in the tree: it joins the same summary, and a corrected summary hands
+/// all its children to the one that corrects it.
+pub(crate) struct Hier<'a> {
+    pub(crate) kids: HashMap<&'a str, Vec<&'a str>>,
+    pub(crate) parent: HashMap<&'a str, &'a str>,
+    /// Layer: 0 for a memory nothing is summarized under, else one more than its tallest child.
+    pub(crate) level: HashMap<&'a str, u32>,
+    desc: HashMap<&'a str, usize>,
+}
+
+impl Hier<'_> {
+    pub(crate) fn layer(&self, e: &Entry) -> u32 {
+        self.level.get(e.id.as_str()).copied().unwrap_or(0)
+    }
+}
+
+pub(crate) fn hierarchy<'a>(entries: &'a [Entry], by_id: &HashMap<&'a str, &'a Entry>) -> Hier<'a> {
+    let mut parent: HashMap<&str, &str> = HashMap::new();
+    for e in entries {
+        for r in e
+            .references
+            .iter()
+            .filter(|r| matches!(r.kind, RefKind::Summarizes))
+        {
+            let Some(child) = by_id.get(r.id.as_str()) else {
+                continue;
+            };
+            if child.id == e.id {
+                continue;
+            }
+            let newer = parent
+                .get(child.id.as_str())
+                .is_none_or(|p| by_id.get(p).is_none_or(|old| old.recorded < e.recorded));
+            if newer {
+                parent.insert(child.id.as_str(), e.id.as_str());
+            }
+        }
+    }
+    let mut corrections: Vec<(&Entry, &str)> = entries
+        .iter()
+        .flat_map(|e| {
+            e.references
+                .iter()
+                .filter(|r| {
+                    matches!(r.kind, RefKind::Corrects) && by_id.contains_key(r.id.as_str())
+                })
+                .map(move |r| (e, r.id.as_str()))
+        })
+        .collect();
+    corrections.sort_by(|a, b| a.0.recorded.cmp(&b.0.recorded));
+    let mut held: HashMap<&str, Vec<&str>> = HashMap::new();
+    for (child, up) in &parent {
+        held.entry(*up).or_default().push(*child);
+    }
+    for (newer, old) in corrections {
+        let newer = newer.id.as_str();
+        if newer == old {
+            continue;
+        }
+        if !parent.contains_key(newer)
+            && let Some(up) = parent.get(old).copied()
+            && up != newer
+        {
+            parent.insert(newer, up);
+            held.entry(up).or_default().push(newer);
+        }
+        for child in held.remove(old).unwrap_or_default() {
+            if child != newer {
+                parent.insert(child, newer);
+                held.entry(newer).or_default().push(child);
+            }
+        }
+    }
+    // A summary that (through others) ends up summarizing itself would loop forever: cut it at the start.
+    for start in parent.keys().copied().collect::<Vec<_>>() {
+        let (mut at, mut steps) = (start, 0);
+        while let Some(up) = parent.get(at).copied() {
+            steps += 1;
+            if up == start || steps > by_id.len() {
+                parent.remove(start);
+                break;
+            }
+            at = up;
+        }
+    }
+    let mut kids: HashMap<&str, Vec<&str>> = HashMap::new();
+    for (child, up) in &parent {
+        kids.entry(*up).or_default().push(*child);
+    }
+    for list in kids.values_mut() {
+        list.sort_by(|a, b| (&by_id[a].occurred, a).cmp(&(&by_id[b].occurred, b)));
+    }
+    let mut level = HashMap::new();
+    let mut desc = HashMap::new();
+    fn walk<'a>(
+        id: &'a str,
+        kids: &HashMap<&'a str, Vec<&'a str>>,
+        level: &mut HashMap<&'a str, u32>,
+        desc: &mut HashMap<&'a str, usize>,
+    ) -> (u32, usize) {
+        if let (Some(l), Some(d)) = (level.get(id), desc.get(id)) {
+            return (*l, *d);
+        }
+        let mut deepest = 0;
+        let mut below = 0;
+        for kid in kids.get(id).map_or(&[][..], Vec::as_slice) {
+            let (l, d) = walk(kid, kids, level, desc);
+            deepest = deepest.max(l + 1);
+            below += 1 + d;
+        }
+        level.insert(id, deepest);
+        desc.insert(id, below);
+        (deepest, below)
+    }
+    for e in entries {
+        walk(e.id.as_str(), &kids, &mut level, &mut desc);
+    }
+    Hier {
+        kids,
+        parent,
+        level,
+        desc,
+    }
+}
+
 /// One memory as the map and the swim lanes draw it. `detail` adds the full text and context (for the cards
 /// on the map); without it the text is longer but there is no context, and the correcting references come
 /// along (for the lanes, which draw them as lines).
@@ -1810,6 +1970,7 @@ fn memory_brief(
     idx: &EntityIndex,
     cites: &HashMap<&str, Vec<(&Entry, RefKind)>>,
     by_id: &HashMap<&str, &Entry>,
+    hier: &Hier,
     detail: bool,
 ) -> serde_json::Value {
     use serde_json::json;
@@ -1857,7 +2018,11 @@ fn memory_brief(
     let ins = citing.iter().filter(|(_, k)| k.is_relates()).count();
     let mut node = json!({"id": e.id, "kind": "memory", "entities": names, "entity_ids": ids,
         "occurred": e.occurred, "source": e.source, "recorded": e.recorded, "revision": e.revision,
-        "replaces": replaces, "replaced_by": replaced_by, "out": out, "ins": ins});
+        "replaces": replaces, "replaced_by": replaced_by, "out": out, "ins": ins,
+        "level": hier.level.get(e.id.as_str()).copied().unwrap_or(0),
+        "desc": hier.desc.get(e.id.as_str()).copied().unwrap_or(0),
+        "summary": hier.parent.get(e.id.as_str()).copied().unwrap_or(""),
+        "kids": hier.kids.get(e.id.as_str()).map_or(&[][..], Vec::as_slice)});
     if detail {
         node["text"] = json!(snippet(&e.text, 110));
         node["full"] = json!(snippet(&e.text, 1600));

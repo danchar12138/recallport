@@ -558,10 +558,23 @@ async fn overview(State(w): State<Web>) -> Response {
         .await
         .map(|p| p.1)
         .unwrap_or(0);
-    let issues: Vec<Value> = w
-        .store
-        .health()
-        .await
+    let health = w.store.health().await.ok();
+    let layers: Vec<Value> = health
+        .as_ref()
+        .map(|h| {
+            let top = h.layers.iter().map(|l| l.count).max().unwrap_or(1).max(1);
+            let highest = h.layers.last().map(|l| l.layer);
+            h.layers
+                .iter()
+                .rev()
+                .map(|l| {
+                    json!({"Layer":l.layer,"Count":l.count,"Width":l.count * 100 / top,
+                    "Top":Some(l.layer) == highest && l.layer > 0,"Open":l.count - l.covered})
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let issues: Vec<Value> = health
         .map(|h| h.issues)
         .unwrap_or_default()
         .into_iter()
@@ -571,6 +584,7 @@ async fn overview(State(w): State<Web>) -> Response {
                 "unresolved_names" => "/entities#unresolved".to_owned(),
                 "duplicate_entities" if !first.is_empty() => format!("/entity/{first}"),
                 "missing_files" | "index_gap" => "/data".to_owned(),
+                "summary_gaps" | "stale_summaries" => format!("/graph?at={}", first.split(' ').find(|w| w.len() > 3 && *w != "extend").unwrap_or_default()),
                 _ if !first.is_empty() => format!("/memory/{first}"),
                 _ => String::new(),
             };
@@ -581,6 +595,8 @@ async fn overview(State(w): State<Web>) -> Response {
                 "unresolved_names" => "AI 提到了名字却没确定是哪个实体，之后会自己确认；你也可以在实体页选一个。",
                 "correction_forks" | "correction_loops" => "几条更正之间互相矛盾，现状没有定论。AI 会判断以哪条为准并汇总；你也可以打开看看。",
                 "missing_files" => "附件的原文件找不到了。AI 会去找，找不到就移除这条附件。",
+                "summary_gaps" => "汇总树是一层一层长的：第 0 层是记忆本身，每一层都要被上一层汇总。这里是最底下还没汇总的那一层，接入的 AI 会按批写汇总，写完再往上一层，不用你操作。",
+                "stale_summaries" => "这些汇总写好之后又并进了不少新记忆，可能说不全了。接入的 AI 会重写或确认，再往上的汇总也会跟着检查。",
                 "index_gap" => "有些记忆的搜索索引还没建好，服务会在后台自己修复。",
                 _ => "",
             };
@@ -588,7 +604,7 @@ async fn overview(State(w): State<Web>) -> Response {
         })
         .collect();
     w.render(json!({"View":"overview","Years":years,"Total":list.len(),"Unknown":unknown,"Entities":entities,
-        "Calendar":calendar(&list),"Changes":changes(&list),"Issues":issues}))
+        "Calendar":calendar(&list),"Changes":changes(&list),"Layers":layers,"Issues":issues}))
 }
 
 /// The last year, one square per day, shaded by how many memories happened that day.

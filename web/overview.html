@@ -7,6 +7,14 @@
   <a class="stat" href="/entities"><span>实体</span><strong>{{ Entities }}</strong>{% if Entities %}<span class="go">查看实体<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
   <a class="stat" href="/memories?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
 </div>
+{% if Layers %}
+<section class="layers" aria-labelledby="layers-title">
+  <div class="section-head"><div><h2 id="layers-title">汇总层级</h2><p>第 0 层是记忆本身，上面每一层都由接入的 AI 汇总、维护，一直收到最上面的几条总汇总。关系图缩小看顶层，放大一步露出下一层。</p></div></div>
+  <ol class="layer-list">{% for l in Layers %}
+    <li><span class="layer-name">第 {{ l.Layer }} 层<small>{% if l.Layer == 0 %}记忆本身{% endif %}</small></span><meter class="layer-bar" min="0" max="100" value="{{ l.Width }}" aria-hidden="true"></meter><span class="layer-num"><strong>{{ l.Count }}</strong> 条{% if l.Top %}<small>最上层</small>{% elif l.Open %}<small>{{ l.Open }} 条待汇总</small>{% else %}<small>已汇总</small>{% endif %}</span></li>
+  {% endfor %}</ol>
+</section>
+{% endif %}
 {% if Issues %}
 <section class="tidy" aria-labelledby="tidy-title">
   <div class="section-head"><div><h2 id="tidy-title">整理建议</h2><p>接入的 AI 通过 health 工具看到同样的清单，会自己动手修复，不需要你批准；这里只是让你知道库里有什么。</p></div></div>

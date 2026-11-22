@@ -60,6 +60,7 @@ function mountGraph(root) {
       ...cardStyles(v),
       ...farStyles(v),
       ...bridgeStyles(v),
+      ...summaryStyles(v),
       ...mapStyles(v),
       {selector: 'node.gone,edge.gone,.carried', style: {display: 'none'}},
       {selector: 'edge.minor', style: {display: 'none'}},
@@ -76,8 +77,10 @@ function mountGraph(root) {
       {selector: 'node.mem.hit', style: {'border-color': v('--g-anchor'), 'border-width': 4, 'background-color': v('--accent-soft'), 'z-index': 6}},
       {selector: 'node.mem.far.hit', style: {width: 52, height: 52, 'background-color': v('--g-anchor'), 'border-color': v('--g-suggest'), 'border-width': 6, 'z-index': 6}},
       // 缩得很小时只看领地：记忆和引用线淡出（不用 display，才能做渐隐）。
-      {selector: 'node.mem.t1,node.more-tab.t1', style: {opacity: 0, events: 'no'}},
+      {selector: 'node.mem.t1,node.more-tab.t1,node.halo.t1', style: {opacity: 0, events: 'no'}},
       {selector: 'edge.ref.t1,edge.thread.t1', style: {opacity: 0, events: 'no'}},
+      // 汇总还没展开时，它汇总的记忆、圈和连线都收起来（淡出）
+      {selector: 'node.folded,edge.folded', style: {opacity: 0, events: 'no'}},
     ];
   };
   // 放大到能读清时，每条记忆是一张小卡片，直接看到内容；被更正/汇总掉的旧记忆叠在新记忆下面。
@@ -109,6 +112,19 @@ function mountGraph(root) {
       {selector: 'node.mem.bridge.far:selected', style: {shape: 'hexagon', width: 56, height: 56, padding: 0, label: '', 'text-opacity': 0, 'border-width': 6}},
       {selector: 'edge.thread', style: {'curve-style': 'straight', width: 1, 'line-color': v('--g-edge'), 'target-arrow-shape': 'none', opacity: 0.35, 'z-index': 0}},
       {selector: 'edge.thread.show', style: {width: 1.8, opacity: 0.95}},
+    ];
+  }
+  // 汇总：缩小时是一个写着「汇总了几条」的圆，放大后是带强调边的卡片；展开后，它的光晕圈住它汇总的那些记忆。
+  function summaryStyles(v) {
+    const card = n => `汇总 · ${n.data('desc')} 条\n${wrapLabel(short(n.data('text'), 44), 13)}`;
+    const size = 'mapData(desc,1,40,64,124)';
+    return [
+      {selector: 'node.mem.summary', style: {'background-color': v('--accent-soft'), 'border-color': v('--accent'), 'border-width': 3, label: card, 'z-index': 4}},
+      {selector: 'node.mem.summary.far', style: {shape: 'ellipse', width: size, height: size, padding: 0, 'border-width': 7, label: n => String(n.data('desc')), 'text-opacity': 1, 'text-valign': 'center', 'text-halign': 'center', 'text-margin-y': 0, 'font-size': 26, 'font-weight': 700, color: v('--accent-text')}},
+      {selector: 'node.mem.summary.far.bridge', style: {shape: 'hexagon'}},
+      {selector: 'node.mem.summary.far.open', style: {width: 54, height: 54, 'border-width': 5, 'font-size': 20}},
+      {selector: 'node.mem.summary:selected', style: {'border-color': v('--g-suggest'), 'border-width': 5}},
+      {selector: 'node.halo', style: {shape: 'ellipse', width: 'data(d)', height: 'data(d)', 'background-color': v('--accent'), 'background-opacity': 0.06, 'border-width': 3, 'border-style': 'dashed', 'border-color': v('--accent'), 'border-opacity': 0.5, label: '', events: 'no', 'z-index': 0}},
     ];
   }
   function mapStyles(v) {
@@ -159,7 +175,40 @@ function mountGraph(root) {
     const far = z < (tier.far ? FAR + 0.04 : FAR), t1 = z < (tier.t1 ? NEAR + 0.02 : NEAR);
     if (far !== tier.far || t1 !== tier.t1) { tier.far = far; tier.t1 = t1; applyTier(cy.elements()); lastLabelZoom = 0; }
     if (Math.abs(Math.log(z / (lastLabelZoom || 1e-9))) > 0.04) declutter();
+    syncFolds();
   };
+  // 汇总的展开：一团放大到它的圈在屏幕上够大（OPEN_PX）才展开，里面更小的一团同理，所以层数不限、一层层放大一层层展开。
+  // 命中的、选中的记忆所在的那几层不管多小都展开，免得它们藏在收起的汇总里。
+  const OPEN_PX = 130, layerNote = $('[data-graph-layer]');
+  let folds = new Map(), foldKey = '';
+  function syncFolds(force = false) {
+    const sums = cy.nodes('.summary').filter(n => n.data('rc'));
+    layerNote.hidden = !sums.length;
+    if (!sums.length) return;
+    const z = cy.zoom(), forced = new Set();
+    for (const n of cy.nodes('.hit,:selected')) for (let up = n.data('sup'); up; up = cy.getElementById(up).data('sup')) forced.add(up);
+    const open = new Map();
+    const visit = n => {
+      const key = n.id();
+      if (open.has(key)) return open.get(key);
+      const up = n.data('sup'), mine = (!up || visit(cy.getElementById(up))) && (forced.has(key) || z * n.data('rc') >= (folds.get(key) ? OPEN_PX * 0.88 : OPEN_PX));
+      open.set(key, mine);
+      return mine;
+    };
+    sums.forEach(n => { visit(n); }); // 回调返回 false 会让 cytoscape 的 forEach 提前结束
+    const sig = [...open].filter(e => e[1]).map(e => e[0]).sort().join('|') + `#${cy.nodes('.mem').length}`;
+    if (!force && sig === foldKey) return;
+    foldKey = sig; folds = open;
+    cy.batch(() => {
+      cy.nodes('.mem').forEach(n => { const up = n.data('sup'); n.toggleClass('folded', Boolean(up) && !open.get(up)); });
+      sums.forEach(n => n.toggleClass('open', Boolean(open.get(n.id()))));
+      cy.nodes('.halo').forEach(h => h.toggleClass('folded', !open.get(h.data('of'))));
+      cy.edges().forEach(e => e.toggleClass('folded', e.source().hasClass('folded') || e.target().hasClass('folded')));
+    });
+    // 现在最细看到哪一层：第 0 层是记忆本身，汇总是它上面的层
+    const seen = Math.min(Infinity, ...cy.nodes('.mem').not('.folded').map(n => n.data('level') || 0));
+    layerNote.textContent = seen && seen !== Infinity ? `现在看到第 ${seen} 层及以上的汇总，放大一步露出第 ${seen - 1} 层` : '现在看到的是第 0 层：记忆本身';
+  }
 
   // ---------- 视野：始终居中在没被浮层挡住的那部分 ----------
   let touched = false;
@@ -297,9 +346,14 @@ function mountGraph(root) {
 
   // ---------- 记忆落座 ----------
   // 只属于一个实体的记忆住在它的领地里：离中心越近越新，同一圈里意思相近的坐在同一侧。
-  function seat(items, home, offset) {
-    const placed = new Map();
-    const slots = items.map((_, k) => { const g = offset + k, a = g * GOLDEN; return {x: Math.cos(a) * (FIRST + STEP * Math.sqrt(g)), y: Math.sin(a) * (FIRST + STEP * Math.sqrt(g)), band: Math.floor(Math.sqrt(g) * 0.5), dir: ((a + Math.PI) % (2 * Math.PI)) - Math.PI}; });
+  // taken：领地里已经被汇总的一团占去的圆（相对领地中心），座位绕开它们。
+  function seat(items, home, offset, taken) {
+    const placed = new Map(), slots = [];
+    for (let g = offset; slots.length < items.length; g++) {
+      const a = g * GOLDEN, rho = FIRST + STEP * Math.sqrt(g), x = Math.cos(a) * rho, y = Math.sin(a) * rho;
+      if (taken.some(o => Math.hypot(o.x - x, o.y - y) < o.r + SEAT_R)) continue;
+      slots.push({x, y, band: Math.floor(Math.sqrt(g) * 0.5), dir: ((a + Math.PI) % (2 * Math.PI)) - Math.PI});
+    }
     const bands = new Map();
     items.forEach((d, k) => { const b = slots[k].band; if (!bands.has(b)) bands.set(b, []); bands.get(b).push(k); });
     for (const ks of bands.values()) {
@@ -311,20 +365,49 @@ function mountGraph(root) {
     return placed;
   }
   // 提到多个实体的记忆画成「桥」，停在它们所属领地之间的空隙里：从这几个领地的中点出发，沿螺旋往外找第一个空位。
-  const BRIDGE_SPACE = 62;
-  function bridgeSpot(lands, taken) {
+  // foot：它占的半径（单条记忆的桥是 BRIDGE_R；汇总连同它汇总的一团要大得多）；taken 里每一项也带 r。
+  const BRIDGE_R = 31, SEAT_R = 56;
+  function bridgeSpot(lands, taken, foot = BRIDGE_R) {
     // 领地本身，以及它上方写名字的那一块，桥都要躲开
     const all = cy.nodes('.territory').toArray().flatMap(n => [{x: n.position('x'), y: n.position('y'), r: n.data('d') / 2 + 34}, {x: n.position('x'), y: n.position('y') - n.data('d') / 2 - 40, r: 100}]);
     const cx = lands.reduce((t, n) => t + n.position('x'), 0) / lands.length, cyy = lands.reduce((t, n) => t + n.position('y'), 0) / lands.length;
-    for (let t = 0; t < 3000; t++) {
+    for (let t = 0; t < 4000; t++) {
       const x = cx + Math.cos(t * GOLDEN) * 34 * Math.sqrt(t), y = cyy + Math.sin(t * GOLDEN) * 34 * Math.sqrt(t);
-      if (all.some(o => Math.hypot(o.x - x, o.y - y) < o.r) || taken.some(q => Math.hypot(q.x - x, q.y - y) < BRIDGE_SPACE)) continue;
+      if (all.some(o => Math.hypot(o.x - x, o.y - y) < o.r + foot - BRIDGE_R) || taken.some(q => Math.hypot(q.x - x, q.y - y) < q.r + foot)) continue;
       return {x, y};
     }
     return {x: cx, y: cyy};
   }
-  // 被更正、被汇总掉的旧记忆叠在取代它的新记忆下面。
+  // 被更正掉的旧记忆叠在取代它的新记忆下面。
   const stackOffset = n => ({dx: 11 + 7 * Math.min(n, 5), dy: 13 + 7 * Math.min(n, 5)});
+  // 汇总连同它汇总的所有记忆排成一团：汇总在中心，它汇总的子汇总各成一小团，单条记忆围在外面。
+  // 返回每条记忆相对中心的位置，以及每个汇总的光晕半径（这团占的圈）。
+  const CORE_R = 48, LEAF_R = 66;
+  function layoutTree(id, kidsOf) {
+    const kids = kidsOf.get(id) || [];
+    const subs = kids.filter(k => kidsOf.has(k)).map(k => ({id: k, ...layoutTree(k, kidsOf)})).sort((a, b) => b.r - a.r);
+    const leaves = kids.filter(k => !kidsOf.has(k));
+    const pos = new Map([[id, {x: 0, y: 0}]]), halos = [], circles = [{x: 0, y: 0, r: CORE_R}];
+    const free = (x, y, r) => circles.every(o => Math.hypot(o.x - x, o.y - y) >= o.r + r + 10);
+    for (const sub of subs) {
+      for (let t = 1; t < 6000; t++) {
+        const x = Math.cos(t * GOLDEN) * 26 * Math.sqrt(t), y = Math.sin(t * GOLDEN) * 26 * Math.sqrt(t);
+        if (!free(x, y, sub.r)) continue;
+        circles.push({x, y, r: sub.r});
+        for (const [k, p] of sub.pos) pos.set(k, {x: x + p.x, y: y + p.y});
+        for (const h of sub.halos) halos.push({id: h.id, x: x + h.x, y: y + h.y, r: h.r});
+        break;
+      }
+    }
+    let g = 0;
+    for (const leaf of leaves) {
+      let spot;
+      do { spot = {x: Math.cos(g * GOLDEN) * STEP * Math.sqrt(g + 1), y: Math.sin(g * GOLDEN) * STEP * Math.sqrt(g + 1)}; g++; } while (!free(spot.x, spot.y, LEAF_R));
+      pos.set(leaf, spot);
+    }
+    const r = 28 + Math.max(CORE_R, ...circles.map(o => Math.hypot(o.x, o.y) + o.r), ...leaves.map(k => Math.hypot(pos.get(k).x, pos.get(k).y) + LEAF_R));
+    return {r, pos, halos: [{id, x: 0, y: 0, r}, ...halos]};
+  }
 
   const loaded = new Map(), loading = new Set(); // 领地 id → {page, total, more, drawn, inner}
   const bendOf = (a, b, id) => {
@@ -334,6 +417,12 @@ function mountGraph(root) {
   };
   // 记忆属于哪几个领地：它提到的、画出了领地的那些实体；一个都没有就是「未归类」。
   const landsOfData = d => { const ids = (d.entity_ids || []).filter(x => cy.getElementById(x).hasClass('territory')); return ids.length ? ids : [LOOSE]; };
+  const BRIDGE_TREE = 40; // 停在领地之间的一团，最多收这么多条记忆
+  const colourOf = land => [0, 1, 2, 3, 4, 5].map(n => `g${n}`).find(c => cy.getElementById(land).hasClass(c)) || '';
+  // 一页记忆怎么上图：
+  //  · 被更正的旧记忆叠在更正它的新记忆下面；
+  //  · 汇总连同它汇总的所有记忆是一团（一棵树）：汇总只属于一个实体就住在那个领地里，属于几个就像「桥」一样停在它们之间；
+  //  · 其余的记忆只属于一个实体就落座在领地里，属于几个实体就是「桥」。
   async function loadLand(id, page = 0) {
     const have = loaded.get(id);
     if ((page === 0 && have) || (have && page <= have.page) || loading.has(id + page)) return;
@@ -346,51 +435,140 @@ function mountGraph(root) {
       if (!response.ok) throw new Error('land request failed');
       const data = await response.json();
       if (!cy.getElementById(id).length) return;
-      const colour = [0, 1, 2, 3, 4, 5].map(n => `g${n}`).find(c => land.hasClass(c)) || '';
       const state = have || {inner: 0, drawn: 0};
-      // 别的领地先载入过的记忆（桥）已经在图上了，不再画第二次
+      // 别的领地先载入过的记忆（桥、汇总）已经在图上了，不再画第二次
       const memories = data.nodes.filter(d => d.kind !== 'entity' && !cy.getElementById(d.id).length);
-      const kept = new Set(memories.map(d => d.id)), parent = new Map();
-      for (const e of data.edges) if ((e.rk === 'corrects' || e.rk === 'summarizes') && kept.has(e.from) && kept.has(e.to) && e.from !== e.to && !parent.has(e.to)) parent.set(e.to, e.from);
-      const rootOf = key => { let cur = key, guard = 0; while (parent.has(cur) && guard++ < 20) cur = parent.get(cur); return cur; };
-      const free = memories.filter(d => !parent.has(d.id)), inside = free.filter(d => landsOfData(d).length === 1), bridges = free.filter(d => landsOfData(d).length > 1);
-      const insideIds = new Set(inside.map(d => d.id));
-      const inner = state.inner + inside.length + memories.filter(d => parent.has(d.id) && insideIds.has(rootOf(d.id))).length;
-      growLand(land, inner);
-      const home = land.position(), seats = seat(inside, home, state.inner), taken = cy.nodes('.bridge').map(n => ({x: n.position('x'), y: n.position('y')})), spots = new Map();
-      for (const d of inside) spots.set(d.id, {...seats.get(d.id), anchor: id});
-      for (const d of bridges) { const spot = bridgeSpot(landsOfData(d).map(l => cy.getElementById(l)), taken); taken.push(spot); spots.set(d.id, {...spot, anchor: ''}); }
-      const under = new Map();
-      for (const d of memories) {
-        if (!parent.has(d.id)) continue;
-        const top = rootOf(d.id), base = spots.get(top), n = under.get(top) || 0, off = stackOffset(n);
-        under.set(top, n + 1);
-        spots.set(d.id, base ? {x: base.x + off.dx, y: base.y + off.dy, anchor: base.anchor, under: top, off: [off.dx, off.dy]} : {x: home.x, y: home.y, anchor: id});
+      const byId = new Map(memories.map(d => [d.id, d]));
+      const isInside = d => landsOfData(d).length === 1, landOfUnit = d => landsOfData(d)[0];
+      const stackedUnder = new Map();
+      for (const e of data.edges) if (e.rk === 'corrects' && byId.has(e.from) && byId.has(e.to) && e.from !== e.to && !stackedUnder.has(e.to)) stackedUnder.set(e.to, e.from);
+      const topOfStack = key => { let cur = key, guard = 0; while (stackedUnder.has(cur) && guard++ < 20) cur = stackedUnder.get(cur); return cur; };
+      // 树：被叠起来的旧记忆不进树；汇总的孩子只算这一页里画得出的
+      const sup = new Map();
+      for (const d of memories) if (d.summary && byId.has(d.summary) && !stackedUnder.has(d.id) && !stackedUnder.has(d.summary)) sup.set(d.id, d.summary);
+      const kidsOf = new Map();
+      for (const d of memories) for (const k of d.kids || []) if (sup.get(k) === d.id) { if (!kidsOf.has(d.id)) kidsOf.set(d.id, []); kidsOf.get(d.id).push(k); }
+      // 跨好几个实体、又汇总了一大片的汇总（比如把几个项目的总结再总结一遍）不把孩子收进来：
+      // 它们各自留在自己的领地里，汇总只用虚线连着它们，免得一大团塞在几个领地之间。
+      const sizeBelow = key => (kidsOf.get(key) || []).reduce((t, k) => t + 1 + sizeBelow(k), 0);
+      for (const queue = memories.filter(d => !sup.has(d.id) && kidsOf.has(d.id)); queue.length;) {
+        const d = queue.pop();
+        if (isInside(d) || sizeBelow(d.id) <= BRIDGE_TREE) continue;
+        for (const k of kidsOf.get(d.id)) { sup.delete(k); if (kidsOf.has(k)) queue.push(byId.get(k)); }
+        kidsOf.delete(d.id);
       }
-      const olds = new Set(data.edges.filter(e => e.rk === 'corrects' || e.rk === 'summarizes').map(e => e.to));
+      const treeRoot = key => { let cur = key, guard = 0; while (sup.has(cur) && guard++ < 60) cur = sup.get(cur); return cur; };
+      const unitOf = key => treeRoot(topOfStack(key)); // 它挂在哪个「单位」下：一团的根，或一条独立的记忆
+      const trees = new Map(), radiusOf = new Map();
+      for (const d of memories) if (kidsOf.has(d.id) && !sup.has(d.id)) {
+        const tree = layoutTree(d.id, kidsOf);
+        trees.set(d.id, tree);
+        for (const h of tree.halos) radiusOf.set(h.id, h.r);
+      }
+      const units = memories.filter(d => unitOf(d.id) === d.id);
+      const homeOf = key => { const u = byId.get(unitOf(key)); return isInside(u) ? landOfUnit(u) : ''; };
+
+      // 1) 住在领地里的团：在领地里找放得下的位置（相对领地中心），领地因此要长大多少也一并算出
+      const taken = new Map(), needs = new Map(), relSpot = new Map();
+      const takenIn = land0 => {
+        if (!taken.has(land0)) {
+          const at = cy.getElementById(land0).position();
+          taken.set(land0, [
+            ...cy.nodes('.mem').filter(n => n.data('anchor') === land0 && !n.data('top')).map(n => ({x: n.position('x') - at.x, y: n.position('y') - at.y, r: SEAT_R})),
+            ...cy.nodes('.halo').filter(n => n.data('anchor') === land0 && n.data('of') === n.data('top')).map(n => ({x: n.position('x') - at.x, y: n.position('y') - at.y, r: n.data('d') / 2})),
+          ]);
+        }
+        return taken.get(land0);
+      };
+      const inner = new Map();
+      const innerNow = land0 => land0 === id ? state.inner : (loaded.get(land0)?.inner || 0);
+      for (const d of memories) { const home = homeOf(d.id); if (home) inner.set(home, (inner.get(home) || 0) + 1); }
+      for (const root of units.filter(d => trees.has(d.id) && isInside(d)).sort((a, b) => trees.get(b.id).r - trees.get(a.id).r || (a.id < b.id ? -1 : 1))) {
+        const land0 = landOfUnit(root), r = trees.get(root.id).r, circles = takenIn(land0);
+        let spot = {x: 0, y: 0};
+        for (let t = 0; t < 8000; t++) {
+          const x = Math.cos(t * GOLDEN) * 40 * Math.sqrt(t), y = Math.sin(t * GOLDEN) * 40 * Math.sqrt(t);
+          if (circles.every(o => Math.hypot(o.x - x, o.y - y) >= o.r + r + 24)) { spot = {x, y}; break; }
+        }
+        circles.push({...spot, r});
+        relSpot.set(root.id, spot);
+        needs.set(land0, Math.max(needs.get(land0) || 0, Math.hypot(spot.x, spot.y) + r + 30));
+      }
+      // 记忆多了领地要长大，挤到的邻居被推开；这之后位置才是定的
+      const touchedLands = [...new Set([id, ...needs.keys()])].filter(l => cy.getElementById(l).length);
+      for (const land0 of touchedLands) growLand(cy.getElementById(land0), Math.max(reach(innerNow(land0) + (inner.get(land0) || 0)), needs.get(land0) || 0));
+
+      // 2) 落座
+      const spots = new Map();
+      for (const [root, spot] of relSpot) {
+        const at = cy.getElementById(landOfUnit(byId.get(root))).position();
+        spots.set(root, {x: at.x + spot.x, y: at.y + spot.y, anchor: landOfUnit(byId.get(root))});
+      }
+      const insideSingles = new Map();
+      for (const d of units) if (!trees.has(d.id) && isInside(d)) { const l = landOfUnit(d); if (!insideSingles.has(l)) insideSingles.set(l, []); insideSingles.get(l).push(d); }
+      for (const [land0, list] of insideSingles) {
+        const at = cy.getElementById(land0).position(), seats = seat(list, at, innerNow(land0), takenIn(land0));
+        for (const d of list) spots.set(d.id, {...seats.get(d.id), anchor: land0});
+      }
+      const taking = cy.nodes('.bridge').map(n => ({x: n.position('x'), y: n.position('y'), r: n.data('foot')}));
+      const feet = new Map();
+      for (const d of [...units.filter(u => trees.has(u.id) && !isInside(u)).sort((a, b) => trees.get(b.id).r - trees.get(a.id).r || (a.id < b.id ? -1 : 1)), ...units.filter(u => !trees.has(u.id) && !isInside(u))]) {
+        const foot = trees.has(d.id) ? trees.get(d.id).r : BRIDGE_R, spot = bridgeSpot(landsOfData(d).map(l => cy.getElementById(l)), taking, foot);
+        taking.push({...spot, r: foot}); feet.set(d.id, foot);
+        spots.set(d.id, {...spot, anchor: ''});
+      }
+      // 一团里的其余记忆跟着根；被叠起来的旧记忆叠在新记忆下面，也跟着根
+      for (const [root, tree] of trees) {
+        const base = spots.get(root);
+        for (const [key, p] of tree.pos) if (key !== root) spots.set(key, {x: base.x + p.x, y: base.y + p.y, anchor: base.anchor, under: root, off: [p.x, p.y]});
+      }
+      const stackedCount = new Map();
+      for (const d of memories) {
+        if (!stackedUnder.has(d.id)) continue;
+        const top = topOfStack(d.id), base = spots.get(top);
+        if (!base) { spots.set(d.id, {x: land.position('x'), y: land.position('y'), anchor: id}); continue; }
+        const n = stackedCount.get(top) || 0, off = stackOffset(n), rootId = base.under || top, rootSpot = spots.get(rootId);
+        stackedCount.set(top, n + 1);
+        spots.set(d.id, {x: base.x + off.dx, y: base.y + off.dy, anchor: base.anchor, under: rootId, off: [base.x + off.dx - rootSpot.x, base.y + off.dy - rootSpot.y]});
+      }
+      const rootOfNode = key => spots.get(key)?.under || (trees.has(key) ? key : '');
+      const olds = new Set(data.edges.filter(e => e.rk === 'corrects').map(e => e.to));
+      const topOf = key => (spots.has(key) ? rootOfNode(key) : cy.getElementById(key).data('top')) || '';
       let fresh = cy.collection();
       cy.batch(() => {
         for (const d of memories) {
           if (cy.nodes().length >= maxNodes) break;
-          const spot = spots.get(d.id), lands = landsOfData(d), bridge = lands.length > 1 && !spot.under;
+          const spot = spots.get(d.id), lands = landsOfData(d);
+          const bridge = unitOf(d.id) === d.id && !isInside(d), home = homeOf(d.id), root = rootOfNode(d.id);
           const groups = lands.map(l => cy.getElementById(l).data('group')).filter(Number.isInteger);
-          fresh = fresh.union(cy.add({group: 'nodes', data: {...d, label: short(d.text, 17), lands, groups, anchor: spot.anchor, under: spot.under || '', off: spot.off || null, old: olds.has(d.id) ? 1 : 0}, classes: ['mem', 'lazy', bridge ? 'bridge' : colour, spot.under && 'stacked'].filter(Boolean).join(' '), position: {x: spot.x, y: spot.y}}));
+          const data0 = {...d, label: short(d.text, 17), lands, groups, anchor: spot.anchor, under: spot.under || '', off: spot.off || null, old: olds.has(d.id) ? 1 : 0, top: root, sup: sup.get(d.id) || (stackedUnder.has(d.id) ? sup.get(topOfStack(d.id)) : '') || '', rc: radiusOf.get(d.id) || 0, foot: bridge ? feet.get(d.id) : 0};
+          const classes = ['mem', 'lazy', bridge && 'bridge', !bridge && home && colourOf(home), d.kids?.length && 'summary', stackedUnder.has(d.id) && 'stacked'].filter(Boolean).join(' ');
+          fresh = fresh.union(cy.add({group: 'nodes', data: data0, classes, position: {x: spot.x, y: spot.y}}));
           if (bridge) for (const l of lands) fresh = fresh.union(cy.add({group: 'edges', data: {id: `th:${d.id}:${l}`, source: d.id, target: l, bend: 0}, classes: 'thread'}));
+        }
+        for (const [root, tree] of trees) {
+          const base = spots.get(root);
+          for (const h of tree.halos) {
+            fresh = fresh.union(cy.add({group: 'nodes', data: {id: `halo:${h.id}`, kind: 'halo', of: h.id, top: root, anchor: base.anchor, under: h.id === root ? '' : root, off: [h.x, h.y], d: 2 * h.r}, classes: 'halo lazy', position: {x: base.x + h.x, y: base.y + h.y}}));
+          }
         }
         for (const e of data.edges.filter(x => !x.mention && !x.co && cy.getElementById(x.from).length && cy.getElementById(x.to).length)) {
           const edgeId = `r:${e.from}:${e.to}`;
           if (cy.getElementById(edgeId).length) continue;
+          // 一团里的汇总和它汇总的记忆，已经由光晕圈在一起，不再画线
+          if (e.rk === 'summarizes' && topOf(e.from) && topOf(e.from) === topOf(e.to)) continue;
           const stacked = cy.getElementById(e.to).hasClass('stacked');
           fresh = fresh.union(cy.add({group: 'edges', data: {id: edgeId, source: e.from, target: e.to, reason: e.reason, rk: e.rk, bend: stacked ? 0 : bendOf(cy.getElementById(e.from).position(), cy.getElementById(e.to).position(), edgeId)}, classes: ['ref', e.rk && e.rk !== 'relates' && e.rk].filter(Boolean).join(' ')}));
         }
       });
-      loaded.set(id, {page, total: data.total, more: Boolean(data.more), drawn: state.drawn + data.nodes.length, inner});
+      loaded.set(id, {page, total: data.total, more: Boolean(data.more), drawn: state.drawn + data.nodes.filter(d => !d.extra).length, inner: state.inner + (inner.get(id) || 0)});
       moreTab(land);
       applyTier(fresh.union(fresh.connectedEdges()));
       fresh.addClass('entering');
       requestAnimationFrame(() => requestAnimationFrame(() => fresh.removeClass('entering')));
       if (solo) fresh.nodes().forEach(n => n.toggleClass('gone', !inGroup(n)));
       if (searching) markHits(fresh.nodes());
+      syncFolds(true);
     } catch {
       status.textContent = '未能载入这个实体的记忆，缩放一下再试';
     } finally {
@@ -432,7 +610,7 @@ function mountGraph(root) {
     }
     return touchedLands;
   }
-  // 跟着旧记忆的新记忆挪了位置，叠在它下面的旧记忆也跟过去。
+  // 一团（或叠起来的几条）的根挪了位置，跟着它的记忆和光晕也跟过去。
   function refollow(parent) {
     cy.nodes().filter(n => n.data('under') === parent.id()).forEach(n => { const [dx, dy] = n.data('off'); n.position({x: parent.position('x') + dx, y: parent.position('y') + dy}); });
   }
@@ -440,15 +618,15 @@ function mountGraph(root) {
   function replaceBridges(ids) {
     const mine = cy.nodes('.bridge').filter(n => n.data('lands').some(l => ids.has(l)));
     if (!mine.length) return;
-    const taken = cy.nodes('.bridge').not(mine).map(n => ({x: n.position('x'), y: n.position('y')}));
-    cy.batch(() => mine.toArray().sort((a, b) => String(b.data('occurred') || '').localeCompare(String(a.data('occurred') || '')) || (a.id() < b.id() ? -1 : 1)).forEach(n => {
-      const spot = bridgeSpot(n.data('lands').map(l => cy.getElementById(l)), taken);
-      taken.push(spot); n.position(spot); refollow(n);
+    const taken = cy.nodes('.bridge').not(mine).map(n => ({x: n.position('x'), y: n.position('y'), r: n.data('foot')}));
+    cy.batch(() => mine.toArray().sort((a, b) => b.data('foot') - a.data('foot') || String(b.data('occurred') || '').localeCompare(String(a.data('occurred') || '')) || (a.id() < b.id() ? -1 : 1)).forEach(n => {
+      const spot = bridgeSpot(n.data('lands').map(l => cy.getElementById(l)), taken, n.data('foot'));
+      taken.push({...spot, r: n.data('foot')}); n.position(spot); refollow(n);
     }));
   }
-  // 画出的记忆多于一页时，领地随之长大，挤到的邻居被推开。
-  function growLand(land, inner) {
-    const d = 2 * (reach(inner) + 90);
+  // 画出的记忆多于一页（或有一大团汇总）时，领地随之长大到装得下 radius，挤到的邻居被推开。
+  function growLand(land, radius) {
+    const d = 2 * (radius + 90);
     if (d <= land.data('d')) return;
     land.data('d', d);
     replaceBridges(new Set([land.id(), ...relaxAround(land.id())]));
@@ -552,7 +730,11 @@ function mountGraph(root) {
     markFilterGone();
   });
   // 点图例里的一组，只看这一组；位置不变，视野移过去。
-  const inGroup = n => n.hasClass('bridge') ? (n.data('groups') || []).includes(Number(solo)) : n.hasClass(`g${solo}`);
+  const inGroup = n => {
+    const top = n.data('top'); // 一团里的记忆和光晕，跟着这一团的根
+    if (top && top !== n.id() && cy.getElementById(top).length) return inGroup(cy.getElementById(top));
+    return n.hasClass('bridge') ? (n.data('groups') || []).includes(Number(solo)) : n.hasClass(`g${solo}`);
+  };
   const markFilterGone = () => cy.batch(() => cy.nodes().forEach(n => n.toggleClass('gone', Boolean(solo) && !n.hasClass('more-tab') && !inGroup(n))));
   function pickGroup(group) {
     solo = solo === group ? '' : group;
@@ -595,10 +777,11 @@ function mountGraph(root) {
     cy.$('node:selected').unselect();
     paint(cy.collection(), dim);
     refreshShow();
-    if (!active) { refreshPane(); return; }
+    if (!active) { syncFolds(); refreshPane(); return; }
     node.select();
     pulse(node);
     paint(node, dim);
+    syncFolds();
     if (node.hasClass('mem') || node.hasClass('territory')) { openPane('item'); showItem(node); }
   }
   let showEdges = cy.collection();
@@ -660,6 +843,11 @@ function mountGraph(root) {
       actions: loose ? [{href: '/memories', text: '在「记忆」页查看全部'}] : [{href: `/entity/${encodeURIComponent(id)}`, text: '查看实体页', primary: true}, {href: `/memories?entity=${encodeURIComponent(id)}`, text: '只看它的记忆'}],
     };
   }
+  // 汇总的说明：汇总了多少条、几层、在这个视图里怎么看；被更上一层汇总过的也说一声
+  const summaryNote = (d, how) => [
+    d.kids?.length ? `这是一条汇总，汇总了 ${d.desc} 条记忆${d.level > 1 ? `（${d.level} 层）` : ''}${how ? `：${how}。` : '。'}` : '',
+    d.summary ? '它已经被更上一层的汇总归在一起。' : '',
+  ];
   // 一条记忆：quick 是图上已有的内容（先占位），full 是读到的完整内容；hooks 说明在当前视图里「飞到哪」。
   function memoryCard({mid, quick, full, loading, back, hooks, note}) {
     const src = full || quick;
@@ -708,7 +896,8 @@ function mountGraph(root) {
     if (!node.hasClass('mem')) return;
     const d = node.data();
     await fillMemoryCard(token, node.id(), {occurred: d.occurred, source: d.source, text: d.full || d.text, context: d.context}, backHere(node.id()), mapHooks,
-      () => node.hasClass('bridge') ? `这条记忆提到 ${d.lands.length} 个实体，所以画成「桥」，停在它们之间；细线连着每个实体的领地` : '');
+      () => [...summaryNote(d, d.rc ? '放大会展开它圈住的记忆，缩小就收起' : ''), node.hasClass('bridge') ? `这条记忆提到 ${d.lands.length} 个实体，所以画成「桥」，停在它们之间；细线连着每个实体的领地。` : ''].filter(Boolean).join(''));
+
   }
   // 泳道里选中：一条记忆或一个实体
   function selectInLanes(mid, reveal) {
@@ -718,7 +907,7 @@ function mountGraph(root) {
     openPane('item');
     const token = ++renderToken;
     fillMemoryCard(token, mid, {occurred: m.occurred, source: m.source, text: m.text, context: ''}, backHere(mid), laneHooks,
-      () => m.lanes.length > 1 ? `这条记忆提到 ${m.lanes.length} 个实体，每个实体的泳道上各有一个点，竖线把它们连在一起` : '');
+      () => [...summaryNote(m, '泳道上的括号括住它汇总的那段时间'), m.lanes.length > 1 ? `这条记忆提到 ${m.lanes.length} 个实体，每个实体的泳道上各有一个点，竖线把它们连在一起。` : ''].filter(Boolean).join(''));
   }
   function pickLane(id) {
     lanes.selectLane(id);
@@ -779,6 +968,7 @@ function mountGraph(root) {
     searching = false; hitList = []; lit = []; hitIds = new Set(); lastHits = null;
     cy.elements().removeClass('hit miss has-hit');
     cy.nodes('.territory').data('hits', 0);
+    syncFolds();
     lanes.setHits(null);
     renderChips();
   }
@@ -830,6 +1020,7 @@ function mountGraph(root) {
       cy.nodes('.territory').forEach(n => { n.toggleClass('miss', !count.has(n.id())); n.toggleClass('has-hit', count.has(n.id())); n.data('hits', count.get(n.id()) || 0); });
       cy.edges().forEach(e => { if (e.hasClass('co') || e.source().hasClass('miss') || e.target().hasClass('miss')) e.addClass('miss'); });
     });
+    syncFolds();
     renderHits(data);
     openPane('hits');
     const targets = cy.nodes('.hit');
@@ -1064,7 +1255,7 @@ function mountGraph(root) {
   cy.on('grab', 'node', event => {
     const node = event.target;
     dragging = true; calm();
-    if (node.hasClass('territory')) { dragRun = {node, from: {...node.position()}, carry: new Map()}; cy.elements('.mem,.more-tab,edge.ref,edge.thread').addClass('carried'); }
+    if (node.hasClass('territory')) { dragRun = {node, from: {...node.position()}, carry: new Map()}; cy.elements('.mem,.halo,.more-tab,edge.ref,edge.thread').addClass('carried'); }
   });
   cy.on('drag', 'node.territory', event => {
     if (!dragRun) return;

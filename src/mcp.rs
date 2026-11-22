@@ -521,7 +521,12 @@ WHEN TO REMEMBER
 - Before remembering, recall the topic. If a memory already says the same thing, do not add a duplicate.
 
 THINGS CHANGE: KEEP THE TRAIL
-- Never overwrite the past. When a fact, agreement, habit or judgment changes, `remember` the new situation and cite the old memory in `references` with kind=corrects (and a short reason). Searches then show the correction first and keep the old text in its `trail`; weigh the whole trail. Several scattered memories that are really one story: `remember` a summary citing each with kind=summarizes. Do not merge memories just because they look similar.
+- Never overwrite the past. When a fact, agreement, habit or judgment changes, `remember` the new situation and cite the old memory in `references` with kind=corrects (and a short reason). Searches then show the correction first and keep the old text in its `trail`; weigh the whole trail. Do not merge memories just because they look similar.
+
+SUMMARIES: A TREE YOU GROW AND KEEP UP, LAYER BY LAYER
+- The memories themselves are layer 0. A summary is a memory of its own that cites what it sums up with kind=summarizes (up to 64, aim for 3 to 12); it sits one layer above its tallest child, and summaries of summaries make the next layer, as many as the library needs, until at most 8 summaries are left at the top. The user's map shows the top layers when zoomed out and unfolds one layer for every step in, so write a summary as a title plus the conclusion, not a list. The originals stay.
+- You maintain every layer, and the server only tells you where the work is: `health` lists `summary_gaps` for the lowest layer that has any (batches of ids: `new` = `remember` one summary of the batch; `extend <summary>` = `link` kind=summarizes from that summary to each id) and `stale_summaries` (a summary that many newer memories joined after it was written: `remember` a new summary that corrects it and cites the newcomers, or `link` one newcomer to mark it checked). Call `health` again after each layer; work for the layer above appears once it is covered. A memory belongs to the newest summary that cites it; a correction takes the place of what it corrects, and a summary that corrects another takes over all its children.
+- Summarize what truly belongs together, and in the user's language. Never summarize a layer by skipping the one below it.
 
 ENTITIES: WHAT MEMORIES ARE ABOUT
 - Attach the projects, devices, tools, people, places or ideas involved: `entities` in `remember`, or `link` with `entity` for an existing memory. Search the `entity` tool first and reuse an existing entity by `id`.

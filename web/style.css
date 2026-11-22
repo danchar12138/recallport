@@ -798,7 +798,7 @@ a.chip-entity:hover { text-decoration: underline; }
 .more-row { display: flex; justify-content: center; padding: 14px 0 4px; }
 
 /* ---------- 概览：最近一年、变化、整理建议 ---------- */
-.activity, .changes, .tidy { margin-bottom: 24px; }
+.activity, .changes, .tidy, .layers { margin-bottom: 24px; }
 .changes { margin-top: 28px; }
 .cal-scroll { overflow-x: auto; padding-bottom: 4px; }
 .cal { display: block; max-width: none; width: 100%; min-width: 680px; height: auto; }
@@ -1099,6 +1099,9 @@ button.chip-entity:hover, .graph-inspector .chip-entity:focus-visible { border-c
 .lg-ring { fill: var(--accent-soft); stroke: var(--g-c0); stroke-width: 1.6; stroke-dasharray: 3 2; }
 .lg-hex { fill: var(--surface); stroke: var(--g-anchor); stroke-width: 2; stroke-linejoin: round; }
 .lg-band { fill: var(--hover); stroke: var(--border-strong); stroke-dasharray: 3 2; }
+.lg-sum { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.lg-sum-core { fill: var(--accent); }
+.lg-sum-line { stroke: var(--accent); }
 
 /* 提示卡里的更正 / 汇总 / 引用行，浮窗条目的第二行 */
 .tip-lines { display: grid; gap: 4px; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--border); }
@@ -1108,3 +1111,15 @@ button.chip-entity:hover, .graph-inspector .chip-entity:focus-visible { border-c
 .pick-row > span { min-width: 0; }
 .row-sub { display: block; margin-top: 1px; font-style: normal; font-size: 11.5px; color: var(--text-3); }
 .graph-inspector .chip-row .chip { padding: 1px 10px; }
+
+.layer-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.layer-list li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 8.5em; align-items: center; gap: 12px; }
+.layer-name { font-weight: 650; }
+.layer-name small, .layer-num small { display: block; color: var(--text-3); font-size: 12px; font-weight: 400; }
+.layer-bar { width: 100%; height: 10px; border: 0; border-radius: 999px; background: var(--surface-2); appearance: none; }
+.layer-bar::-webkit-meter-bar { height: 10px; border: 0; border-radius: 999px; background: var(--surface-2); }
+.layer-bar::-webkit-meter-optimum-value, .layer-bar::-webkit-meter-suboptimum-value, .layer-bar::-webkit-meter-even-less-good-value { border-radius: 999px; background: var(--accent); min-width: 6px; }
+.layer-bar::-moz-meter-bar { border-radius: 999px; background: var(--accent); }
+.layer-num { text-align: right; }
+@media (max-width: 520px) { .layer-list li { grid-template-columns: 6em minmax(0, 1fr) 6.5em; gap: 8px; } }
+.graph-layer { margin: 0; color: var(--accent-text); font-weight: 600; }

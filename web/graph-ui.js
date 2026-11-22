@@ -13,7 +13,8 @@
     meta: `${d.occurred || '日期未记'} · ${d.source || '来源未记'}`,
     text: short(d.full || d.text, 360), sub: d.context ? `情境：${short(d.context, 120)}` : '', chips: d.entities || [],
     lines: [
-      ...(d.replaces || []).map(r => ({tag: r.kind === 'corrects' ? '更正了' : '汇总了', warn: true, text: `${short(r.text, 34)}${r.occurred ? `（${r.occurred}）` : ''}`})),
+      ...(d.replaces || []).filter(r => r.kind === 'corrects').map(r => ({tag: '更正了', warn: true, text: `${short(r.text, 34)}${r.occurred ? `（${r.occurred}）` : ''}`})),
+      ...(d.kids?.length ? [{tag: '汇总', warn: true, text: `汇总了 ${d.desc} 条记忆${d.level > 1 ? `，共 ${d.level} 层` : ''}`}] : []),
       ...(d.replaced_by ? [{tag: d.replaced_by.kind === 'corrects' ? '已被更正' : '已被汇总', warn: true, text: `→ ${short(d.replaced_by.text, 34)}`}] : []),
       ...(d.out || d.ins ? [{tag: '关联', text: [d.out ? `引用 ${d.out} 条` : '', d.ins ? `被 ${d.ins} 条引用` : ''].filter(Boolean).join(' · ')}] : []),
     ],
@@ -54,6 +55,7 @@
         <li><b>缩小</b>看每个实体的领地：圆越大，只属于它的记忆越多；颜色相同的经常一起出现，它们之间的空隙越宽，共享的记忆越多。</li>
         <li><b>放大进一个实体</b>，只属于它的记忆一条条出现：离中心越近越新，意思相近的坐在同一侧；被更正的旧记忆叠在新记忆下面。</li>
         <li><b>提到多个实体的记忆</b>画成六边形的「桥」，停在它们所属的领地之间，细线连着每个领地。</li>
+        <li><b>汇总</b>是接入的 AI 写的：一条汇总连同它汇总的记忆排成一团，用虚线圈圈住；缩小时只看到一个写着条数的圆，放大一层才展开一层，汇总的汇总同理。</li>
         <li><b>点一下</b>看详情和相连的内容；<b>双击</b>放大过去；拖动领地可以挪位置。</li>
         <li><b>上方搜索</b>不会离开这里：命中的记忆发光，其余淡下去，右边列出结果。</li>
         <li>键盘：方向键移动，回车进入，Esc 取消，+ − 缩放，0 适合窗口，/ 搜索。</li>
@@ -97,14 +99,16 @@
     line: html`<svg class="lg-glyph" viewBox="0 0 22 12"><path d="M1 6h20" class="lg-stroke"/></svg>`,
     ring: html`<svg class="lg-glyph" viewBox="0 0 22 12"><circle cx="11" cy="6" r="5" class="lg-ring"/></svg>`,
     bridge: html`<svg class="lg-glyph" viewBox="0 0 22 12"><path d="M11 0.8 15.6 3.4V8.6L11 11.2 6.4 8.6V3.4Z" class="lg-hex"/></svg>`,
+    summary: html`<svg class="lg-glyph" viewBox="0 0 22 12"><circle cx="11" cy="6" r="5.4" class="lg-sum"/><circle cx="11" cy="6" r="1.8" class="lg-sum-core"/></svg>`,
+    bracket: html`<svg class="lg-glyph" viewBox="0 0 22 12"><path d="M2 9V4h18v5" class="lg-stroke lg-sum-line"/><circle cx="20" cy="4" r="2.2" class="lg-sum-core"/></svg>`,
     dot: html`<svg class="lg-glyph" viewBox="0 0 22 12"><circle cx="11" cy="6" r="4" class="lg-fill"/></svg>`,
     span: html`<svg class="lg-glyph" viewBox="0 0 22 12"><path d="M11 1v10" class="lg-stroke"/><circle cx="11" cy="2" r="2.4" class="lg-fill"/><circle cx="11" cy="10" r="2.4" class="lg-fill"/></svg>`,
     warn: html`<svg class="lg-glyph" viewBox="0 0 22 12"><path d="M1 6h20" class="lg-stroke lg-warn"/></svg>`,
     band: html`<svg class="lg-glyph" viewBox="0 0 22 12"><rect x="3" y="1" width="16" height="10" rx="2" class="lg-band"/></svg>`,
   })[kind];
   const LEGENDS = {
-    map: [['ring', '实体的领地'], ['dot', '记忆'], ['bridge', '桥：提到多个实体的记忆'], ['line', '引用']],
-    lanes: [['dot', '记忆'], ['span', '一条记忆提到多个实体'], ['warn', '更正 / 汇总'], ['band', '日期未记']],
+    map: [['ring', '实体的领地'], ['dot', '记忆'], ['bridge', '桥：提到多个实体的记忆'], ['summary', '汇总：圈住它汇总的记忆'], ['line', '引用']],
+    lanes: [['dot', '记忆'], ['span', '一条记忆提到多个实体'], ['bracket', '汇总：括住它汇总的那段时间'], ['warn', '更正'], ['band', '日期未记']],
   };
   const Legend = ({mode}) => LEGENDS[mode].map(([kind, text]) => html`<span class="lg-item"><${Glyph} kind=${kind}/>${text}</span>`);
 

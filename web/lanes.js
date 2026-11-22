@@ -22,7 +22,7 @@
       let lanes = [], laneOf = new Map(), mems = [], byId = new Map(), lo = 0, hi = 1, hasUndated = false;
       let view = {sx: 1, tx: 0, ty: 0}, motion = null;
       let hits = null, solo = '', selected = null, laneSel = '', hover = null, hoverLane = '', hoverAmt = 0, hoverGoal = 0, pointer = null;
-      let marks = [], segments = [], hoverTimer = 0, leaveTimer = 0;
+      let marks = [], segments = [], brackets = [], hoverTimer = 0, leaveTimer = 0;
 
       const colour = name => css().getPropertyValue(name).trim();
       // 名字放不下时截断并加省略号
@@ -127,9 +127,10 @@
         ctx.lineWidth = 1;
         for (const t of ticks) { ctx.strokeStyle = t.major ? strong : border; ctx.globalAlpha = t.major ? 0.9 : 0.55; ctx.beginPath(); ctx.moveTo(t.x + 0.5, g.top); ctx.lineTo(t.x + 0.5, H); ctx.stroke(); }
         ctx.globalAlpha = 1;
-        // 更正与汇总：新记忆指向旧记忆的线
+        // 更正：新记忆指向旧记忆的线。汇总只在选中或悬停时连线（汇总平时用下面的括号表示）。
         ctx.lineWidth = 1.5; ctx.strokeStyle = colour('--warn');
         for (const m of mems) for (const r of m.refs) {
+          if (r.kind === 'summarizes' && m !== hover && m !== selected) continue;
           const o = byId.get(r.to), a = rows.get(m.lanes[0]?.id), b = o && rows.get(o.lanes[0]?.id);
           if (!o || a === undefined || b === undefined) continue;
           const x0 = xOf(dayOf(m)), x1 = xOf(dayOf(o));
@@ -138,6 +139,24 @@
           ctx.beginPath(); ctx.moveTo(x0, yOf(a, g)); ctx.lineTo(x1, yOf(b, g)); ctx.stroke();
         }
         ctx.setLineDash([]); ctx.globalAlpha = 1;
+        // 汇总：在它的第一条道上括住它汇总的那一段时间，汇总的汇总括得更长、画得更高
+        brackets = [];
+        const accent = colour('--accent');
+        for (const m of mems) {
+          if (!m.reach) continue;
+          const row = rows.get(m.lanes[0].e.id);
+          if (row === undefined) continue;
+          const x0 = xOf(m.reach[0]), x1 = xOf(m.reach[1]);
+          if (x1 < g.left || x0 > W || x1 - x0 < 6) continue;
+          const y = yOf(row, g) - 8 - 2.5 * Math.min(m.level, 3), on = m === hover || m === selected;
+          if (yOf(row, g) < g.top - LANE || yOf(row, g) > H + LANE) continue;
+          ctx.globalAlpha = hits && !hits.has(m.id) ? 0.12 : 1;
+          if (on) { ctx.fillStyle = accent; ctx.globalAlpha *= 0.12; ctx.fillRect(x0, yOf(row, g) - LANE / 2, x1 - x0, LANE); ctx.globalAlpha = hits && !hits.has(m.id) ? 0.12 : 1; }
+          ctx.strokeStyle = accent; ctx.lineWidth = on ? 3 : 1.8; ctx.globalAlpha *= on ? 1 : 0.7;
+          ctx.beginPath(); ctx.moveTo(x0, y + 5); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, y + 5); ctx.stroke();
+          brackets.push({m, x0, x1, y});
+        }
+        ctx.globalAlpha = 1;
         // 记忆：竖线加每条道上一个点
         marks = []; segments = [];
         const surface = colour('--surface-2'), pulse = reduce ? 0 : (Math.sin(now / 420) + 1) / 2;
@@ -217,6 +236,9 @@
         if (best) return best;
         d = 7;
         for (const s of segments) { const dist = Math.abs(s.x - x); if (y >= s.y0 - 2 && y <= s.y1 + 2 && dist < d) { d = dist; best = s.m; } }
+        if (best) return best;
+        d = 5;
+        for (const b of brackets) { const dist = Math.abs(b.y - y); if (x >= b.x0 - 3 && x <= b.x1 + 3 && dist < d) { d = dist; best = b.m; } }
         return best;
       };
       const laneAtY = y => { const g = geometry(), i = Math.floor((y - g.top - view.ty) / LANE), list = visibleLanes(); return y > g.top && i >= 0 && i < list.length ? list[i] : null; };
@@ -308,13 +330,25 @@
           mems = list.map(m => ({...m, day: parseDay(m.occurred), refs: m.refs || [], lanes: [...new Set(m.entity_ids.filter(id => laneOf.has(id)))].map(id => laneOf.get(id))}))
             .map(m => ({...m, lanes: m.lanes.length ? m.lanes : (laneOf.has('~loose') ? [laneOf.get('~loose')] : [])})).filter(m => m.lanes.length);
           byId = new Map(mems.map(m => [m.id, m]));
+          // 汇总括住的时间：它自己和它汇总的所有记忆（一层层往下）里最早到最晚的一天
+          const reach = new Map();
+          const spanOf = m => {
+            if (reach.has(m.id)) return reach.get(m.id);
+            let from = dayOf(m), to = from;
+            reach.set(m.id, [from, to]);
+            for (const kid of m.kids || []) { const c = byId.get(kid); if (c) { const [a, b] = spanOf(c); from = Math.min(from, a); to = Math.max(to, b); } }
+            reach.set(m.id, [from, to]);
+            return [from, to];
+          };
+          for (const m of mems) if (m.kids?.length) m.reach = spanOf(m);
           laneSel = ''; selected = null; hover = null; hits = null; view = fitView(); motion = null; schedule();
         },
         show() { shown = true; resize(); },
         hide() { shown = false; hover = null; hoverGoal = 0; hoverAmt = 0; ui.hideTip(); },
         redraw: () => schedule(),
-        // 给自动化检查用：当前画出的点，以及时间轴和泳道的位置
+        // 给自动化检查用：当前画出的点和汇总括号，以及时间轴和泳道的位置
         marks: () => marks.map(k => ({id: k.m.id, x: k.x, y: k.y})),
+        brackets: () => brackets.map(b => ({id: b.m.id, x0: b.x0, x1: b.x1, y: b.y})),
         bounds: () => { const g = geometry(); return {axisTop: g.a.y0, laneTop: g.top, laneBottom: g.bottom, left: LABEL, sx: view.sx}; },
         fit: () => goTo(fitView()),
         zoom: factor => zoomAt(factor),
