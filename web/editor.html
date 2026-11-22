@@ -1,0 +1,60 @@
+{% from "parts.html" import icon, layer %}
+{% set n = Node %}
+<header class="page-head">
+  <div><h1>{% if n %}编辑节点{% else %}新建节点{% endif %}</h1><p class="sub">{% if n %}改动会记成新的一版，旧的版本留在历史里{% else %}自己写一条记忆；平时这些由接入的 AI 来写{% endif %}</p></div>
+</header>
+{% if Conflict %}
+<div class="banner banner-warn" role="status">{{ icon("info") }}<p>你打开编辑页之后，这个节点又被改过了（可能是 AI 刚刚改的）。<a href="/node/{{ n.id }}/edit">重新载入</a>最新的内容再改，免得盖掉别人的改动。</p></div>
+{% endif %}
+<form class="editor-form" method="post" enctype="multipart/form-data" action="{% if n %}/node/{{ n.id }}/edit{% else %}/node/new{% endif %}" data-editor{% if n %} data-self="{{ n.id }}"{% endif %}>
+  {% if n %}<input type="hidden" name="version" value="{{ Form.version }}">{% endif %}
+  {% if Form.parent %}<input type="hidden" name="parent" value="{{ Form.parent }}">{% endif %}
+  {% if not n and Parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在这一条下面：<a href="/node/{{ Parent.id }}">{{ Parent.text }}</a></span></p>{% elif not n and Form.parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在节点 {{ Form.parent }} 下面（找不到这个节点，保存时会报错）</span></p>{% endif %}
+
+  <div class="field">
+    <label for="f-content">内容 <span class="req">必填</span></label>
+    <textarea id="f-content" name="content" rows="6" required maxlength="4000" data-autosize aria-describedby="f-content-foot">{{ Form.content }}</textarea>
+    <div class="field-foot" id="f-content-foot"><span class="hint">写成一句完整的话，过一段时间再看也读得懂。最多 4000 个字。</span><span class="counter" data-counter aria-live="off"></span></div>
+  </div>
+
+  <div class="field">
+    <label for="f-tags">标签 <span class="opt">可选</span></label>
+    <input type="text" id="f-tags" name="tags" value="{{ Form.tags }}" placeholder="用逗号隔开，例如：项目甲, 设备" autocomplete="off" data-tags aria-describedby="f-tags-hint">
+    <div class="field-foot"><span class="hint" id="f-tags-hint">标签只用来搜索和筛选，不影响节点放在树的哪里。输入后按回车或逗号加上一个。</span></div>
+  </div>
+
+  <div class="field" data-date-field>
+    <label for="f-occurred">发生时间 <span class="opt">可选</span></label>
+    <div class="datefield"><input type="text" id="f-occurred" name="occurred" value="{{ Form.occurred }}" placeholder="2024-09-12，或只写 2024-09、2024" maxlength="32" autocomplete="off" data-date aria-describedby="f-occurred-hint"></div>
+    <div class="field-foot"><span class="hint" id="f-occurred-hint" data-date-hint>不确定具体日子时，只写年或年月就行；留空表示没记。</span></div>
+  </div>
+
+  <div class="field" data-refs>
+    <label for="f-refs-q">引用的节点 <span class="opt">可选</span></label>
+    <ul class="ref-chips" data-ref-chips>{% for r in Form.refs %}<li class="chip">{{ layer(r.layer) }}<span class="chip-text">{{ r.text }}</span><input type="hidden" name="refs" value="{{ r.id }}"><button type="button" class="chip-x-btn" data-ref-remove aria-label="取消引用：{{ r.text }}">{{ icon("x", "xs") }}</button></li>{% endfor %}</ul>
+    <input type="text" id="f-refs-q" data-ref-search placeholder="搜一搜，把相关的节点加进来" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-refs-hits" hidden>
+    <ul class="pick-list" id="f-refs-hits" role="listbox" hidden></ul>
+    <div class="field-foot"><span class="hint">一条记忆常常属于不止一个故事；引用把它和别处的节点连起来。</span></div>
+  </div>
+
+  <details class="fold field-fold"{% if Form.sources %} open{% endif %}>
+    <summary>来源 <span class="opt">可选</span></summary>
+    <div class="field"><label class="sr-only" for="f-sources">来源，每行一个</label><textarea id="f-sources" name="sources" rows="3" placeholder="每行一个：哪次对话、哪个文件、哪个网址">{{ Form.sources }}</textarea></div>
+  </details>
+
+  <div class="field">
+    <label for="f-file">附件 <span class="opt">可选</span></label>
+    {% if Attachments %}
+    <ul class="files files-edit">{% for a in Attachments %}<li><label class="check"><input type="checkbox" name="remove" value="{{ a.hash }}"{% if a.hash in Form.remove %} checked{% endif %}>{{ icon("paperclip", "sm") }}<span class="file-name"><b>{{ a.name }}</b> <span class="muted">{{ a.size_text }}</span></span><span class="check-note">勾上就移除</span></label></li>{% endfor %}</ul>
+    {% endif %}
+    <input type="file" id="f-file" name="file" multiple data-files aria-describedby="f-file-hint">
+    <ul class="file-picked" data-file-list aria-live="polite"></ul>
+    <div class="field-foot"><span class="hint" id="f-file-hint">图片、录音、文档都可以，单个文件最多 64 MB。{% if Form.chosen %}<b class="warn">刚才选的 {{ Form.chosen }} 个文件没有保存，请重新选择。</b>{% endif %}</span></div>
+  </div>
+
+  <div class="actionbar">
+    <span class="dirty-state" data-dirty hidden>有未保存的改动</span>
+    <div class="btns"><a class="btn" href="{% if n %}/node/{{ n.id }}{% elif Form.parent %}/node/{{ Form.parent }}{% else %}/memories{% endif %}">取消</a><button class="btn btn-primary" type="submit">{% if n %}保存{% else %}新建{% endif %}<kbd>Ctrl</kbd><kbd>Enter</kbd></button></div>
+  </div>
+</form>
+<script src="/node.js" defer></script>

@@ -4,16 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>{% if View == "clients" %}接入{% elif View == "data" %}数据{% elif View == "overview" %}概览{% elif View == "graph" %}关系图{% elif View == "entities" %}实体{% elif View == "entity" %}{{ Entity.Name }}{% elif View == "memory" %}记忆详情{% elif View == "detail" %}{% if Entry.ID %}编辑记忆{% else %}新建记忆{% endif %}{% else %}记忆{% endif %} · RecallPort</title>
+<title>{{ Title }} · RecallPort</title>
 <script src="/theme.js"></script>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
-<link rel="stylesheet" href="/vendor/flatpickr.min.css">
 <link rel="stylesheet" href="/style.css">
-<script src="/vendor/flatpickr.min.js" defer></script>
+<link rel="stylesheet" href="/admin.css">
 <script src="/ui.js" defer></script>
-<script src="/controls.js" defer></script>
-{% if View == "graph" %}<meta id="__________cytoscape_stylesheet" name="cytoscape-style" content="rules live in style.css">
-<script src="/vendor/cytoscape.min.js" defer></script><script src="/vendor/preact.min.js" defer></script><script src="/vendor/htm.min.js" defer></script><script src="/graph-ui.js" defer></script><script src="/lanes.js" defer></script><script src="/graph.js" defer></script>{% endif %}
 </head>
 <body data-view="{{ View }}">
 <!-- Lucide icon license
@@ -62,19 +58,18 @@ SOFTWARE.
 
 -->
 <svg class="sprite" aria-hidden="true">
-  <symbol id="network" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></symbol>
-  <symbol id="sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4" /></symbol>
-  <symbol id="expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></symbol>
-  <symbol id="shrink" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /></symbol>
-  <symbol id="panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M15 3v18" /></symbol>
+  <symbol id="dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></symbol>
+  <symbol id="tree" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" /><path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" /></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol>
+  <symbol id="plug" viewBox="0 0 24 24"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></symbol>
+  <symbol id="database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol>
   <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
   <symbol id="scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /></symbol>
-  <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol>
   <symbol id="upload" viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol>
   <symbol id="refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
   <symbol id="history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></symbol>
-  <symbol id="plug" viewBox="0 0 24 24"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></symbol>
-  <symbol id="database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></symbol>
   <symbol id="search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></symbol>
   <symbol id="calendar" viewBox="0 0 24 24"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /></symbol>
   <symbol id="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
@@ -82,15 +77,12 @@ SOFTWARE.
   <symbol id="back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></symbol>
   <symbol id="download" viewBox="0 0 24 24"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></symbol>
   <symbol id="copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol>
-  <symbol id="save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /><path d="M7 3v4a1 1 0 0 0 1 1h7" /></symbol>
-  <symbol id="trash" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol>
   <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
   <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
   <symbol id="alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" /></symbol>
   <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></symbol>
   <symbol id="circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></symbol>
   <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol>
-  <symbol id="keyboard" viewBox="0 0 24 24"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></symbol>
   <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></symbol>
   <symbol id="moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></symbol>
   <symbol id="monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></symbol>
@@ -100,29 +92,32 @@ SOFTWARE.
   <symbol id="file" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /></symbol>
   <symbol id="power" viewBox="0 0 24 24"><path d="M12 2v10" /><path d="M18.4 6.6a9 9 0 1 1-12.77.04" /></symbol>
   <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></symbol>
+  <symbol id="undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" /></symbol>
+  <symbol id="move" viewBox="0 0 24 24"><path d="M12 2v20" /><path d="m15 19-3 3-3-3" /><path d="m19 9 3 3-3 3" /><path d="M2 12h20" /><path d="m5 9-3 3 3 3" /><path d="m9 5 3-3 3 3" /></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></symbol>
+  <symbol id="music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></symbol>
+  <symbol id="video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /><rect x="2" y="6" width="14" height="12" rx="2" /></symbol>
 </svg>
+{% set tabs = [["/", "overview", "概览", "dashboard"], ["/tree", "tree", "树", "tree"], ["/memories", "memories", "记忆", "list"], ["/trash", "trash", "回收站", "trash"], ["/connect", "connect", "接入", "plug"], ["/data", "data", "数据", "database"]] %}
+{% set here = "memories" if View in ["node", "editor"] else View %}
 <a class="skip-link" href="#main">跳到主要内容</a>
 <header class="top">
   <a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#history"/></svg></span>RecallPort</a>
   <nav class="tabs" aria-label="主导航">
-    <a href="/" {% if View == "overview" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg>概览</a>
-    <a href="/memories" {% if (View == "memories") or (View == "detail") or (View == "memory") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#history"/></svg>记忆</a>
-    <a href="/entities" {% if (View == "entities") or (View == "entity") %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#tag"/></svg>实体</a>
-    <a href="/graph" {% if View == "graph" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#network"/></svg>关系图</a>
-    <a href="/clients" {% if View == "clients" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#plug"/></svg>接入</a>
-    <a href="/data" {% if View == "data" %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#database"/></svg>数据</a>
+    {% for tab in tabs %}<a href="{{ tab[0] }}"{% if tab[1] == here %} aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#{{ tab[3] }}"/></svg>{{ tab[2] }}</a>
+    {% endfor %}
   </nav>
   <div class="theme-switch theme-switch-mobile" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
   <div class="side-foot">
-    {% if Semantic %}<div class="status-line" title="只监听本机 127.0.0.1；语义搜索已启用"><span class="dot"></span>服务运行中</div>
-    {% else %}<div class="status-line is-warn" title="没有找到语义模型：现在只能按关键词搜索"><span class="dot"></span>运行中 · 无语义搜索</div>{% endif %}
+    <div class="status-line" title="只监听本机 127.0.0.1"><span class="dot"></span>服务运行中</div>
     <div class="theme-switch" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
-
-    <button type="button" class="btn btn-ghost btn-sm side-shortcuts" data-shortcuts><svg class="icon icon-sm" aria-hidden="true"><use href="#keyboard"/></svg>快捷键 <kbd>?</kbd></button>
   </div>
 </header>
-<main id="main" class="shell{% if View == "graph" %} shell-graph{% endif %}">
-{% if View == "memories" %}{% include "memories.html" %}{% elif View == "memory" %}{% include "memory.html" %}{% elif View == "detail" %}{% include "editor.html" %}{% elif View == "overview" %}{% include "overview.html" %}{% elif View == "graph" %}{% include "graph-page.html" %}{% elif View == "clients" %}{% include "mcp-guide.html" %}{% elif View == "entities" %}{% include "entities.html" %}{% elif View == "entity" %}{% include "entity.html" %}{% else %}{% include "data.html" %}{% endif %}
+<main id="main" class="shell{% if View == "tree" %} shell-wide{% endif %}">
+{% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
+{% if Notice %}<div class="banner banner-ok" role="status"><svg class="icon" aria-hidden="true"><use href="#circle-check"/></svg><p>{{ Notice }}</p></div>{% endif %}
+{% include View ~ ".html" %}
 </main>
 </body>
 </html>

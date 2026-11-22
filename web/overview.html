@@ -1,74 +1,82 @@
+{% from "parts.html" import icon, layer, node_link %}
 <header class="page-head">
-  <div><h1>概览</h1><p class="sub">记忆的整体分布、最近的变化，以及值得整理的地方</p></div>
+  <div><h1>概览</h1><p class="sub">记忆树现在的样子、需要整理的地方，以及最近的变化</p></div>
+  <div class="head-actions"><a class="btn" href="/node/new">{{ icon("plus") }}新建节点</a></div>
 </header>
-{% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
-<div class="stats">
-  <a class="stat" href="/memories"><span>全部记忆</span><strong>{{ Total }}</strong><span class="go">查看全部记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span></a>
-  <a class="stat" href="/entities"><span>实体</span><strong>{{ Entities }}</strong>{% if Entities %}<span class="go">查看实体<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
-  <a class="stat" href="/memories?undated=1"><span>日期未记</span><strong>{{ Unknown }}</strong>{% if Unknown %}<span class="go">查看这些记忆<svg class="icon icon-sm" aria-hidden="true"><use href="#right"/></svg></span>{% endif %}</a>
-</div>
-{% if Layers %}
-<section class="layers" aria-labelledby="layers-title">
-  <div class="section-head"><div><h2 id="layers-title">汇总层级</h2><p>第 0 层是记忆本身，上面每一层都由接入的 AI 汇总、维护，一直收到最上面的几条总汇总。关系图缩小看顶层，放大一步露出下一层。</p></div></div>
-  <ol class="layer-list">{% for l in Layers %}
-    <li><span class="layer-name">第 {{ l.Layer }} 层<small>{% if l.Layer == 0 %}记忆本身{% endif %}</small></span><meter class="layer-bar" min="0" max="100" value="{{ l.Width }}" aria-hidden="true"></meter><span class="layer-num"><strong>{{ l.Count }}</strong> 条{% if l.Top %}<small>最上层</small>{% elif l.Open %}<small>{{ l.Open }} 条待汇总</small>{% else %}<small>已汇总</small>{% endif %}</span></li>
-  {% endfor %}</ol>
-</section>
+{% if OldBackups %}
+<div class="banner banner-info" role="status">{{ icon("info") }}<p><b>发现旧版备份。</b>这个记忆库还是空的，但数据目录里有备份文件。<a href="/data#restore">去数据页恢复</a></p></div>
 {% endif %}
-{% if Issues %}
-<section class="tidy" aria-labelledby="tidy-title">
-  <div class="section-head"><div><h2 id="tidy-title">整理建议</h2><p>接入的 AI 通过 health 工具看到同样的清单，会自己动手修复，不需要你批准；这里只是让你知道库里有什么。</p></div></div>
-  <ul class="tidy-list">{% for i in Issues %}<li>{% if i.URL %}<a href="{{ i.URL }}">{{ i.Detail }}</a>{% else %}<span>{{ i.Detail }}</span>{% endif %}{% if i.Help %}<small>{{ i.Help }}</small>{% endif %}</li>{% endfor %}</ul>
+{% if Empty %}
+<section class="card onboarding" aria-labelledby="empty-title">
+  <h2 id="empty-title">还没有记忆：把你的 AI 接上来</h2>
+  <p>RecallPort 只保存你和 AI 的对话里值得记住的事，由接入的 AI 自己写进来、整理成一棵树。接好之后，每次新对话它都能想起之前的内容。</p>
+  <ol>
+    <li><b>接入 AI</b><span>在「接入」页一键写入配置，或者复制配置给你的客户端。</span></li>
+    <li><b>像平时一样聊天</b><span>AI 会把值得记的事写成一条条记忆，再逐层汇总。</span></li>
+    <li><b>回来看看</b><span>概览、树和记忆页会显示它记下了什么；任何一条你都可以改、可以删。</span></li>
+  </ol>
+  <div class="actions"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}自己写第一条</a></div>
 </section>
-{% endif %}
-{% if Calendar.Total %}
-<section class="activity" aria-labelledby="activity-title">
-  <div class="section-head"><div><h2 id="activity-title">最近一年</h2><p>{{ Calendar.Total }} 条记忆发生在 {{ Calendar.Days }} 天里，颜色越深当天越多；点一天查看那天的记忆。</p></div></div>
-  <div class="cal-scroll">
-    <svg class="cal" viewBox="0 0 772 124" width="772" height="124" role="group" aria-label="最近一年每天的记忆数量">
-      {% for m in Calendar.Months %}<text class="cal-label" x="{{ m.X }}" y="12">{{ m.Label }}</text>{% endfor %}
-      <text class="cal-label" x="0" y="30">一</text><text class="cal-label" x="0" y="58">三</text><text class="cal-label" x="0" y="86">五</text>
-      {% for c in Calendar.Cells %}<a href="/memories?period={{ c.Date }}"><rect class="cal-cell lv{{ c.Level }}" x="{{ c.X }}" y="{{ c.Y }}" width="11" height="11" rx="2"><title>{{ c.Date }}：{{ c.Count }} 条</title></rect></a>{% endfor %}
-    </svg>
-  </div>
-  <p class="cal-legend" aria-hidden="true">少<i class="cal-key lv0"></i><i class="cal-key lv1"></i><i class="cal-key lv2"></i><i class="cal-key lv3"></i><i class="cal-key lv4"></i>多</p>
-</section>
-{% endif %}
-{% macro year_row(r0) %}
-  <div class="year">
-    <a class="year-head" href="{{ r0.URL }}" title="查看 {{ r0.Year }} 全年"><span>{{ r0.Year }}</span><small>{{ r0.Count }} 条</small></a>
-    <div class="months">{% for r1 in r0.Months %}
-      {% if r1.Count %}<a class="month" data-count="{{ r1.Count }}" data-max="{{ r1.Max }}" href="{{ r1.URL }}" aria-label="{{ r0.Year }} 年 {{ r1.Label }} 月：{{ r1.Count }} 条" title="{{ r0.Year }}-{{ r1.Label }}：{{ r1.Count }} 条"><span>{{ r1.Label }} 月</span><strong>{{ r1.Count }}</strong></a>
-      {% else %}<div class="month is-empty"><span>{{ r1.Label }} 月</span><strong>0</strong></div>{% endif %}
-    {% endfor %}</div>
-  </div>
-{% endmacro %}
-<section class="years" aria-labelledby="years-title">
-  <div class="section-head"><div><h2 id="years-title">按年月浏览</h2><p>点年份看全年，点月份看那个月。</p></div></div>
-{% if Years %}
-  <div class="year-list">
-    {% for r0 in Years[:3] %}{{ year_row(r0) }}{% endfor %}
-    {% if (Years|length) > 3 %}
-    <details class="history older">
-      <summary>更早的 {{ (Years|length) - 3 }} 个年份</summary>
-      <div class="older-rows">{% for r0 in Years[3:] %}{{ year_row(r0) }}{% endfor %}</div>
-    </details>
-    {% endif %}
-  </div>
 {% else %}
-  <div class="card"><div class="empty"><svg class="icon" aria-hidden="true"><use href="#calendar"/></svg><h3>暂无带日期的记忆</h3><p>记忆写入时如果带有发生时间，就会按年月出现在这里。</p></div></div>
-{% endif %}
+<div class="stats">
+  <a class="stat" href="/memories"><span>节点</span><strong>{{ Nodes }}</strong><span class="go">浏览全部{{ icon("right", "sm") }}</span></a>
+  <a class="stat" href="/tree"><span>层数</span><strong>{{ Layers|length }}</strong><span class="go">在树里看{{ icon("right", "sm") }}</span></a>
+  <a class="stat" href="/memories?layer={{ Top }}"><span>最上层有几条</span><strong>{{ TopCount }}</strong><span class="go">看看是什么{{ icon("right", "sm") }}</span></a>
+  <a class="stat" href="/trash"><span>回收站</span><strong>{{ Deleted }}</strong>{% if Deleted %}<span class="go">查看{{ icon("right", "sm") }}</span>{% endif %}</a>
+</div>
+
+<section class="block layers" aria-labelledby="layers-title">
+  <div class="section-head"><div><h2 id="layers-title">汇总层级</h2><p>第 0 层是记忆本身；上面每一层，都由接入的 AI 把下面一层汇总起来、并持续维护，一直收成最上面的几条。</p></div></div>
+  <ol class="layer-list">
+  {% for l in Layers %}
+    <li>
+      <span class="layer-name">第 {{ l.layer }} 层{% if l.layer == 0 %}<small>记忆本身</small>{% endif %}</span>
+      <meter class="layer-bar" data-layer="{{ [l.layer, 5]|min }}" min="0" max="100" value="{{ l.width }}" aria-hidden="true"></meter>
+      <a class="layer-num" href="/memories?layer={{ l.layer }}"><strong>{{ l.count }}</strong> 条<small>{% if l.state == "top" %}最上层{% elif l.state == "open" %}{{ l.open }} 条待汇总{% else %}已汇总{% endif %}</small></a>
+    </li>
+  {% endfor %}
+  </ol>
 </section>
-{% if Changes.Items %}
-<section class="changes" aria-labelledby="changes-title">
-  <div class="section-head"><div><h2 id="changes-title">记忆的变化</h2><p>最近的更正与汇总：旧记录都还在，这里把新旧放在一起看。{% if Changes.Total > 12 %}共 {{ Changes.Total }} 条，只显示最近 12 条。{% endif %}</p></div></div>
-  <ol class="change-list">
-  {% for c in Changes.Items %}
-    <li class="change {% if c.Corrects %}is-correct{% else %}is-summary{% endif %}">
-      <div class="change-head"><span class="chip {% if c.Corrects %}chip-trail{% else %}chip-soft{% endif %}">{{ c.Kind }}</span><time>{{ local_time(c.When) }}</time><span class="muted">{{ c.Source }}</span></div>
-      <a class="change-new" href="/memory/{{ c.NewID }}">{{ c.New }}</a>
-      <p class="change-old"><span>{% if c.Corrects %}原先{% else %}汇总了{% endif %}</span><a href="/memory/{{ c.OldID }}">{{ c.Old }}</a></p>
-      {% if c.Reason %}<p class="change-reason">{{ c.Reason }}</p>{% endif %}
+
+<section class="block" aria-labelledby="todo-title">
+  <div class="section-head"><div><h2 id="todo-title">待办</h2><p>接入的 AI 会通过同一份清单自己整理，通常不需要你动手；这里让你知道树现在缺什么。</p></div></div>
+  {% if Whole %}
+  <p class="calm">{{ icon("circle-check") }}<span><b>树是完整的。</b>每条记忆都有汇总收着，汇总也都跟得上最新的内容。</span></p>
+  {% endif %}
+  {% if Gaps %}
+  <div class="todo">
+    <h3>第 {{ Gaps.layer }} 层有 {{ Gaps.missing }} 条还没被第 {{ Gaps.next }} 层汇总</h3>
+    <p class="help">它们还没有放进任何一条汇总里。AI 下次整理时会处理：要么放进已有的汇总，要么写一条新的。你也可以自己动手：打开节点，用「移动」放到合适的汇总下面。</p>
+    {% for e in Gaps.extend %}
+    <div class="todo-item"><p>可以放进这条已有的汇总（再收 {{ e.count }} 条）：</p>{{ node_link(e.summary) }}<ul class="mini">{% for n in e.nodes %}<li>{{ node_link(n) }}</li>{% endfor %}</ul></div>
+    {% endfor %}
+    {% if Gaps.extend_more %}<p class="muted">还有 {{ Gaps.extend_more }} 条汇总有可以放进去的内容。</p>{% endif %}
+    {% for g in Gaps.groups %}
+    <div class="todo-item"><p>这 {{ g.count }} 条讲的是同一件事，可以合成一条新的汇总：</p><ul class="mini">{% for n in g.nodes %}<li>{{ node_link(n) }}</li>{% endfor %}</ul></div>
+    {% endfor %}
+    {% if Gaps.groups_more %}<p class="muted">还有 {{ Gaps.groups_more }} 组。</p>{% endif %}
+  </div>
+  {% endif %}
+  {% if Stale.total %}
+  <div class="todo">
+    <h3>{{ Stale.total }} 条汇总写好之后又并进了新记忆，可能说不全了</h3>
+    <p class="help">汇总是 AI 在某个时间点写的。之后又有新的内容放到了它下面，所以它可能没有覆盖到这些新内容。AI 会重写它；如果你读过觉得没问题，在节点页点「确认仍然正确」即可。</p>
+    {% for s in Stale.items %}
+    <div class="todo-item">{{ node_link(s.summary) }}<p class="muted">之后并进了 {{ s.count }} 条：</p><ul class="mini">{% for n in s.newer %}<li>{{ node_link(n) }}</li>{% endfor %}</ul></div>
+    {% endfor %}
+    {% if Stale.more %}<p class="muted">还有 {{ Stale.more }} 条。</p>{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<section class="block" aria-labelledby="changes-title">
+  <div class="section-head"><div><h2 id="changes-title">最近的变化</h2><p>谁在什么时候动了哪一条。每次改动都留有历史，打开节点可以看到。</p></div></div>
+  <ol class="feed">
+  {% for c in Changes %}
+    <li>
+      <span class="op op-{{ c.op }}">{{ c.label }}</span>
+      <div class="feed-main">{{ node_link(c.node) }}{% if c.reason %}<p class="reason">{{ c.reason }}</p>{% endif %}</div>
+      <span class="feed-who">{{ c.who }} · <time datetime="{{ c.at }}">{{ local_time(c.at) }}</time></span>
     </li>
   {% endfor %}
   </ol>
