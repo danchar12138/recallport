@@ -4,7 +4,7 @@ use crate::{
     data::Mode,
     embedding::{self, Embed},
     jobs::Job,
-    service::{AttachInput, ListQuery, Order, Parent, Service, UpdateInput, WriteInput},
+    service::{AttachInput, ListQuery, Order, Service, UpdateInput, WriteInput},
     tree::SearchOpts,
 };
 use anyhow::Result;
@@ -141,14 +141,6 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
         .no_strong_match
     );
     // filters of the list
-    let roots = s.list(&ListQuery {
-        parent: Parent::Root,
-        ..Default::default()
-    });
-    assert_eq!(
-        (roots.total, roots.items[0].id.as_str()),
-        (1, sum.id.as_str())
-    );
     let tagged = s.list(&ListQuery {
         tag: Some("家庭服务器".into()),
         order: Order::Created,
@@ -191,7 +183,8 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
         .unwrap();
     assert_eq!(s.get(&sum.id).unwrap().children.len(), 2);
     assert!(
-        s.move_nodes(&[sum.id.clone()], Some(&a.id), "web").is_err(),
+        s.move_nodes(std::slice::from_ref(&sum.id), Some(&a.id), "web")
+            .is_err(),
         "no loops"
     );
 }
@@ -237,19 +230,8 @@ fn attachments_are_copied_travel_in_backups_and_are_swept_with_the_node() {
     let copy = t.get(&n.id).unwrap();
     assert!(copy.attachments.iter().all(|a| a.available));
     assert_eq!(
-        std::fs::read(t.files.path_of(&crate::tree::Attachment {
-            hash: copy.attachments[0].hash.clone(),
-            name: String::new(),
-            caption: String::new(),
-            mime: String::new(),
-            size: 0,
-            storage: crate::tree::Storage::Stored,
-            path: String::new(),
-        }))
-        .unwrap()
-        .len()
-            <= 5,
-        true
+        std::fs::read(t.files.blob(&copy.attachments[0].hash)).unwrap(),
+        b"hello"
     );
     // removing an attachment and deleting + purging the node sweeps the copies
     let first = n.attachments[0].hash.clone();
@@ -264,7 +246,7 @@ fn attachments_are_copied_travel_in_backups_and_are_swept_with_the_node() {
     )
     .unwrap();
     s.delete(&n.id, None, "不要了", "web").unwrap();
-    assert_eq!(s.purge(&[n.id.clone()]).unwrap(), 1);
+    assert_eq!(s.purge(std::slice::from_ref(&n.id)).unwrap(), 1);
     assert!(s.get(&n.id).is_err());
     assert_eq!(
         std::fs::read_dir(dir.path().join("files")).unwrap().count(),

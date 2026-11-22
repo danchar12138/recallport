@@ -4,8 +4,8 @@ use crate::{
     embedding::Embed,
     files::Files,
     tree::{
-        Attachment, Draft, Event, Hit, Maintenance, Node, Patch, SearchOpts, Status, Storage, Tree,
-        no_strong_match,
+        Attachment, Draft, Event, Hit, Maintenance, Node, Patch, STRONG, SearchOpts, Status,
+        Storage, Tree, no_strong_match,
     },
 };
 use anyhow::{Context, Result, ensure};
@@ -100,6 +100,8 @@ pub struct HitView {
     pub id: String,
     pub layer: u32,
     pub relevance: f64,
+    /// Clearly about the question (exact words, or very close in meaning).
+    pub strong: bool,
     pub exact: bool,
     pub matched: &'static str,
     pub content: String,
@@ -200,15 +202,6 @@ pub struct Page<T> {
     pub total: usize,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub enum Parent {
-    #[default]
-    Any,
-    /// Nodes that sit under nothing.
-    Root,
-    Of(String),
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Order {
     #[default]
@@ -219,7 +212,6 @@ pub enum Order {
 
 #[derive(Clone, Debug, Default)]
 pub struct ListQuery {
-    pub parent: Parent,
     pub tag: Option<String>,
     pub min_layer: Option<u32>,
     pub max_layer: Option<u32>,
@@ -424,6 +416,7 @@ impl Service {
                 HitView {
                     layer: h.layer,
                     relevance: (f64::from(h.relevance) * 100.0).round() / 100.0,
+                    strong: h.exact || h.relevance >= STRONG,
                     exact: h.exact,
                     matched: h.matched,
                     content: h.content,
@@ -447,11 +440,6 @@ impl Service {
         let layers = t.layers();
         let mut nodes: Vec<&Node> = t
             .nodes()
-            .filter(|n| match &q.parent {
-                Parent::Any => true,
-                Parent::Root => n.parent.is_none(),
-                Parent::Of(p) => n.parent.as_deref() == Some(p.as_str()),
-            })
             .filter(|n| q.tag.as_ref().is_none_or(|tag| n.tags.contains(tag)))
             .filter(|n| {
                 let layer = layers.get(&n.id).copied().unwrap_or(0);

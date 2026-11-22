@@ -8,7 +8,7 @@ mod search;
 
 pub use maintain::Maintenance;
 pub use model::{Attachment, Draft, Event, MAX_CONTENT, Node, Patch, Status, Storage, now};
-pub use search::{Hit, SearchOpts, no_strong_match};
+pub use search::{Hit, STRONG, SearchOpts, no_strong_match};
 
 use crate::{embedding::Embed, vectors};
 use anyhow::{Context, Result, bail, ensure};

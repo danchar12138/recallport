@@ -124,10 +124,6 @@ impl Archive {
             .collect()
     }
 
-    pub fn len(&self) -> usize {
-        self.memories.len()
-    }
-
     /// The events of the library and the text each node's vector was made from, by node id.
     pub fn events(&self) -> Vec<Event> {
         let by_id: HashMap<&str, &Memory> =

@@ -52,7 +52,8 @@ pub fn router(service: Arc<Service>, address: SocketAddr, app: Arc<App>) -> Resu
         };
     }
     templates!(
-        "page", "parts", "overview", "tree", "memories", "node", "editor", "trash", "data", "connect"
+        "page", "parts", "overview", "tree", "memories", "node", "editor", "trash", "data",
+        "connect"
     );
     let web = Web {
         service: service.clone(),

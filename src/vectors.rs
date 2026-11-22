@@ -18,6 +18,9 @@ const MAGIC: &[u8; 8] = b"RPVLOG1\0";
 const LEGACY_MAGIC: &[u8; 8] = b"RPVEC1\0\0";
 const ID_BYTES: usize = 32;
 
+/// Saved vectors by node id: (what the text was, the vector).
+pub type Known = HashMap<String, (u64, Vec<f32>)>;
+
 pub fn to_half(x: f32) -> u16 {
     let bits = x.to_bits();
     let sign = ((bits >> 16) & 0x8000) as u16;
@@ -108,7 +111,7 @@ fn record(id: &str, key: u64, vector: &[f32]) -> Vec<u8> {
 
 /// The vectors in a file, by node id: (what the text was, the vector). A file made by another model or one that
 /// is unreadable is simply empty; a torn last record is ignored.
-pub fn read(bytes: &[u8]) -> HashMap<String, (u64, Vec<f32>)> {
+pub fn read(bytes: &[u8]) -> Known {
     let mut out = HashMap::new();
     let head = header();
     if bytes.len() < head.len() || bytes[..head.len()] != head[..] {
@@ -129,7 +132,7 @@ pub fn read(bytes: &[u8]) -> HashMap<String, (u64, Vec<f32>)> {
 
 /// Vectors in the file format of the 0.x series (one record per memory, a count in the header), keyed by the
 /// memory id and the text they were made from.
-pub fn read_legacy(bytes: &[u8]) -> Result<HashMap<String, (u64, Vec<f32>)>> {
+pub fn read_legacy(bytes: &[u8]) -> Result<Known> {
     let mut at = 0usize;
     let mut take = |n: usize| -> Result<&[u8]> {
         ensure!(at + n <= bytes.len(), "向量文件不完整");
@@ -172,12 +175,10 @@ pub struct Log {
 
 impl Log {
     /// Open the file, starting a new one when it does not exist or was made by another model.
-    pub fn open(path: &Path) -> Result<(Self, HashMap<String, (u64, Vec<f32>)>)> {
+    pub fn open(path: &Path) -> Result<(Self, Known)> {
         let bytes = fs::read(path).unwrap_or_default();
         let known = read(&bytes);
-        if known.is_empty() && !bytes.is_empty() {
-            fs::write(path, header())?;
-        } else if bytes.is_empty() {
+        if known.is_empty() {
             fs::write(path, header())?;
         } else {
             // cut a torn last record off, so later records line up again

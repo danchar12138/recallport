@@ -4,7 +4,7 @@ use super::{Web, failure, human};
 use crate::{
     service::{
         AttachInput, AttachmentView, Brief, ChangeView, LayerStat, ListQuery, MaintenanceView,
-        NodeView, Order, Parent, Revision, Service, Stats, UpdateInput, WriteInput,
+        NodeView, Order, Revision, Service, Stats, UpdateInput, WriteInput,
     },
     tree::SearchOpts,
 };
@@ -25,8 +25,6 @@ use tower_http::services::ServeFile;
 /// Who changes are attributed to when the person makes them in these pages.
 const ACTOR: &str = "web";
 const PAGE_SIZE: usize = 30;
-/// Cosine from which a hit counts as clearly about the question (the search uses the same line).
-const STRONG: f32 = 0.88;
 const SEARCH_HITS: usize = 20;
 /// A single uploaded file, and the whole form with all its files.
 const MAX_FILE: usize = 64 << 20;
@@ -501,7 +499,6 @@ async fn memories(State(w): State<Web>, Query(p): Query<HashMap<String, String>>
                 (stats, Some(result), None)
             } else {
                 let list = s.list(&ListQuery {
-                    parent: Parent::Any,
                     tag: tag_filter,
                     min_layer,
                     max_layer,
@@ -569,7 +566,7 @@ async fn memories(State(w): State<Web>, Query(p): Query<HashMap<String, String>>
                             "id": h.id, "layer": h.layer, "content": h.content, "truncated": h.truncated,
                             "tags": h.tags, "occurred": h.occurred, "exact": h.exact,
                             "matched": match h.matched { "both" => "关键词和语义都命中", "keyword" => "关键词命中", _ => "语义相近" },
-                            "strong": h.relevance >= STRONG,
+                            "strong": h.strong,
                             "path": path, "expanded": h.expanded,
                         })
                     })

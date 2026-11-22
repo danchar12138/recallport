@@ -46,7 +46,6 @@ impl Default for SearchOpts {
 pub struct Hit {
     pub id: String,
     pub layer: u32,
-    pub score: f32,
     /// Cosine of the query and the node: how close in meaning, whatever the keywords did.
     pub relevance: f32,
     /// The whole query (lower-cased) occurs in the content or the tags.
@@ -143,7 +142,7 @@ impl Tree {
         Ok(ranked
             .into_iter()
             .take(opts.k.max(1))
-            .map(|(id, (score, kw, sem))| {
+            .map(|(id, (_, kw, sem))| {
                 let node = &self.nodes[id];
                 let mut expanded: Vec<(String, f32)> = self
                     .children(id)
@@ -154,7 +153,6 @@ impl Tree {
                 Hit {
                     id: id.to_owned(),
                     layer: self.layer(id),
-                    score,
                     matched: match (kw, sem) {
                         (true, true) => "both",
                         (true, false) => "keyword",
