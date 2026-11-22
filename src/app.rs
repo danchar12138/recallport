@@ -1,5 +1,5 @@
 //! State shared between the web server, the MCP handler and the tray.
-use crate::store::now;
+use crate::tree::now;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,

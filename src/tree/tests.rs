@@ -1,5 +1,6 @@
 use super::{model, search::Hit, *};
-use crate::{embedding, store::terms};
+use crate::embedding;
+use super::lexicon::terms;
 use std::sync::Arc;
 
 /// A bag-of-words "model": every word of the text lights one direction, so texts that share words are close.
@@ -7,7 +8,7 @@ struct Words;
 impl Embed for Words {
     fn encode(&self, input: &str) -> Result<Vec<f32>> {
         let mut v = vec![0.0f32; embedding::DIMENSIONS as usize];
-        for w in terms(input, usize::MAX).split_whitespace() {
+        for w in terms(input) {
             let h = w.bytes().fold(7usize, |h, b| {
                 h.wrapping_mul(31).wrapping_add(usize::from(b))
             });
@@ -184,7 +185,6 @@ fn delete_is_soft_children_move_up_and_everything_survives_a_restart() {
         );
         assert!(t.live(&mid.id).is_none() && t.trash().len() == 1);
         assert!(find(&t, "家里网络的小结").iter().all(|h| h.id != mid.id));
-        t.flush().unwrap();
     }
     let mut t = open(dir.path());
     assert_eq!(t.len(), 2);
@@ -396,6 +396,7 @@ fn scale_twenty_thousand_nodes() {
                 parent: None,
                 refs: vec![],
                 sources: vec![],
+                attachments: vec![],
                 version: 1,
                 occurred: format!("2024-{:02}-{:02}", i % 12 + 1, i % 28 + 1),
                 created: stamp.clone(),
@@ -405,7 +406,7 @@ fn scale_twenty_thousand_nodes() {
         })
         .collect();
     let started = std::time::Instant::now();
-    t.import(events).unwrap();
+    t.replace(events, &HashMap::new()).unwrap();
     println!("import + index: {:?}", started.elapsed());
     let started = std::time::Instant::now();
     for q in ["服务 5 端口 备份", "故障 7 处理记录", "结论 3"] {

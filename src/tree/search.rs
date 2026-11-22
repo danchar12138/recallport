@@ -22,8 +22,8 @@ pub struct SearchOpts {
     pub until: String,
     /// How many of the best-matching children come along with a hit that is a summary.
     pub expand: usize,
-    /// Ignore nodes that are less close than this in meaning (0 keeps every node in the ranking).
-    pub min_cosine: f32,
+    /// Only nodes that carry this tag.
+    pub tag: Option<String>,
 }
 
 impl Default for SearchOpts {
@@ -37,7 +37,7 @@ impl Default for SearchOpts {
             since: String::new(),
             until: String::new(),
             expand: 3,
-            min_cosine: 0.0,
+            tag: None,
         }
     }
 }
@@ -64,6 +64,9 @@ pub struct Hit {
 
 const RRF: f32 = 60.0;
 
+/// Cosine from which a node counts as clearly about the question.
+pub const STRONG: f32 = 0.88;
+
 fn cosine(a: &[f32], b: &[f32]) -> f32 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
@@ -82,7 +85,13 @@ impl Tree {
         if query.is_empty() {
             return Ok(vec![]);
         }
+        let layers = (opts.min_layer.is_some() || opts.max_layer.is_some()).then(|| self.layers());
         let allow = |n: &Node| {
+            if let Some(tag) = &opts.tag
+                && !n.tags.contains(tag)
+            {
+                return false;
+            }
             if let Some(scope) = &opts.scope
                 && !self.within(&n.id, scope)
             {
@@ -97,8 +106,8 @@ impl Tree {
                     return false;
                 }
             }
-            if opts.min_layer.is_some() || opts.max_layer.is_some() {
-                let layer = self.layer(&n.id);
+            if let Some(layers) = &layers {
+                let layer = layers.get(&n.id).copied().unwrap_or(0);
                 if opts.min_layer.is_some_and(|m| layer < m)
                     || opts.max_layer.is_some_and(|m| layer > m)
                 {
@@ -115,7 +124,6 @@ impl Tree {
             .iter()
             .filter(|(id, _)| allowed(id))
             .map(|(id, v)| (id.as_str(), cosine(&qv, v)))
-            .filter(|(_, c)| *c >= opts.min_cosine)
             .collect();
         semantic.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(b.0)));
         let pool = (opts.k * 8).max(40);
@@ -178,4 +186,9 @@ impl Tree {
             })
             .collect())
     }
+}
+
+/// True when no hit is clearly about the question: the hits are only clues.
+pub fn no_strong_match(hits: &[Hit]) -> bool {
+    !hits.iter().any(|h| h.exact || h.relevance >= STRONG)
 }

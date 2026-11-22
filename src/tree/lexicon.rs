@@ -1,7 +1,32 @@
-//! Keyword search over node text: BM25 on the same words the memory store indexes (jieba words and Chinese
-//! character pairs), kept in memory.
-use crate::store::terms;
-use std::collections::HashMap;
+//! Keyword search over node text: BM25 over jieba words and Chinese character pairs, kept in memory.
+use std::{
+    collections::{HashMap, HashSet},
+    sync::OnceLock,
+};
+
+fn han(c: char) -> bool {
+    matches!(c, '\u{3400}'..='\u{4dbf}' | '\u{4e00}'..='\u{9fff}' | '\u{20000}'..='\u{323af}')
+}
+
+/// The words a text is searched by: jieba words (cut for search) and every pair of neighbouring Chinese
+/// characters, so a name or a phrase is found whichever way it was split.
+pub fn terms(text: &str) -> Vec<String> {
+    static JIEBA: OnceLock<jieba_rs::Jieba> = OnceLock::new();
+    let lower = text.to_lowercase();
+    let mut words: Vec<String> = JIEBA
+        .get_or_init(jieba_rs::Jieba::new)
+        .cut_for_search(&lower, true)
+        .into_iter()
+        .filter(|w| w.chars().all(char::is_alphanumeric))
+        .map(str::to_owned)
+        .collect();
+    for run in lower.split(|c: char| !han(c)).filter(|s| !s.is_empty()) {
+        for pair in run.chars().collect::<Vec<_>>().windows(2) {
+            words.push(pair.iter().collect());
+        }
+    }
+    words
+}
 
 #[derive(Default)]
 pub struct Lexicon {
@@ -18,10 +43,7 @@ const B: f32 = 0.75;
 impl Lexicon {
     pub fn add(&mut self, id: &str, text: &str) {
         self.remove(id);
-        let words: Vec<String> = terms(text, usize::MAX)
-            .split_whitespace()
-            .map(str::to_owned)
-            .collect();
+        let words = terms(text);
         let mut tf: HashMap<String, u32> = HashMap::new();
         for w in &words {
             *tf.entry(w.clone()).or_default() += 1;
@@ -57,13 +79,13 @@ impl Lexicon {
             return vec![];
         }
         let avg = (self.total as f32 / n).max(1.0);
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = HashSet::new();
         let mut scores: HashMap<&str, f32> = HashMap::new();
-        for w in terms(query, usize::MAX).split_whitespace() {
-            if !seen.insert(w.to_owned()) {
+        for w in terms(query) {
+            if !seen.insert(w.clone()) {
                 continue;
             }
-            let Some(posting) = self.postings.get(w) else {
+            let Some(posting) = self.postings.get(&w) else {
                 continue;
             };
             let df = posting.len() as f32;

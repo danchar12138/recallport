@@ -37,7 +37,8 @@ impl Tree {
             .filter(|n| n.status == Status::Live)
             .map(|n| n.id.as_str())
             .collect();
-        let layer_of: BTreeMap<&str, u32> = live.iter().map(|id| (*id, self.layer(id))).collect();
+        let all = self.layers();
+        let layer_of: BTreeMap<&str, u32> = live.iter().map(|id| (*id, all[*id])).collect();
         let mut counts: BTreeMap<u32, (usize, usize)> = BTreeMap::new();
         for id in &live {
             let at = counts.entry(layer_of[id]).or_default();

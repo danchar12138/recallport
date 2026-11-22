@@ -1,45 +1,22 @@
-//! Attachments: content-addressed files in the data directory, metadata and links in LanceDB.
-//! Files are never put into MCP messages or the memory text; the AI hands over a path (or a small
-//! inline snippet) and the server copies it in, or just remembers where it is.
-use crate::{
-    kv,
-    memory::*,
-    store::{Store, now},
-};
-use anyhow::{Context, Result, anyhow, bail, ensure};
+//! Attachments: content-addressed files in the data folder. Files are never put into MCP messages or node text:
+//! the AI hands over a path (or a small inline snippet) and the server copies it in, or just remembers where it is.
+use crate::tree::{Attachment, Storage};
+use anyhow::{Context, Result, bail, ensure};
 use base64::Engine;
-use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{
+    collections::HashSet,
     fs,
     io::{Read, Write},
     path::{Path, PathBuf},
 };
 
-pub const MAX_PER_MEMORY: usize = 64;
+pub const MAX_ATTACHMENT: u64 = 4 << 30;
+/// Inline data (`data_base64`) is for snippets; anything bigger is handed over by path.
+pub const MAX_INLINE: usize = 8 << 20;
 
-#[derive(Clone, Debug, Serialize)]
-pub struct AttachmentView {
-    pub hash: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub caption: String,
-    pub mime: String,
-    pub size: u64,
-    pub storage: Storage,
-    /// False when the managed copy or the referenced original is missing.
-    pub available: bool,
-    /// Where the file is on this computer (managed copy, or the original for referenced files).
-    pub path: String,
-    /// Web address for viewing or downloading.
-    pub url: String,
-}
-
-#[derive(Default, Clone, Copy, Debug, Serialize)]
-pub struct FileStats {
-    pub stored: usize,
-    pub referenced: usize,
-    pub bytes: u64,
+pub struct Files {
+    dir: PathBuf,
 }
 
 pub fn mime_of(name: &str, head: &[u8]) -> String {
@@ -99,7 +76,7 @@ fn check_path(raw: &str) -> Result<PathBuf> {
     Ok(canon)
 }
 
-/// Stream `source`, returning (sha256, size, first bytes); optionally copy into `copy`.
+/// Stream `source`, returning (sha256, size, first bytes); optionally copy it to `copy` on the way.
 fn digest(source: &Path, copy: Option<&Path>) -> Result<(String, u64, Vec<u8>)> {
     let mut input =
         fs::File::open(source).with_context(|| format!("无法打开 {}", source.display()))?;
@@ -133,244 +110,158 @@ fn digest(source: &Path, copy: Option<&Path>) -> Result<(String, u64, Vec<u8>)> 
     Ok((format!("{:x}", hasher.finalize()), size, head))
 }
 
-impl Store {
-    pub fn blob(&self, hash: &str) -> PathBuf {
-        self.dir.join("files").join(&hash[..2]).join(hash)
+/// A file name that is safe to show and to put in a download header.
+fn clean_name(name: &str) -> String {
+    let base = name
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(name)
+        .trim()
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(200)
+        .collect::<String>();
+    if base.is_empty() { "file".into() } else { base }
+}
+
+impl Files {
+    pub fn new(dir: &Path) -> Self {
+        Self { dir: dir.to_owned() }
+    }
+
+    fn folder(&self) -> PathBuf {
+        self.dir.join("files")
     }
 
     pub fn tmp_dir(&self) -> PathBuf {
-        self.dir.join("files").join(".tmp")
+        self.dir.join("tmp")
     }
 
-    pub async fn attachment(&self, hash: &str) -> Option<Attachment> {
-        self.idx.read().await.files.get(hash).cloned()
+    /// The managed copy of a file.
+    pub fn blob(&self, hash: &str) -> PathBuf {
+        self.folder().join(hash)
     }
 
-    pub fn attachment_path(&self, a: &Attachment) -> PathBuf {
+    /// Where the bytes of an attachment are: the managed copy, or the original for a referenced file.
+    pub fn path_of(&self, a: &Attachment) -> PathBuf {
         match a.storage {
             Storage::Stored => self.blob(&a.hash),
             Storage::Referenced => PathBuf::from(&a.path),
         }
     }
 
-    pub async fn file_stats(&self) -> FileStats {
-        let idx = self.idx.read().await;
-        let mut stats = FileStats::default();
-        for a in idx.files.values() {
-            match a.storage {
-                Storage::Stored => {
-                    stats.stored += 1;
-                    stats.bytes += a.size;
+    pub fn available(&self, a: &Attachment) -> bool {
+        self.path_of(a).is_file()
+    }
+
+    fn store(&self, source: &Path, name: &str, caption: &str, reference: bool) -> Result<Attachment> {
+        fs::create_dir_all(self.folder())?;
+        fs::create_dir_all(self.tmp_dir())?;
+        let name = clean_name(name);
+        let (hash, size, head, storage) = if reference {
+            let (hash, size, head) = digest(source, None)?;
+            (hash, size, head, Storage::Referenced)
+        } else {
+            let tmp = self.tmp_dir().join(uuid::Uuid::new_v4().simple().to_string());
+            let (hash, size, head) = match digest(source, Some(&tmp)) {
+                Ok(done) => done,
+                Err(error) => {
+                    let _ = fs::remove_file(&tmp);
+                    return Err(error);
                 }
-                Storage::Referenced => stats.referenced += 1,
-            }
-        }
-        stats
-    }
-
-    pub async fn attachment_views(&self, refs: &[AttachmentRef]) -> Vec<AttachmentView> {
-        let idx = self.idx.read().await;
-        refs.iter()
-            .map(|r| match idx.files.get(&r.hash) {
-                Some(a) => {
-                    let path = self.attachment_path(a);
-                    AttachmentView {
-                        hash: r.hash.clone(),
-                        name: if r.name.is_empty() {
-                            a.name.clone()
-                        } else {
-                            r.name.clone()
-                        },
-                        caption: r.caption.clone(),
-                        mime: a.mime.clone(),
-                        size: a.size,
-                        storage: a.storage,
-                        available: path.is_file(),
-                        path: path.to_string_lossy().into_owned(),
-                        url: format!("/files/{}", a.hash),
-                    }
-                }
-                None => AttachmentView {
-                    hash: r.hash.clone(),
-                    name: r.name.clone(),
-                    caption: r.caption.clone(),
-                    mime: "application/octet-stream".into(),
-                    size: 0,
-                    storage: Storage::Stored,
-                    available: false,
-                    path: String::new(),
-                    url: String::new(),
-                },
-            })
-            .collect()
-    }
-
-    /// Bring the files in. Safe to run before taking the write lock: the files are content-addressed.
-    pub(crate) async fn ingest(
-        &self,
-        inputs: &[AttachInput],
-        source: &str,
-    ) -> Result<Vec<AttachmentRef>> {
-        let mut refs = Vec::new();
-        for input in inputs {
-            let r = self.ingest_one(input, source).await?;
-            if !refs.iter().any(|x: &AttachmentRef| x.hash == r.hash) {
-                refs.push(r);
-            }
-        }
-        Ok(refs)
-    }
-
-    async fn ingest_one(&self, input: &AttachInput, source: &str) -> Result<AttachmentRef> {
-        if !input.hash.is_empty() {
-            let known = self
-                .attachment(&input.hash)
-                .await
-                .ok_or_else(|| anyhow!("附件不存在：{}", input.hash))?;
-            return Ok(AttachmentRef {
-                hash: known.hash,
-                name: if input.name.is_empty() {
-                    known.name
-                } else {
-                    input.name.clone()
-                },
-                caption: input.caption.clone(),
-            });
-        }
-        let tmp_dir = self.tmp_dir();
-        fs::create_dir_all(&tmp_dir)?;
-        let tmp = tmp_dir.join(format!("{}.part", uuid::Uuid::new_v4().simple()));
-        let reference = input.mode == AttachMode::Reference && input.data_base64.is_empty();
-        let (display, original, copy) = if input.data_base64.is_empty() {
-            let path = check_path(&input.path)?;
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_else(|| "file".into());
-            (name, Some(path), !reference)
-        } else {
-            let bytes = base64::engine::general_purpose::STANDARD
-                .decode(input.data_base64.trim())
-                .context("data_base64 不是有效的 base64")?;
-            ensure!(
-                bytes.len() <= MAX_INLINE,
-                "附件的 data_base64 超过约 96 KB，请改用 path（绝对路径）"
-            );
-            fs::write(&tmp, &bytes)?;
-            (String::new(), None, true)
-        };
-        let target = tmp.clone();
-        let scan = tokio::task::spawn_blocking(move || -> Result<(String, u64, Vec<u8>)> {
-            match (&original, copy) {
-                (Some(path), true) => digest(path, Some(&target)),
-                (Some(path), false) => digest(path, None),
-                (None, _) => digest(&target, None),
-            }
-        })
-        .await?;
-        let (hash, size, head) = match scan {
-            Ok(v) => v,
-            Err(e) => {
-                let _ = fs::remove_file(&tmp);
-                return Err(e);
-            }
-        };
-        let name = if !input.name.is_empty() {
-            input.name.clone()
-        } else if !display.is_empty() {
-            display
-        } else {
-            format!("file-{}", &hash[..8])
-        };
-        let mime = mime_of(&name, &head);
-        let existing = self.attachment(&hash).await;
-        let keep_stored = existing
-            .as_ref()
-            .is_some_and(|a| a.storage == Storage::Stored);
-        let record = if reference && !keep_stored {
-            let _ = fs::remove_file(&tmp);
-            Attachment {
-                hash: hash.clone(),
-                name: name.clone(),
-                mime,
-                size,
-                storage: Storage::Referenced,
-                path: check_path(&input.path)?.to_string_lossy().into_owned(),
-                added: now(),
-                source: source.into(),
-            }
-        } else {
-            let blob = self.blob(&hash);
-            if blob.exists() {
+            };
+            let target = self.blob(&hash);
+            if target.is_file() {
                 let _ = fs::remove_file(&tmp);
             } else {
-                fs::create_dir_all(blob.parent().context("blob path")?)?;
-                fs::rename(&tmp, &blob)?;
+                fs::rename(&tmp, &target)?;
             }
-            Attachment {
-                hash: hash.clone(),
-                name: name.clone(),
-                mime,
-                size,
-                storage: Storage::Stored,
-                path: String::new(),
-                added: existing
-                    .as_ref()
-                    .map(|a| a.added.clone())
-                    .unwrap_or_else(now),
-                source: existing.map(|a| a.source).unwrap_or_else(|| source.into()),
-            }
+            (hash, size, head, Storage::Stored)
         };
-        kv::put(
-            &self.atable,
-            &[(hash.clone(), serde_json::to_string(&record)?)],
-        )
-        .await?;
-        self.idx.write().await.files.insert(hash.clone(), record);
-        Ok(AttachmentRef {
+        Ok(Attachment {
+            mime: mime_of(&name, &head),
             hash,
             name,
-            caption: input.caption.clone(),
+            caption: caption.trim().chars().take(400).collect(),
+            size,
+            storage,
+            path: if reference { source.to_string_lossy().into_owned() } else { String::new() },
         })
     }
 
-    pub async fn link_attachment(
-        &self,
-        memory_id: &str,
-        input: AttachInput,
-        source: &str,
-    ) -> Result<AttachmentRef> {
-        let mut input = input;
-        input.clean()?;
-        let attached = self
-            .ingest(std::slice::from_ref(&input), source)
-            .await?
-            .into_iter()
-            .next()
-            .context("附件处理失败")?;
-        let _guard = self.writes.lock().await;
-        let mut record = self.find(memory_id).await?;
-        record.entry.attachments.retain(|a| a.hash != attached.hash);
-        ensure!(
-            record.entry.attachments.len() < MAX_PER_MEMORY,
-            "一条记忆最多 64 个附件"
-        );
-        record.entry.attachments.push(attached.clone());
-        record.entry.updated = now();
-        self.rewrite_locked(&record).await?;
-        Ok(attached)
+    /// Take a file by its path: copied into the data folder, or (with `reference`) only remembered.
+    pub fn ingest_path(&self, raw: &str, name: Option<&str>, caption: &str, reference: bool) -> Result<Attachment> {
+        let path = check_path(raw)?;
+        let name = name
+            .filter(|n| !n.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| path.file_name().map(|n| n.to_string_lossy().into_owned()))
+            .unwrap_or_else(|| "file".into());
+        self.store(&path, &name, caption, reference)
     }
 
-    pub async fn unlink_attachment(&self, memory_id: &str, hash: &str) -> Result<()> {
-        let _guard = self.writes.lock().await;
-        let mut record = self.find(memory_id).await?;
-        let before = record.entry.attachments.len();
-        record.entry.attachments.retain(|a| a.hash != hash);
-        ensure!(
-            record.entry.attachments.len() < before,
-            "这条记忆没有该附件"
-        );
-        record.entry.updated = now();
-        self.rewrite_locked(&record).await
+    /// Take a small snippet handed over inline (base64).
+    pub fn ingest_base64(&self, name: &str, data: &str, caption: &str) -> Result<Attachment> {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(data.trim())
+            .context("data_base64 不是有效的 base64")?;
+        self.ingest_bytes(name, &bytes, caption)
+    }
+
+    pub fn ingest_bytes(&self, name: &str, bytes: &[u8], caption: &str) -> Result<Attachment> {
+        ensure!(bytes.len() <= MAX_INLINE, "内联数据最多 8 MiB，更大的文件请给出路径");
+        fs::create_dir_all(self.tmp_dir())?;
+        let tmp = self.tmp_dir().join(uuid::Uuid::new_v4().simple().to_string());
+        fs::write(&tmp, bytes)?;
+        let done = self.store(&tmp, name, caption, false);
+        let _ = fs::remove_file(&tmp);
+        done
+    }
+
+    /// Delete stored copies that no node mentions any more.
+    pub fn sweep(&self, used: &HashSet<String>) {
+        let Ok(list) = fs::read_dir(self.folder()) else {
+            return;
+        };
+        for entry in list.flatten() {
+            if !used.contains(entry.file_name().to_string_lossy().as_ref()) {
+                let _ = fs::remove_file(entry.path());
+            }
+        }
+    }
+
+    pub fn clean_temporary(&self) {
+        let _ = fs::remove_dir_all(self.tmp_dir());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_copied_file_is_stored_once_by_its_hash_and_a_referenced_one_stays_put() {
+        let dir = tempfile::tempdir().unwrap();
+        let files = Files::new(dir.path());
+        let original = dir.path().join("note.txt");
+        fs::write(&original, "hello").unwrap();
+        let a = files.ingest_path(original.to_str().unwrap(), None, " 备忘 ", false).unwrap();
+        let b = files.ingest_bytes("same.txt", b"hello", "").unwrap();
+        assert_eq!(a.hash, b.hash);
+        assert_eq!(a.storage, Storage::Stored);
+        assert_eq!(a.caption, "备忘");
+        assert_eq!(a.mime, "text/plain");
+        assert!(files.available(&a) && files.blob(&a.hash).is_file());
+        let r = files.ingest_path(original.to_str().unwrap(), None, "", true).unwrap();
+        assert_eq!(r.storage, Storage::Referenced);
+        assert_eq!(files.path_of(&r), original);
+        fs::remove_file(&original).unwrap();
+        assert!(!files.available(&r) && files.available(&a));
+        // relative and network paths are refused
+        assert!(files.ingest_path("a.png", None, "", false).is_err());
+        assert!(files.ingest_path(r"\\server\share\a.png", None, "", false).is_err());
+        // unused copies are swept away
+        files.sweep(&HashSet::new());
+        assert!(!files.available(&a));
     }
 }

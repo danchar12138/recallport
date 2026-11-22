@@ -1,28 +1,22 @@
 //! The memory tree: every memory is a node, a node has at most one parent (the summary it sits under), and the
 //! AI may write, update, move and delete nodes freely. The file `nodes.jsonl` is an append-only log of every
 //! change; the tree in memory is just its latest state, so any mistake can be traced and undone.
-#![allow(dead_code)] // reached only from `--tree-eval` and the tests until the MCP tools and the page are wired
-
-pub mod eval;
-mod import;
 mod lexicon;
 mod maintain;
 mod model;
 mod search;
 
-pub use model::{Draft, Event, Node, Patch, Status};
-pub use search::SearchOpts;
+pub use maintain::Maintenance;
+pub use model::{Attachment, Draft, Event, Node, Patch, Status, Storage, now};
+pub use search::{Hit, SearchOpts, no_strong_match};
 
-use crate::{
-    embedding::{self, Embed},
-    vectors::VectorCache,
-};
+use crate::{embedding::Embed, vectors};
 use anyhow::{Context, Result, bail, ensure};
 use lexicon::Lexicon;
-use model::{MAX_CONTENT, MAX_LINKS, MAX_SOURCES, MAX_TAGS, now};
+use model::{MAX_ATTACHMENTS, MAX_CONTENT, MAX_LINKS, MAX_SOURCES, MAX_TAGS};
 use std::{
-    collections::HashMap,
-    fs::{File, OpenOptions},
+    collections::{HashMap, HashSet},
+    fs::{self, File, OpenOptions},
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     sync::Arc,
@@ -42,6 +36,7 @@ pub struct Tree {
     lex: Lexicon,
     history: HashMap<String, Vec<Event>>,
     log: File,
+    vlog: vectors::Log,
 }
 
 /// What the text of a node is searched by: the content and its tags.
@@ -70,28 +65,69 @@ fn clean_content(content: &str) -> Result<String> {
     Ok(content.to_owned())
 }
 
+fn clean_attachments(list: &[Attachment]) -> Result<Vec<Attachment>> {
+    let mut out: Vec<Attachment> = vec![];
+    for a in list {
+        if !out.iter().any(|x| x.hash == a.hash) {
+            out.push(a.clone());
+        }
+    }
+    ensure!(out.len() <= MAX_ATTACHMENTS, "附件最多 {MAX_ATTACHMENTS} 个");
+    Ok(out)
+}
+
+/// What a merge did to the library.
+#[derive(Clone, Debug, Default, serde::Serialize)]
+pub struct MergeReport {
+    pub added: usize,
+    pub updated: usize,
+    pub unchanged: usize,
+}
+
+fn read_log(path: &Path) -> Result<Vec<Event>> {
+    let mut events = vec![];
+    if !path.exists() {
+        return Ok(events);
+    }
+    let lines: Vec<String> = BufReader::new(File::open(path)?)
+        .lines()
+        .collect::<std::io::Result<_>>()?;
+    let last = lines.iter().rposition(|l| !l.trim().is_empty());
+    let mut torn_at = None;
+    for (n, line) in lines.iter().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        match serde_json::from_str::<Event>(line) {
+            Ok(event) => events.push(event),
+            // a write cut short by a crash can only be the last line
+            Err(_) if Some(n) == last => torn_at = Some(n),
+            Err(error) => bail!("nodes.jsonl 第 {} 行损坏：{error}", n + 1),
+        }
+    }
+    if let Some(n) = torn_at {
+        let kept: String = lines[..n].iter().map(|l| format!("{l}\n")).collect();
+        fs::write(path, kept)?;
+        crate::log!("nodes.jsonl 的最后一行没写完，已丢弃");
+    }
+    Ok(events)
+}
+
 impl Tree {
     pub fn open(dir: &Path, embed: Arc<dyn Embed>) -> Result<Self> {
-        std::fs::create_dir_all(dir)?;
+        fs::create_dir_all(dir)?;
         let path = dir.join("nodes.jsonl");
         let mut nodes = HashMap::new();
         let mut history: HashMap<String, Vec<Event>> = HashMap::new();
-        if path.exists() {
-            for (n, line) in BufReader::new(File::open(&path)?).lines().enumerate() {
-                let line = line?;
-                if line.trim().is_empty() {
-                    continue;
-                }
-                let event: Event = serde_json::from_str(&line)
-                    .with_context(|| format!("nodes.jsonl 第 {} 行损坏", n + 1))?;
-                nodes.insert(event.node.id.clone(), event.node.clone());
-                history
-                    .entry(event.node.id.clone())
-                    .or_default()
-                    .push(event);
-            }
+        for event in read_log(&path)? {
+            nodes.insert(event.node.id.clone(), event.node.clone());
+            history
+                .entry(event.node.id.clone())
+                .or_default()
+                .push(event);
         }
         let log = OpenOptions::new().create(true).append(true).open(&path)?;
+        let (vlog, known) = vectors::Log::open(&dir.join("vectors.bin"))?;
         let mut tree = Self {
             dir: dir.to_owned(),
             embed,
@@ -101,19 +137,18 @@ impl Tree {
             lex: Lexicon::default(),
             history,
             log,
+            vlog,
         };
-        tree.rebuild()?;
+        tree.rebuild(&known)?;
         Ok(tree)
     }
 
-    /// Kids, the keyword index and the vectors, from the nodes. Vectors that were saved for the same text are reused.
-    fn rebuild(&mut self) -> Result<()> {
+    /// The kids, the keyword index and the vectors, from the nodes. Vectors that were saved for the same text are
+    /// reused; the rest are computed (and saved).
+    fn rebuild(&mut self, known: &HashMap<String, (u64, Vec<f32>)>) -> Result<()> {
         self.kids.clear();
+        self.vectors.clear();
         self.lex = Lexicon::default();
-        let cache = std::fs::read(self.dir.join("vectors.bin"))
-            .ok()
-            .and_then(|bytes| VectorCache::decode(&bytes, embedding::ID).ok())
-            .unwrap_or_default();
         let mut missing: Vec<String> = vec![];
         let mut live: Vec<&Node> = self
             .nodes
@@ -123,14 +158,11 @@ impl Tree {
         live.sort_by(|a, b| a.id.cmp(&b.id));
         for n in &live {
             self.lex.add(&n.id, &index_text(n));
-            match cache
-                .get(&n.id, &n.content)
-                .and_then(|v| v.into_iter().next())
-            {
-                Some(v) => {
-                    self.vectors.insert(n.id.clone(), v);
+            match known.get(&n.id) {
+                Some((key, v)) if *key == vectors::key(&n.content) => {
+                    self.vectors.insert(n.id.clone(), v.clone());
                 }
-                None => missing.push(n.id.clone()),
+                _ => missing.push(n.id.clone()),
             }
             if let Some(parent) = &n.parent {
                 self.kids
@@ -145,6 +177,8 @@ impl Tree {
                 .map(|id| self.nodes[id].content.clone())
                 .collect();
             for (id, v) in batch.iter().zip(self.embed.encode_many(&texts)?) {
+                self.vlog
+                    .append(id, vectors::key(&self.nodes[id].content), &v)?;
                 self.vectors.insert(id.clone(), v);
             }
         }
@@ -152,20 +186,61 @@ impl Tree {
         for list in self.kids.values_mut() {
             list.sort_by(|a, b| (&nodes[a].occurred, a).cmp(&(&nodes[b].occurred, b)));
         }
-        if !missing.is_empty() {
-            self.flush()?;
+        // the file only needs the latest vector of each live node
+        if known.len() > self.vectors.len() * 2 + 64 {
+            self.compact_vectors()?;
         }
         Ok(())
     }
 
-    /// Save the vectors next to the log so the next start does not run the model again.
-    pub fn flush(&self) -> Result<()> {
-        let mut cache = VectorCache::default();
-        for (id, v) in &self.vectors {
-            cache.insert(id, &self.nodes[id].content, std::slice::from_ref(v));
+    fn compact_vectors(&mut self) -> Result<()> {
+        let keep: Vec<(String, u64, Vec<f32>)> = self
+            .vectors
+            .iter()
+            .map(|(id, v)| (id.clone(), vectors::key(&self.nodes[id].content), v.clone()))
+            .collect();
+        self.vlog.compact(keep.into_iter())
+    }
+
+    /// Replace the whole log with these events and rebuild the tree from them. Vectors already computed for
+    /// the same text are kept; `extra` offers vectors from elsewhere (a backup).
+    fn restart(
+        &mut self,
+        events: &[Event],
+        extra: &HashMap<String, (u64, Vec<f32>)>,
+    ) -> Result<()> {
+        let tmp = self.dir.join("nodes.jsonl.tmp");
+        let mut text = String::new();
+        for e in events {
+            text.push_str(&serde_json::to_string(e)?);
+            text.push('\n');
         }
-        std::fs::write(self.dir.join("vectors.bin"), cache.encode(embedding::ID))?;
-        Ok(())
+        fs::write(&tmp, text)?;
+        fs::rename(&tmp, self.dir.join("nodes.jsonl"))?;
+        self.log = OpenOptions::new()
+            .append(true)
+            .open(self.dir.join("nodes.jsonl"))?;
+        let mut known: HashMap<String, (u64, Vec<f32>)> = extra.clone();
+        for (id, v) in &self.vectors {
+            if let Some(n) = self.nodes.get(id) {
+                known.insert(id.clone(), (vectors::key(&n.content), v.clone()));
+            }
+        }
+        self.nodes.clear();
+        self.history.clear();
+        for e in events {
+            self.nodes.insert(e.node.id.clone(), e.node.clone());
+            self.history
+                .entry(e.node.id.clone())
+                .or_default()
+                .push(e.clone());
+        }
+        self.rebuild(&known)
+    }
+
+    /// The vector file, for putting in a backup.
+    pub fn vector_bytes(&self) -> Result<Vec<u8>> {
+        self.vlog.bytes()
     }
 
     // ---------- reading ----------
@@ -185,6 +260,11 @@ impl Tree {
             .count()
     }
 
+    /// Every live node.
+    pub fn nodes(&self) -> impl Iterator<Item = &Node> {
+        self.nodes.values().filter(|n| n.status == Status::Live)
+    }
+
     pub fn children(&self, id: &str) -> &[String] {
         self.kids.get(id).map_or(&[], Vec::as_slice)
     }
@@ -196,6 +276,28 @@ impl Tree {
             .map(|c| self.layer(c) + 1)
             .max()
             .unwrap_or(0)
+    }
+
+    /// The layer of every live node, in one pass.
+    pub fn layers(&self) -> HashMap<String, u32> {
+        fn walk(t: &Tree, id: &str, memo: &mut HashMap<String, u32>) -> u32 {
+            if let Some(l) = memo.get(id) {
+                return *l;
+            }
+            let l = t
+                .children(id)
+                .iter()
+                .map(|c| walk(t, c, memo) + 1)
+                .max()
+                .unwrap_or(0);
+            memo.insert(id.to_owned(), l);
+            l
+        }
+        let mut memo = HashMap::new();
+        for n in self.nodes() {
+            walk(self, &n.id, &mut memo);
+        }
+        memo
     }
 
     /// Parents, nearest first.
@@ -218,12 +320,66 @@ impl Tree {
         id == top || self.ancestors(id).iter().any(|n| n.id == top)
     }
 
+    /// Live nodes at or under `id`, itself included.
+    pub fn subtree(&self, id: &str) -> usize {
+        1 + self
+            .children(id)
+            .iter()
+            .map(|c| self.subtree(c))
+            .sum::<usize>()
+    }
+
     /// Every revision of a node, oldest first.
     pub fn history(&self, id: &str) -> Vec<&Event> {
         self.history
             .get(id)
             .map(|h| h.iter().collect())
             .unwrap_or_default()
+    }
+
+    /// The most recent changes anywhere, newest first.
+    pub fn activity(&self, limit: usize) -> Vec<&Event> {
+        let mut all: Vec<&Event> = self.history.values().flatten().collect();
+        all.sort_by(|a, b| b.at.cmp(&a.at));
+        all.truncate(limit);
+        all
+    }
+
+    /// The recycle bin: deleted nodes, newest first.
+    pub fn trash(&self) -> Vec<&Node> {
+        let mut out: Vec<&Node> = self
+            .nodes
+            .values()
+            .filter(|n| n.status == Status::Deleted)
+            .collect();
+        out.sort_by(|a, b| b.updated.cmp(&a.updated));
+        out
+    }
+
+    /// Tags and how many live nodes carry each, most used first.
+    pub fn tags(&self) -> Vec<(String, usize)> {
+        let mut counts: HashMap<&str, usize> = HashMap::new();
+        for n in self.nodes() {
+            for t in &n.tags {
+                *counts.entry(t).or_default() += 1;
+            }
+        }
+        let mut out: Vec<(String, usize)> = counts
+            .into_iter()
+            .map(|(t, n)| (t.to_owned(), n))
+            .collect();
+        out.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        out
+    }
+
+    /// Every stored attachment any node (deleted ones included) still mentions.
+    pub fn used_files(&self) -> HashSet<String> {
+        self.nodes
+            .values()
+            .flat_map(|n| n.attachments.iter())
+            .filter(|a| a.storage == Storage::Stored)
+            .map(|a| a.hash.clone())
+            .collect()
     }
 
     /// When the content of a node last changed (moving it around does not count).
@@ -243,15 +399,14 @@ impl Tree {
             .map_or("", |e| e.at.as_str())
     }
 
-    /// The recycle bin: deleted nodes, newest first.
-    pub fn trash(&self) -> Vec<&Node> {
-        let mut out: Vec<&Node> = self
-            .nodes
+    /// The latest change anywhere, for "nothing changed since the last backup".
+    pub fn last_change(&self) -> &str {
+        self.history
             .values()
-            .filter(|n| n.status == Status::Deleted)
-            .collect();
-        out.sort_by(|a, b| b.updated.cmp(&a.updated));
-        out
+            .filter_map(|h| h.last())
+            .map(|e| e.at.as_str())
+            .max()
+            .unwrap_or("")
     }
 
     // ---------- changing ----------
@@ -306,6 +461,7 @@ impl Tree {
         if node.status == Status::Live {
             self.lex.add(&id, &index_text(&node));
             if let Some(v) = vector {
+                self.vlog.append(&id, vectors::key(&node.content), &v)?;
                 self.vectors.insert(id.clone(), v);
             }
             if let Some(parent) = &node.parent {
@@ -336,6 +492,7 @@ impl Tree {
         let refs = clean_list(&draft.refs, MAX_LINKS, "引用")?;
         let sources = clean_list(&draft.sources, MAX_SOURCES, "来源")?;
         let adopt = clean_list(&draft.adopt, MAX_MOVE, "收纳的节点")?;
+        let attachments = clean_attachments(&draft.attachments)?;
         self.check_links(&refs, None)?;
         if let Some(parent) = &draft.parent {
             self.must_live(parent)?;
@@ -358,6 +515,7 @@ impl Tree {
             parent: draft.parent,
             refs,
             sources,
+            attachments,
             version: 1,
             occurred: draft.occurred.trim().to_owned(),
             created: stamp.clone(),
@@ -394,14 +552,13 @@ impl Tree {
         if let Some(sources) = &patch.sources {
             node.sources = clean_list(sources, MAX_SOURCES, "来源")?;
         }
+        if let Some(attachments) = &patch.attachments {
+            node.attachments = clean_attachments(attachments)?;
+        }
         if let Some(occurred) = &patch.occurred {
             node.occurred = occurred.trim().to_owned();
         }
-        let touch = patch.content.is_none()
-            && patch.tags.is_none()
-            && patch.refs.is_none()
-            && patch.sources.is_none()
-            && patch.occurred.is_none();
+        let touch = patch.is_empty();
         node.version += 1;
         node.updated = now();
         self.put(
@@ -473,8 +630,7 @@ impl Tree {
 
     /// Take a node back out of the recycle bin. It returns to its old parent when that is still there.
     pub fn restore(&mut self, id: &str, actor: &str) -> Result<Node> {
-        let node = self.nodes.get(id).filter(|n| n.status == Status::Deleted);
-        let mut node = match node {
+        let mut node = match self.nodes.get(id).filter(|n| n.status == Status::Deleted) {
             Some(n) => n.clone(),
             None => bail!("回收站里没有这个节点：{id}"),
         };
@@ -493,32 +649,168 @@ impl Tree {
         Ok(node)
     }
 
-    /// Fill an empty tree by replaying ready-made events (for importing an older library).
-    pub fn import(&mut self, events: Vec<Event>) -> Result<()> {
-        ensure!(self.nodes.is_empty(), "只能导入到空的树里");
-        let last: HashMap<&str, &Node> = events
+    /// Remove deleted nodes for good, history included. Returns how many went.
+    pub fn purge(&mut self, ids: &[String]) -> Result<usize> {
+        let gone: HashSet<&str> = ids
             .iter()
-            .map(|e| (e.node.id.as_str(), &e.node))
+            .filter(|id| {
+                self.nodes
+                    .get(*id)
+                    .is_some_and(|n| n.status == Status::Deleted)
+            })
+            .map(String::as_str)
             .collect();
-        for (id, n) in &last {
-            if let Some(p) = &n.parent {
-                ensure!(
-                    last.contains_key(p.as_str()),
-                    "节点 {id} 的父节点 {p} 不在导入的数据里"
-                );
+        if gone.is_empty() {
+            return Ok(0);
+        }
+        let events: Vec<Event> = self
+            .all_events()
+            .into_iter()
+            .filter(|e| !gone.contains(e.node.id.as_str()))
+            .collect();
+        let count = gone.len();
+        self.restart(&events, &HashMap::new())?;
+        Ok(count)
+    }
+
+    /// Purge what has been in the recycle bin longer than `days`.
+    pub fn purge_old(&mut self, days: i64) -> Result<usize> {
+        let limit = (chrono::Utc::now() - chrono::Duration::days(days))
+            .to_rfc3339_opts(chrono::SecondsFormat::Nanos, true);
+        let old: Vec<String> = self
+            .trash()
+            .into_iter()
+            .filter(|n| n.updated < limit)
+            .map(|n| n.id.clone())
+            .collect();
+        self.purge(&old)
+    }
+
+    // ---------- whole-library operations ----------
+
+    /// Every event, grouped by node and in time order within a node.
+    pub fn all_events(&self) -> Vec<Event> {
+        let mut ids: Vec<&String> = self.history.keys().collect();
+        ids.sort();
+        ids.into_iter()
+            .flat_map(|id| self.history[id].iter().cloned())
+            .collect()
+    }
+
+    /// Make the library exactly this history (a restored backup), keeping vectors that still fit.
+    pub fn replace(
+        &mut self,
+        events: Vec<Event>,
+        vectors: &HashMap<String, (u64, Vec<f32>)>,
+    ) -> Result<()> {
+        let events = settle(events)?;
+        self.restart(&events, vectors)
+    }
+
+    /// Add what another library knows: events this one does not have are added, and a node both changed ends
+    /// up as the version that was changed last (both histories stay).
+    pub fn merge(
+        &mut self,
+        incoming: Vec<Event>,
+        vectors: &HashMap<String, (u64, Vec<f32>)>,
+    ) -> Result<MergeReport> {
+        let mut report = MergeReport::default();
+        let have: HashSet<(String, u32, String)> = self
+            .history
+            .values()
+            .flatten()
+            .map(|e| (e.node.id.clone(), e.node.version, e.at.clone()))
+            .collect();
+        let mut touched: HashSet<String> = HashSet::new();
+        let mut all = self.all_events();
+        for e in incoming {
+            if have.contains(&(e.node.id.clone(), e.node.version, e.at.clone())) {
+                continue;
+            }
+            touched.insert(e.node.id.clone());
+            all.push(e);
+        }
+        for id in &touched {
+            if self.nodes.contains_key(id) {
+                report.updated += 1;
+            } else {
+                report.added += 1;
             }
         }
-        for event in events {
-            writeln!(self.log, "{}", serde_json::to_string(&event)?)?;
-            self.nodes.insert(event.node.id.clone(), event.node.clone());
-            self.history
-                .entry(event.node.id.clone())
-                .or_default()
-                .push(event);
+        report.unchanged = self.nodes.len().saturating_sub(report.updated);
+        if touched.is_empty() {
+            return Ok(report);
         }
-        self.log.flush()?;
-        self.rebuild()
+        let events = settle(all)?;
+        self.restart(&events, vectors)?;
+        Ok(report)
     }
+}
+
+/// Put events in the order they happened per node, and make the result consistent: every parent exists and is
+/// live, and no node is its own ancestor (two libraries may have moved nodes in conflicting ways).
+fn settle(mut events: Vec<Event>) -> Result<Vec<Event>> {
+    for e in &events {
+        ensure!(
+            e.node.id.len() == 32 && e.node.id.bytes().all(|b| b.is_ascii_hexdigit()),
+            "备份里有无效的节点编号：{}",
+            e.node.id
+        );
+        ensure!(
+            !e.node.content.trim().is_empty() && e.node.content.chars().count() <= MAX_CONTENT,
+            "备份里有内容无效的节点：{}",
+            e.node.id
+        );
+    }
+    events.sort_by(|a, b| {
+        a.node
+            .id
+            .cmp(&b.node.id)
+            .then_with(|| a.at.cmp(&b.at))
+            .then_with(|| a.node.version.cmp(&b.node.version))
+    });
+    // the final state of each node
+    let mut last: HashMap<String, usize> = HashMap::new();
+    for (i, e) in events.iter().enumerate() {
+        last.insert(e.node.id.clone(), i);
+    }
+    let live: HashSet<&str> = last
+        .iter()
+        .filter(|(_, i)| events[**i].node.status == Status::Live)
+        .map(|(id, _)| id.as_str())
+        .collect();
+    let mut parent: HashMap<String, Option<String>> = last
+        .iter()
+        .map(|(id, i)| {
+            let p = events[*i]
+                .node
+                .parent
+                .clone()
+                .filter(|p| live.contains(p.as_str()));
+            (id.clone(), p)
+        })
+        .collect();
+    let ids: Vec<String> = parent.keys().cloned().collect();
+    for start in ids {
+        let mut at = start.clone();
+        for _ in 0..=parent.len() {
+            match parent.get(&at).cloned().flatten() {
+                Some(up) if up == start => {
+                    parent.insert(start.clone(), None);
+                    break;
+                }
+                Some(up) => at = up,
+                None => break,
+            }
+        }
+    }
+    for (id, i) in &last {
+        let fixed = parent[id].clone();
+        if events[*i].node.parent != fixed {
+            events[*i].node.parent = fixed;
+        }
+    }
+    Ok(events)
 }
 
 #[cfg(test)]

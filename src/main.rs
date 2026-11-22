@@ -4,27 +4,21 @@
 #[macro_use]
 mod log;
 mod app;
-mod archive;
-mod autobackup;
 mod clients;
 mod clusters;
-mod detail;
+mod data;
 mod embedding;
-mod entities;
 mod files;
-mod health;
 mod jobs;
-mod kv;
+mod legacy;
 mod mcp;
-mod memory;
+mod service;
 mod shell;
-mod store;
 #[cfg(test)]
 mod tests;
 mod tree;
 mod vectors;
 mod web;
-mod web_admin;
 
 use anyhow::{Context, Result, bail, ensure};
 use app::App;
@@ -36,7 +30,7 @@ use std::{
     sync::{Arc, mpsc},
     time::Duration,
 };
-use store::{LaneKind, Store};
+use service::Service;
 
 const DEFAULT_PORT: u16 = 3765;
 
@@ -52,15 +46,9 @@ struct Args {
     /// 语义模型位置，默认是程序目录下的 model
     #[arg(long)]
     model: Option<PathBuf>,
-    /// 把备份（ZIP）导入空库后退出
+    /// 把备份（ZIP，新旧版本都可以）合并进记忆库后退出
     #[arg(long, value_name = "BACKUP")]
     import: Option<PathBuf>,
-    /// 实验：用这份问题（JSON）比较 v0.6 的检索和节点树的检索，需要同时给 --keys
-    #[arg(long, value_name = "QUESTIONS", requires = "keys")]
-    tree_eval: Option<PathBuf>,
-    /// 实验：问题里的答案名对应的记忆编号（JSON）
-    #[arg(long, value_name = "KEYS")]
-    keys: Option<PathBuf>,
     /// 后台运行：启动时不自动打开管理页（开机自启使用）
     #[arg(long)]
     background: bool,
@@ -126,18 +114,15 @@ fn open_library(model: &std::path::Path) -> Result<Arc<dyn embedding::Embed>> {
 }
 
 fn import(path: PathBuf, dir: PathBuf, model: PathBuf) -> Result<()> {
-    let runtime = tokio::runtime::Runtime::new()?;
-    runtime.block_on(async {
-        let store = Arc::new(Store::open(&dir, Some(open_library(&model)?)).await?);
-        ensure!(
-            store.all().await?.is_empty(),
-            "导入仅允许写入空库，请在网页的「数据」页使用导入功能"
-        );
-        let info = store.restore_zip(path, jobs::Job::detached()).await?;
-        store.maintain(Some(LaneKind::All)).await?;
-        println!("已导入 {} 条记忆：{}", info.memories, dir.display());
-        Ok(())
-    })
+    let service = Service::open(&dir, open_library(&model)?)?;
+    let report = service.import_archive(&path, data::Mode::Merge, &jobs::Job::detached())?;
+    println!(
+        "已导入 {} 个节点{}：{}",
+        report.nodes,
+        if report.legacy { "（来自旧版备份）" } else { "" },
+        dir.display()
+    );
+    Ok(())
 }
 
 fn run(args: Args) -> Result<()> {
@@ -149,10 +134,6 @@ fn run(args: Args) -> Result<()> {
     let model = args.model.clone().unwrap_or_else(|| root.join("model"));
     if let Some(path) = args.import.clone() {
         return import(path, dir, model);
-    }
-    if let (Some(questions), Some(keys)) = (args.tree_eval.clone(), args.keys.clone()) {
-        return tokio::runtime::Runtime::new()?
-            .block_on(tree::eval::run(&dir, &model, &questions, &keys));
     }
     let explicit = args.listen.is_some();
     let want = args
@@ -243,31 +224,30 @@ fn serve(
     runtime.block_on(async move {
         let boot = async {
             let engine = open_library(&model)?;
-            let store = Arc::new(Store::open(&dir, Some(engine)).await?);
-            store.clean_temporary();
-            if let Some(notice) = store.recover_interrupted().await? {
-                log!("{notice}");
-            }
+            let service = {
+                let dir = dir.clone();
+                tokio::task::spawn_blocking(move || Service::open(&dir, engine)).await??
+            };
             listener.set_nonblocking(true)?;
             let listener = tokio::net::TcpListener::from_std(listener)?;
-            let router = web::router(store.clone(), listener.local_addr()?, app.clone())?;
-            store.maintain(None).await?;
+            let router = web::router(service.clone(), listener.local_addr()?, app.clone())?;
             tokio::spawn(async move {
                 loop {
                     tokio::time::sleep(Duration::from_secs(60)).await;
-                    if let Err(error) = store.maintain(None).await {
-                        log!("Index maintenance: {error:#}");
-                    }
-                    match store.compact().await {
-                        Ok(true) => log!("Compacted the library files"),
-                        Ok(false) => {}
-                        Err(error) => log!("Compaction: {error:#}"),
-                    }
-                    match store.auto_backup().await {
-                        Ok(Some(name)) => log!("Automatic backup: {name}"),
-                        Ok(None) => {}
-                        Err(error) => log!("Automatic backup: {error:#}"),
-                    }
+                    let _ = service
+                        .run(|s| {
+                            match s.tidy() {
+                                Ok(0) => {}
+                                Ok(n) => log!("回收站里放满一个月的 {n} 个节点已永久删除"),
+                                Err(error) => log!("清理回收站：{error:#}"),
+                            }
+                            match s.auto_backup() {
+                                Ok(Some(name)) => log!("自动备份：{name}"),
+                                Ok(None) => {}
+                                Err(error) => log!("自动备份：{error:#}"),
+                            }
+                        })
+                        .await;
                 }
             });
             anyhow::Ok((listener, router))
