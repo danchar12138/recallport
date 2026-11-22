@@ -479,6 +479,15 @@ impl Service {
         }
     }
 
+    /// An attachment by its hash, for serving the file (it must belong to a node that still exists).
+    pub fn attachment(&self, hash: &str) -> Option<AttachmentView> {
+        let t = self.read();
+        t.nodes()
+            .flat_map(|n| n.attachments.iter())
+            .find(|a| a.hash == hash)
+            .map(|a| self.attachment_view(a))
+    }
+
     pub fn trash(&self) -> Vec<Brief> {
         let t = self.read();
         t.trash()
