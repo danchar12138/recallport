@@ -99,20 +99,24 @@
     no.focus();
   });
 
+  // In the capture phase and without letting the click go on: a page's own handler for the button must not run
+  // until the question has been answered with yes (then the click is replayed).
   doc.addEventListener('click', async event => {
     const btn = event.target.closest?.('button[data-confirm], a[data-confirm]');
     if (!btn || btn.dataset.confirmed) return;
     event.preventDefault();
+    event.stopPropagation();
     if (await ask(btn, btn.dataset.confirm)) {
       btn.dataset.confirmed = '1';
       btn.click();
       delete btn.dataset.confirmed;
     }
-  });
+  }, true);
   doc.addEventListener('submit', async event => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || !form.dataset.confirm || form.dataset.confirmed) return;
     event.preventDefault();
+    event.stopPropagation();
     const submitter = event.submitter || form.querySelector('button[type=submit], button:not([type])');
     if (!submitter) return;
     if (await ask(submitter, form.dataset.confirm)) {
