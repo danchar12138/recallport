@@ -62,7 +62,7 @@ try {
         }
     } finally { $zip.Dispose() }
     $licenses = (New-Item -ItemType Directory -Force -Path (Join-Path $Output 'licenses')).FullName
-    Get-ChildItem -LiteralPath 'web/vendor' -Filter '*.LICENSE' | Copy-Item -Destination $licenses
+    Get-ChildItem -LiteralPath 'licenses' -Filter '*.LICENSE' | Copy-Item -Destination $licenses
     Copy-Item -LiteralPath $exe -Destination (Join-Path $Output 'RecallPort.exe')
     foreach ($doc in @('README.md','README.en.md','LICENSE','CHANGELOG.md')) { if (Test-Path -LiteralPath $doc) { Copy-Item -LiteralPath $doc -Destination $Output } }
     Get-Item -LiteralPath (Join-Path $Output 'RecallPort.exe') | Select-Object FullName, Length

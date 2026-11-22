@@ -23,10 +23,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: Swatinem/rust-cache@v2
 
       - name: Format

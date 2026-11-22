@@ -1,7 +1,6 @@
 /dist/
 /data/
 /target/
-*.lance/
 *.recallport.json
 /*.exe
 *.db

@@ -7,8 +7,8 @@
 **Switch AIs. Skip the introductions.**<br>
 <sub>换个 AI，往事不必重讲。</sub>
 
-Plug-and-play local long-term memory for AI assistants: one memory shared by every AI, kept only on your computer.<br>
-Memories change over time; the AI organizes entities, keeps the trail of corrections and files things away. You just double-click the exe.
+Plug-and-play local long-term memory for AI assistants: one memory tree shared by every AI, kept on your own computer.<br>
+The AI turns what is worth keeping from a conversation into nodes and summarizes them layer by layer; you can zoom through the whole tree and edit anything by hand.
 
 [![Release](https://img.shields.io/github/v/release/danchar12138/recallport?color=0f766e&label=release)](https://github.com/danchar12138/recallport/releases/latest)
 [![CI](https://github.com/danchar12138/recallport/actions/workflows/ci.yml/badge.svg)](https://github.com/danchar12138/recallport/actions/workflows/ci.yml)
@@ -20,46 +20,48 @@ Memories change over time; the AI organizes entities, keeps the trail of correct
 [简体中文](README.md) · **English** · [Download](https://github.com/danchar12138/recallport/releases/latest) · [Changelog](CHANGELOG.md)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/memories-dark.png">
-  <img src="docs/images/memories-light.png" width="860" alt="RecallPort memory list">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tree-dark.png">
+  <img src="docs/images/tree-light.png" width="860" alt="The RecallPort memory tree: the whole tree is one picture you can zoom without limit">
 </picture>
 
 </div>
 
-> The web interface is currently in Chinese. The MCP tools, their descriptions and the server instructions are in English, so any model can use them.
+> The interface is in Simplified Chinese; the screenshots show the demo library in Chinese.
 
-## The problem
+## What it solves
 
-You solved something in Codex, then explain it all over again in Claude Code. You settled on an approach last week and this week's fresh session has forgotten it. Things changed since, yet the old conclusion keeps being treated as fact.
+The trap you fell into in Codex has to be explained again in Claude Code. The plan you settled on last week is forgotten by this week's new session. Things changed since, yet the old conclusion is still treated as fact.
 
-RecallPort is a memory service that runs on your machine and connects to AI clients through [MCP](https://modelcontextprotocol.io). The AI **looks up memory before it starts a task** and **writes things down after** a decision, a dead end, a change of situation or a correction. It also organizes: what project or device a memory is about, how things changed, where the related files are. Every connected AI shares the same memory. You never curate it.
+RecallPort is a memory service that runs on your machine and plugs into AI clients through [MCP](https://modelcontextprotocol.io). Before a task the AI **looks things up**; after a decision, a pitfall or a change it **writes them down**, and it tidies up on its own: related memories are summarized into one, summaries into summaries, until they form a tree. Every connected AI shares the same tree. You do not have to organize anything, but you can change anything.
 
 ## Features
 
-- **Local and private, no network.** Memories, indexes, attachments and the semantic model all live on your computer. No account, no cloud, no network access at runtime, no telemetry.
-- **One memory, every AI.** Standard MCP over Streamable HTTP. The Connect page detects Codex and Claude Code on this machine, writes the config in one click, and tells you whether they actually connected.
-- **Finds what you mean, and says when it did not.** Keyword search (BM25 with Jieba Chinese tokenization) and semantic search (IBM Granite multilingual embeddings) are fused by rank. Rephrasings still match, and paths and proper nouns still hit exactly; one call can carry several phrasings (synonyms, another language, the error text). Every hit says whether it is a literal, strong or weak match, and when nothing matches well the model is told the results are only clues.
-- **Memory changes, the trail stays.** It separates "when it happened" from "when it was recorded". When things change, the AI appends a record marked as a **correction** of the old one; scattered memories can be **summarized** (and summaries summarized, as many levels as there are); originals are always kept. In a search, a corrected memory gives way to its correction (the old text stays in the `trail` and can be asked for), with when and by whom, and a newer record is not assumed to be more right. Edits made in the web UI keep their previous text too. The Overview page shows the latest corrections and summaries with old and new side by side.
-- **Entities come from the AI, never guessed.** While reading and writing, the AI submits what a memory is about: projects, devices, tools, people. The server never merges by name or vector similarity; on a name clash it hands the choice back to the AI. Every link leads back to its source memory, and entities get a directory, a timeline and a graph.
-- **Attachments are part of memory.** The AI files images, audio, video and documents; they are de-duplicated by content hash and can be previewed and downloaded in the web UI. "Stored" files travel with backups; "referenced" files only remember a location, and the UI says so.
-- **Guides the model to maintain its own memory.** Built-in instructions say when to recall and when to remember; every session starts with what the library holds now (counts, most mentioned entities, whether anything needs tidying); `remember` returns similar memories to avoid duplicates; the `health` tool lists duplicates, unsettled entity names, memories about nothing in particular and forked or looping correction chains so the model can fix them; two prompts, `brief` (look before starting) and `wrap_up` (save what you learned), can be offered as commands by the client.
-- **Backups you can trust.** One versioned ZIP holds memories, entities, links, sources, attachments and the semantic vectors (restoring and rolling back reuse them instead of recomputing, seconds even for tens of thousands). Import validates everything first; "replace" and "merge" are separate operations, each keeps a rollback snapshot, and a crash mid-switch heals itself on the next start. An automatic backup is made once a day when something changed, keeping the newest 7.
-- **Resident in the tray, ready out of the box.** Double-click the exe; closing the web page does not stop the service. The tray icon opens the UI, toggles start-at-login, or quits. The Windows package ships the model and runtime libraries: nothing to install, nothing to download.
-- **A calm interface.** Light, dark or system theme, keyboard friendly, usable at phone width.
+- **One kind of thing: the node.** Layer 0 is atomic memories the AI extracted from conversations; every layer above is a summary the AI wrote, with no limit on the number of layers. A node has content, tags, a date it happened, one parent, cross-links, sources, attachments and a version number. No entity table, no kinds of references, no two structures to keep in sync.
+- **The AI and you can change anything, and every change is recorded.** Rewriting, moving, deleting and restoring are each a line appended to an event log (with a version and who did it); two writers changing one node at once is caught (the later one is refused and told to read again). When things change you simply update the node: the old wording stays in its history, and the node page shows what changed, version by version.
+- **Deleting goes to a recycle bin first.** The node's children move up one level, the node stays in the bin for 30 days and can come back any time; you can also remove it for good right away.
+- **Zoom through the whole tree.** The "Tree" page draws everything as one picture you can zoom without limit: zoomed out you see only the top layers, one step in opens one layer, down to the full text of a memory. Smooth with 20,000 nodes.
+- **It finds things, and says when it did not.** Every layer is searched at once: keywords (BM25 + jieba word segmentation + Chinese character pairs) and meaning (IBM Granite multilingual embeddings), fused by rank. A rephrasing still finds it; a hit on a summary brings its best-matching children along and every hit carries the chain of summaries above it, so an overview question ("how is reliability handled on the home server?") lands on the evidence in one call; you can limit a search to the part of the tree under a node, to a layer, a tag or a time range; with no strong match the model is told the hits are only clues.
+- **The AI maintains the tree; the server only reports.** `maintain` starts at the lowest layer that has nodes without a parent and hands out batches: either a new summary to write, or nodes that fit under an existing summary; the next layer's work appears when one is covered; a summary that many children joined after it was written is reported as stale. The server never writes content itself.
+- **Attachments belong to nodes.** The AI files images, audio, video and documents; they are deduplicated by content hash and can be previewed and downloaded in the web page. "Stored" files travel with backups; "referenced" files only remember a location and the interface says so.
+- **Reliable backups, easy to move, old data comes along.** One ZIP carries the full history of every node, the semantic vectors and the attachments. Before a replace a copy of the current library is kept; a merge takes the union of events; one automatic backup a day at most. **Backups of the 0.x series can be imported directly**: corrections become node versions, summaries become parents, entities become tags.
+- **Lives in the tray, works out of the box.** Double-click the exe; closing the page does not stop the service; the tray lets you open the page, start with Windows or quit. The Windows package already contains the model and the runtime libraries: nothing is downloaded.
+- **Local and private, no network needed.** Nodes, indexes, attachments and the semantic model are all on your computer. No account, no cloud, no network access at runtime, no telemetry.
 
 ## Quick start
 
 **1. Download and run**
 
-Download `RecallPort-*-windows-x64.zip` from [Releases](https://github.com/danchar12138/recallport/releases/latest), unzip it and double-click `RecallPort.exe`. A tray icon appears and your browser opens <http://127.0.0.1:3765/>.
+Download `RecallPort-*-windows-x64.zip` from [Releases](https://github.com/danchar12138/recallport/releases/latest), unzip it and double-click `RecallPort.exe`. A tray icon appears and the browser opens <http://127.0.0.1:3765/>.
 
-> Keep `RecallPort.exe` next to the `model` folder. The executable is not code-signed, so Windows SmartScreen may warn you: choose "More info → Run anyway".
+> Keep `RecallPort.exe` and the `model` folder together. The program is not code-signed, so Windows SmartScreen may warn: choose "More info → Run anyway".
+
+**If you used 0.x:** on the "Data" page choose "import a backup file", pick a ZIP exported by 0.x (its automatic backups are in the `backups` folder of its data directory) and choose "merge" or "replace".
 
 **2. Connect your AI client**
 
-Open the **Connect** page: RecallPort detects Codex and Claude Code; click "Connect". It **changes only the `recallport` entry** in the client's config, backs the file up first, never silently overwrites a same-named entry that points elsewhere, and disconnecting removes only that entry, never your memories. Restart the client, then click "Verify" to confirm it really connected.
+Open the "Connect" page: RecallPort detects Codex and Claude Code, and one click connects it. It **only edits the `recallport` entry** of the client's configuration, backs the file up first, never silently overwrites a same-named entry that points somewhere else, and disconnecting removes only that entry and leaves the memory alone. Restart the client after connecting, then press "Verify connection" to confirm it really arrived.
 
-For other clients or manual setup: the MCP URL is `http://127.0.0.1:3765/mcp` (Streamable HTTP, no token).
+To configure by hand or use another client: the MCP address is `http://127.0.0.1:3765/mcp` (Streamable HTTP, no token).
 
 <details>
 <summary><b>Codex</b>: add to <code>~/.codex/config.toml</code></summary>
@@ -78,245 +80,216 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 ```
 </details>
 
-**3. Make the AI use it proactively (recommended)**
+**3. Make the AI use it on its own (recommended)**
 
-The server already ships usage instructions, but some clients ignore them. One-click connect on the Connect page therefore also writes the block below into the global rules file of Codex / Claude Code (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), wrapped in markers, backed up first, and removed again when you disconnect. For other clients paste it into their rules file yourself:
+The server carries its own usage instructions, but some clients ignore them. "Write usage rules" on the Connect page writes a short block into the global rules file of Codex / Claude Code (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`, wrapped in markers, backed up first, removable when you disconnect). For other clients paste something like this into their rules file (the block the app writes is in Chinese; this is its meaning):
 
 ```markdown
 ## Long-term memory (RecallPort)
-- Before a non-trivial task, a technical choice or a config change, call `recall` for related past experience. If nothing comes back, rephrase once or retry with strategy=semantic.
-- Right after a decision with reasons, a root cause, a fix that worked, a failed attempt and why, one of my preferences or constraints, a change in how things are, or a correction from me, call `remember`. Do not wait for me to ask. Keep accounts, passwords and other private details verbatim when I ask; do not mask them.
-- When things change, remember the new situation and cite the old memory in `references` with kind=corrects; never rewrite the past. When several scattered memories are one story, remember a summary with kind=summarizes and keep the originals; when summaries pile up, summarize those too, layer by layer (layer 0 is the memories themselves); when `health` says a layer lacks summaries or a summary is stale, you fix it.
-- Notice the projects, devices, tools and people involved and submit them as `entities` (search with the `entity` tool first and reuse by id); use `new` when it is a different thing with the same name.
-- If I give you a file, image, audio, video or document that belongs with a memory and you can read it, file it with `attachments` (absolute path and a one-line caption).
-- Recall before you remember so you do not add duplicates, and `link` related memories.
+- Before a sizeable task, a technology choice or a configuration change, `search` for relevant past experience; if nothing is found, retry with other phrasings in `queries` (synonyms, the other language, the original error text).
+- Right after a decision with reasons, a root cause, a fix that worked, a failed attempt and why, my preferences or constraints, or a change of situation, `write` it down without waiting for me. Store accounts and passwords exactly as given when I ask; do not redact.
+- One memory is one complete experience (what happened, why, the outcome), written in my language so someone with no context understands it. No whole conversations, no trivia.
+- `search` before writing; if a node already says the same thing, `update` it instead of writing a duplicate.
+- When things change, `update` the old node (its history is kept automatically); never keep two contradicting nodes.
+- Memory is a tree: layer 0 is what you write down; write a summary with `write` and `adopt` (the nodes it covers), layer after layer; a summary is only an index, `get` the nodes below it for details.
+- Call `maintain` now and then: it says which layer lacks summaries and which summaries are stale, and you write or rewrite them. You have my permission to tidy the whole library, including `delete` of duplicates and wrong nodes (they go to the recycle bin for 30 days) and `move`.
+- Files, images, audio, video and documents I give you that belong with a memory: attach them (absolute path and a caption; captions are not searched, so put what matters in the text).
 ```
 
-## Screenshots
+## Interface
 
 <table>
   <tr>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/detail-dark.png"><img src="docs/images/detail-light.png" alt="Memory detail"></picture>
-      <p align="center"><sub><b>Detail</b>: correction trail, entities, attachments, history, linked memories; one click to find it on the graph</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/tree-zoom-dark.png"><img src="docs/images/tree-zoom-light.png" alt="Zoomed into the tree"></picture>
+      <p align="center"><sub><b>Tree</b>: zoom in and a summary opens up the nodes below it, down to the full text of a memory; search hits glow, details on the right</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img src="docs/images/graph-light.png" alt="Memory graph"></picture>
-      <p align="center"><sub><b>Graph</b>: the whole page is the canvas. Zoom out for each entity's territory, zoom in for its memories; search and details happen right on it, and a minimap tells you where you are. Territories and memory cards can be dragged</sub></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/entities-dark.png"><img src="docs/images/entities-light.png" alt="Entity directory"></picture>
-      <p align="center"><sub><b>Entities</b>: directory, aliases, disambiguating hints</sub></p>
-    </td>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="Semantic search"></picture>
-      <p align="center"><sub><b>Semantic search</b>: rephrasings still match, each hit says how well</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/node-history-dark.png"><img src="docs/images/node-history-light.png" alt="A node's history"></picture>
+      <p align="center"><sub><b>Node</b>: the path from the top, word-level changes between versions, move and delete</sub></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png"><img src="docs/images/overview-light.png" alt="Overview"></picture>
-      <p align="center"><sub><b>Overview</b>: the last year at a glance, what changed, tidy-up suggestions</sub></p>
+      <p align="center"><sub><b>Overview</b>: how many nodes each layer has and whether the next layer covers them; what the AI will tidy next; who touched what lately</sub></p>
     </td>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-zoom-dark.png"><img src="docs/images/graph-zoom-light.png" alt="Zoomed into an entity"></picture>
-      <p align="center"><sub><b>Zoomed into an entity</b>: memories that belong only to it are seated by time (newer is closer to the middle) and meaning (similar ones on the same side), then turn into readable cards; a memory that mentions several entities is a "bridge" between their territories; the AI's summaries form a ring around everything they summarize: one numbered circle when zoomed out, unfolding one level at a time as you zoom in</sub></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-search-dark.png"><img src="docs/images/graph-search-light.png" alt="Search on the graph"></picture>
-      <p align="center"><sub><b>Search stays on the graph</b>: matches glow, each territory shows its hit count, results are listed on the right</sub></p>
-    </td>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-card-dark.png"><img src="docs/images/graph-card-light.png" alt="Floating detail card"></picture>
-      <p align="center"><sub><b>Floating detail card</b>: read the full memory, its correction trail and references without leaving the graph; a memory that mentions several entities is a "bridge" between their territories</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/search-dark.png"><img src="docs/images/search-light.png" alt="Search"></picture>
+      <p align="center"><sub><b>Memories</b>: rephrasings are found, every hit says how well it matches and where it sits in the tree</sub></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-dark.png"><img src="docs/images/graph-lanes-light.png" alt="Swim lanes"></picture>
-      <p align="center"><sub><b>Swim lanes</b>：time runs left to right, one lane per entity; a memory is one dot and a vertical line joins the entities it mentions; a summary is a bracket over the stretch of time it summarizes</sub></p>
-    </td>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-lanes-card-dark.png"><img src="docs/images/graph-lanes-card-light.png" alt="Details in the lanes"></picture>
-      <p align="center"><sub><b>Details in the lanes</b>：select a memory: full text, references and correction trail on the right, shared with the map</sub></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/clients-dark.png"><img src="docs/images/clients-light.png" alt="Connect"></picture>
-      <p align="center"><sub><b>Connect</b>: one-click setup, verify it really connected</sub></p>
+      <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/connect-dark.png"><img src="docs/images/connect-light.png" alt="Connect"></picture>
+      <p align="center"><sub><b>Connect</b>: one-click setup for Codex and Claude Code, proof that they really connected, the manual of the nine tools</sub></p>
     </td>
     <td width="50%">
       <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/data-dark.png"><img src="docs/images/data-light.png" alt="Data"></picture>
-      <p align="center"><sub><b>Data</b>: backup and restore first, with automatic backups; index diagnostics tucked away</sub></p>
+      <p align="center"><sub><b>Data</b>: backup, restore, merge, import 0.x backups, automatic backup and start with Windows</sub></p>
     </td>
   </tr>
 </table>
 
 ## MCP tools
 
-| Tool | Use it | What it does |
+| Tool | When | What it does |
 | --- | --- | --- |
-| `recall` | Before a task, before a choice, when the user mentions the past | Search by words, meaning, dates or entity; `queries` carries several phrasings in one call; hits carry `match` (exact / strong / weak / keyword) and `relevance`, and `no_strong_match` is true when nothing matches well; a corrected memory is replaced by its correction (`replaces`), `history` brings the old ones back; hits carry a `trail`; `strategy`: `hybrid` (default), `lexical`, `semantic` |
-| `read` | After finding a lead | Full content, links both ways (with kinds and reasons), entities, attachments (with local paths), earlier versions, correction trail |
-| `remember` | After a decision, root cause, working fix, failed attempt, preference, change or correction | Append a memory, optionally with `entities`, `attachments` and `references` carrying a `kind`; returns `related`, `entity_choices` (name clashes) and a `hint` |
-| `link` | When two memories belong together, a memory is about something, or a file belongs with it | Exactly one of `to` / `entity` / `attachment`; also settles unresolved names; `remove` only cuts the connection |
-| `entity` | Before submitting entities, when tidying them | `search`, `get` (memories over time and what appears alongside), `update` (rename, aliases), `merge` |
-| `health` | Now and then, when the session summary says something needs tidying | Lists identical memories, same-named entities that cannot be told apart, unsettled names, memories without entities, forked or looping correction chains, attachments whose file is gone, memories not yet under a summary in the summary tree (layer by layer, in batches of ids) and summaries that have fallen behind, with what to do about each; the AI has full authority and fixes them itself, no approval needed |
-| `forget` | When tidying finds an exact duplicate or an obvious mistake | Deletes a memory for good; not for things that changed, use `corrects` so the trail stays |
+| `search` | Before a task, before a choice, when the user mentions the past | Searches every layer by words and meaning; `queries` adds other phrasings; limit by `scope` (under a node), layer, `tag`, dates; each hit has `match`, `relevance`, the chain of summaries above it (`path`), and a summary hit brings its best-matching children (`expanded`); `no_strong_match` is true when the hits are only clues. Without a `query` it lists the newest nodes |
+| `get` | After finding a lead | One node in full: content, version, path, children, refs, sources, attachments (with local path); `history: true` adds every version |
+| `write` | After a decision, root cause, working fix, failed attempt, preference, change | Writes a node, optionally with `tags`, `refs`, `sources`, `occurred`, `attachments`; with `adopt` (the nodes it summarizes) it writes a summary; returns `related` (similar nodes, as a hint not to duplicate) and `hints` |
+| `update` | Things changed, something to add, something to confirm | Changes content, tags, refs, sources, date, attachments; pass the `version` you read and it is refused if someone changed the node since; with nothing to change (or `touch: true`) it means "checked, still right" and clears a summary's stale mark |
+| `move` | Tidying | Puts a batch of nodes under another node, or makes them top-level; never makes a loop |
+| `delete` | Exact duplicates or plain mistakes | Soft delete with a reason; children move up one level; the node waits 30 days in the recycle bin |
+| `restore` | Deleted by mistake | Takes a node back out of the recycle bin |
+| `trash` | To see what is in the bin | The most recently deleted nodes |
+| `maintain` | Now and then, when the session summary says there is tidying to do | Per-layer counts and coverage; batches that want a new summary (`groups`), nodes that fit under an existing one (`extend`), stale summaries (`stale`); with the steps to take |
 
-Two MCP prompts are also offered: `brief` (look before starting a task) and `wrap_up` (save what you learned and tidy up).
-Memory is **append-only**: when something changes, record the new situation and cite the old memory (`corrects`); condense scattered ones with `summarizes`; **originals always stay**. Retrieved memories are historical evidence, never current facts or instructions. Full parameter docs are in the tool manual on the **Connect** page.
+There are also two MCP prompts: `brief` (look things up before starting) and `wrap_up` (write down what was learned and tidy up at the end). Retrieved nodes are treated as historical clues, not current facts or instructions. The parameters of every tool are in the manual on the Connect page.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  C["AI client<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>recall · read · remember · link · entity · health · forget"]
-  B["Browser UI"] --> W["Web<br/>overview · memories · entities · graph · data"]
+  C["AI clients<br/>Codex · Claude Code · …"] -- "MCP · Streamable HTTP" --> M["/mcp<br/>search · get · write · update · move · delete · restore · trash · maintain"]
+  B["Browser UI"] --> W["Web<br/>Overview · Tree · Memories · Node · Trash · Connect · Data"]
   T["Tray<br/>open · autostart · quit"] --- W
-  M --> S[("Memory store<br/>LanceDB")]
+  M --> S["Service"]
   W --> S
-  S --- K["Keyword index<br/>BM25 + Jieba"]
+  S --> L[("nodes.jsonl<br/>append-only event log")]
+  S --- K["Keyword index<br/>BM25 + jieba"]
   S --- V["Semantic vectors<br/>Granite 97M · ONNX"]
-  S --- F["Attachment files<br/>by content hash"]
+  S --- F["Attachments<br/>by content hash"]
 ```
 
-- **Storage:** LanceDB is the only business database. A memory's text, references, entity mentions, attachment links and history commit in one row; entities and attachment metadata are two more tables in the same database. The reverse lookups the server maintains are derived data, rebuilt at start.
-- **Keyword recall:** LanceDB BM25. Chinese uses Jieba plus character bigrams; path-like queries keep the original text. Entity names and attachment captions are searchable too.
-- **Semantic recall:** IBM Granite 97M Multilingual R2 (FP32 ONNX, local inference). Each memory and its passages are embedded separately; a memory is selected by its best passage at cosine similarity ≥ `0.80`. Below 256 memories the search is an exact scan; from 256 on an IVF-HNSW-Flat approximate index is built automatically. Vectors are never quantized.
-- **Hybrid ranking:** both candidate lists are selected independently and fused with reciprocal rank fusion (keyword weight 1.0, semantic 0.9); exact literal matches come first. Several phrasings are searched separately and merged, and a memory found by more of them ranks higher. Each hit gets a relevance from its closest meaning (≥ `0.88` counts as strong, a literal match is 1), and `no_strong_match` is set when none qualifies. A corrected memory appears as its latest correction, the old text stays in the `trail`, and `history: true` lists the old ones as well.
-- **Entities:** only ever contributed by the connected AI; the server never extracts or infers them. Same names are never merged automatically; merging is explicit and can be undone in the web UI.
-- **Attachments:** files live under `files` in the data directory by SHA-256; the AI passes a path or a small base64 snippet, never a large payload through MCP. The web UI serves them through a controlled endpoint: only allow-listed types render inline, everything else is a forced download, all with a sandboxing response header.
+- **Storage**: the data folder holds an append-only event log `nodes.jsonl` (one line per write, update, move, delete, restore, with a version and who did it), `vectors.bin` (a vector log), `files/` (attachments) and `backups/`. The tree in memory is just the log's latest state; at start the log is replayed and each vector is checked against "node id + text", so unchanged ones are reused. A half-written last line left by a crash is dropped at start.
+- **Layers**: a node's layer is one more than its tallest child's, or 0 with no children; it is not stored, so moves and deletes keep it consistent.
+- **Keyword recall**: BM25; Chinese uses jieba words plus neighbouring character pairs; path-like queries keep exact text matching; tags take part too.
+- **Semantic recall**: IBM Granite 97M Multilingual R2 (FP32 ONNX, local inference); one vector per node, cosine similarity computed exactly (no approximate index is needed up to tens of thousands of nodes; one search over 20,000 nodes takes tens of milliseconds).
+- **Hybrid ranking**: both lists are fused by reciprocal rank; text that contains the whole query counts as "exact", cosine ≥ `0.88` as "highly relevant"; with none of those `no_strong_match` is set. A hit on a summary also brings its 3 children closest to the question. Several phrasings are searched separately and merged.
+- **Maintenance**: starting at the lowest layer that has parentless nodes, hierarchical average-linkage clustering splits that layer's nodes into batches of 3 to 12 by meaning; a node close enough to an existing summary's vector is suggested to join it. When a layer is covered the next layer's work appears, until at most 8 nodes are left at the top. The server only gives batches and reasons and never writes content.
+- **Concurrency and safety**: every change carries a version and a mismatch is refused; a move can never make a loop; one call moves at most 64 nodes.
+- **Attachments**: files live under `files` by SHA-256; the AI passes a path or a small base64 snippet, never through the MCP message body. The web page serves them through a guarded endpoint: only whitelisted types are shown inline, everything else is forced to download, with sandboxing headers.
 
-The thresholds and weights are built-in empirical values. The "Runtime parameters" section of the Data page shows the exact current values.
+The thresholds and weights are built-in rules of thumb.
 
 ## Command-line options
 
-All optional. Double-clicking the executable is normally enough.
+All optional; normally you just double-click.
 
-| Option | Default | Description |
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `--listen` | `127.0.0.1:3765` | Listen address, loopback only. If not given and the port is taken, a nearby free port is used; if given, it is used strictly |
-| `--data` | `data` next to the executable | Memory store location (attachments are in its `files`) |
-| `--model` | `model` next to the executable | Semantic model location |
-| `--import <backup.zip>` | none | Import a backup into an empty store, then exit |
-| `--background` | off | Do not open the browser at start (used by start-at-login) |
+| `--listen` | `127.0.0.1:3765` | Address to listen on; loopback only. When not given and the port is taken, a neighbouring free port is used; when given it is used strictly |
+| `--data` | `data` next to the program | Where the library lives (attachments are in its `files`) |
+| `--model` | `model` next to the program | Where the semantic model is |
+| `--import <backup.zip>` | none | Merge a backup (new or old format) into the library and exit |
+| `--background` | off | Do not open the browser at start (used by start-with-Windows) |
 | `--no-tray` | off | No tray icon |
 
-Double-clicking again while one copy is running only opens that copy's page; it never starts a second one.
+Double-clicking the exe again while one copy is running just opens its page.
 
 ## Backup, restore and merge
 
-On the Data page choose "Export backup" to get a `.recallport.zip`: `manifest.json` holds memories, dates, sources, entities, links and history; `files/` holds the stored attachments (hash-verified); `vectors.bin` holds the semantic vectors (half precision, used only when they come from the same model, otherwise recomputed). Models and programs are not included. "Automatic backup" on the Data page makes at most one a day, only when something changed, keeps the newest 7 in the `backups` folder of the data directory, and each can be downloaded or imported right from the page; it holds memories, entities and vectors only and does not copy attachment files (they already sit in the data folder, and copying them daily would multiply their size), so use "Export backup" when moving to another computer.
+On the "Data" page press "Back up now" for a `RecallPort-backup-date-time.zip`: `manifest.json`, `nodes.jsonl` (every node's full history), `vectors.bin` (semantic vectors, only used when made by the same model, otherwise recomputed) and `files/` (stored attachments, by hash). No model, no program. The "automatic backup" runs at most once a day and only when something changed, keeps the newest 7 in the `backups` folder of the data directory, and each can be downloaded, restored or merged from the page; it does not copy attachment files (so they are not copied every day): use "Back up now" when moving to another computer.
 
-- **Replace:** the backup fully replaces the current store; for recovery or a new computer.
-- **Merge:** adds another backup's content to the current store; for bringing in memories created on another computer. It takes the union by id; when both sides edited the same memory the newer wins and the other text goes into history; **same-named entities are never merged automatically** and are reported for you to confirm; identical attachments de-duplicate by content.
-- Both **validate the whole archive first** (format, hashes, paths, dangling references) before touching live data and keep a **rollback snapshot**; if validation or encoding fails the live data is unchanged, and a crash or power loss during the switch is healed at the next start by returning to the state before it.
-- The rollback snapshot is stored together with its vectors, so rolling back is a copy, not a rebuild; it can be restored with one click on the same page, or exported.
-
-ZIP is the only backup format. For moving machines you can also stop the service and move the whole folder; never copy files out of the store while it is being written.
+- **Replace**: the library becomes the backup, for recovery or a new computer. **Before replacing, the current library is saved as a "copy before restore"** (3 are kept), one click in the backup list takes you back.
+- **Merge**: bring another backup's content into this library, e.g. what was added on another computer. Events are united; a node both sides changed ends up as the version changed last, and both histories are kept.
+- An import is validated completely (format, node ids, content, attachment hashes) before existing data is touched; files inside a backup are only read by fixed names, never extracted by the path they claim.
+- **Backups of the 0.x series** can be imported directly: corrections become node versions, summaries become parents, entities become tags; memories longer than the node limit are cut.
 
 ## Security and privacy
 
-- The service listens on loopback only and validates the `Host` and `Origin` headers. It refuses to start on any other address.
-- **There is no authentication and no sensitivity tiers.** Other programs on the same machine can reach it without credentials. Accounts, passwords and other private details may be stored verbatim and take part in search, AI organizing and backups like any other memory; a connected AI can read everything it can reach. This is by design: RecallPort is your local memory, not an encrypted vault. Do not forward it to a LAN or the internet.
-- Backups are **plain text**, and so are attachments. Do not upload them anywhere public.
-- At runtime it makes no network requests and has no telemetry. All scripts, styles and icons of the web UI are bundled; no CDN is used.
-- The source name is self-reported by the caller and does not prove identity.
-- The Connect page backs a client's config up before editing and changes only the `recallport` entry.
+- The service listens on the loopback address only and checks `Host` and `Origin`. Asking it to listen elsewhere makes it refuse to start.
+- **No authentication, and no notion of secret.** Any program on this computer can reach the service without credentials. Accounts, passwords and other private details may be stored as plain text, searched, tidied by the AI and backed up like any other node; a connected AI can read everything it can reach. This is deliberate: RecallPort is your local memory, not an encrypted vault. Do not forward the service to a network.
+- **Deleting is not erasing right away.** A node goes to the recycle bin first and its edit history lives in the event log; only "delete permanently" removes the history too. What already went into a backup is still in that backup file.
+- Backups are **plain text**, attachments too. Do not put them anywhere public.
+- No network request is made at runtime and there is no telemetry. Every script, style and icon of the admin pages ships inside the program; no CDN.
+- The name of who made a change is self-reported by the caller and proves nothing.
+- The Connect page backs a client's configuration up before changing it and changes only the `recallport` entry.
 
-Report security problems as described in [SECURITY.md](SECURITY.md).
+To report a security problem see [SECURITY.md](SECURITY.md).
 
 ## FAQ
 
 <details>
-<summary>My AI does not call the memory tools on its own</summary>
+<summary>The AI does not call the memory tools on its own</summary>
 
-Whether it does depends on the client and the model; RecallPort does not listen to whole conversations. Check that the Connect page says the usage rules are written (for other clients, paste the rules from step 3 yourself). That usually makes a clear difference. The "Verify" button on the Connect page tells you whether a client has really connected.
+Whether it does depends on the client and the model; RecallPort does not see whole conversations. Make sure the Connect page shows "usage rules written" (for other clients paste the rules above), which usually helps a lot. "Verify connection" tells you whether the client really connected.
 </details>
 
 <details>
 <summary>Port 3765 is already in use</summary>
 
-Just double-click: when the default port is taken a nearby free port is used, the tray tooltip and the Connect page show the actual address, and one-click connect writes the actual address. You can also pin a port with `--listen 127.0.0.1:3800`.
+Just double-click: when the default port is taken a neighbouring free port is used, the tray tooltip and the Connect page show the real address, and one-click connect writes it. You can also pin one with `--listen 127.0.0.1:3800`.
 </details>
 
 <details>
 <summary>I closed the browser page. Is it still running? How do I quit?</summary>
 
-Yes. RecallPort stays in the system tray so AIs can keep using the memory. Right-click the tray icon to open the UI, toggle start-at-login, or quit; the "General" section of the Data page has the same switches.
+Yes, it lives in the system tray (bottom right) so the AI can read and write memory at any time. Right-click the tray icon to open the page, start with Windows, or quit; the Data page has the same switch.
 </details>
 
 <details>
-<summary>The same thing was recorded under several names and the entities are messy</summary>
+<summary>The AI wrote nodes that are too fine-grained, or summarized wrongly</summary>
 
-Open one of them on the Entities page and choose "Merge into…". Merging is explicit and undoable, and the names are kept as aliases. The AI can also merge with the `entity` tool while tidying.
+Open the node: edit it, move it under another summary, or delete it (to the recycle bin first). The to-do list on the Overview page and what the AI sees through `maintain` are the same list; the AI handles it at its next tidy-up and treats your changes as the current state.
 </details>
 
 <details>
 <summary>Does it support macOS or Linux?</summary>
 
-Only the Windows x64 package is built and tested today (the tray, start-at-login and one-click connect are Windows features). The project is written in Rust, so the core service should be portable from source, but packaging is not adapted yet.
+Only Windows x64 packages are provided and tested (tray, autostart and one-click connect are Windows features). The project is written in Rust and the core could be ported from source, but packaging has not been adapted.
 </details>
 
 ## Build from source
 
-Requires Rust 1.94 or newer, the MSVC x64 build tools, the Windows SDK and `protoc`, plus the `x86_64-pc-windows-msvc` target:
+You need Rust 1.94 or newer, the MSVC x64 build tools and the Windows SDK, with the `x86_64-pc-windows-msvc` target installed:
 
 ```powershell
 ./scripts/build.ps1
 ```
 
-The output is in `dist/RecallPort`. The script locates a redistributable Microsoft x64 CRT from the build environment, or you can pass `-VCRedistDir`. The packaged result needs no developer tools and no network.
+The output is in `dist/RecallPort`. The script finds the redistributable Microsoft x64 CRT from the build environment, or take `-VCRedistDir`. The package needs no developer tools and no network.
 
-Provide these upstream originals before building. The script verifies SHA-256 and neither converts nor quantizes them. The asset cache defaults to `%TEMP%/recallport-native-compare`; override it with `-AssetCache`:
+Before building, prepare these upstream files; the script verifies SHA-256 and does not convert or quantize anything. The asset cache defaults to `%TEMP%/recallport-native-compare`, override with `-AssetCache`:
 
 - Hugging Face [`ibm-granite/granite-embedding-97m-multilingual-r2`](https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2) revision `835ad14087e140460703cf0fae09f97d469d65c2`: put `onnx/model.onnx` at `granite97/onnx_model.onnx` and `tokenizer.json` at `granite97/tokenizer.json`.
-- The PyPI wheel `onnxruntime-1.32.0-cp311-cp311-win_amd64.whl` at `onnxruntime-win-amd64.whl`. Only the official Windows DLLs and notices are extracted; no Python package is shipped.
+- PyPI `onnxruntime-1.32.0-cp311-cp311-win_amd64.whl` at `onnxruntime-win-amd64.whl`. Only the official Windows DLL and its notices are extracted; no Python package is shipped.
 
-During development run `cargo run -- --model <model directory> --data ./data-dev`. `cargo test` uses real LanceDB tables in temporary directories and never touches your memories. Models, memories, attachments and backups are never committed to Git.
+For development just `cargo run -- --model <model dir> --data ./data-dev`. `cargo test` uses temporary folders and a tiny bag-of-words stand-in for the model, so it needs no model file and never touches your memory. Models, memories, attachments and backups are not committed to Git.
 
 ## Project layout
 
 ```text
 src/
-  main.rs        start-up, single instance, tray and service wiring
-  memory.rs      data model and validation for memories, entities, attachments
-  store.rs       LanceDB storage, search, index upkeep
-  entities.rs    entity directory and derived lookups (only from the AI, never auto-merged)
-  files.rs       attachment intake: by content hash, path safety checks
-  archive.rs     ZIP backup: export, validate, replace, merge, rollback, crash recovery
-  autobackup.rs  the daily automatic backup and its retention
-  vectors.rs     semantic vectors kept with a backup (half precision)
-  health.rs      library check-up (duplicates, unsettled names, forked or looping corrections, similar memories awaiting a summary) and the session summary
-  clusters.rs    batches the memories of one layer by meaning (average-linkage clustering), only to tell the AI where the summary tree still lacks something
-  detail.rs      one memory in full (links, entities, attachments, correction trail)
-  mcp.rs         MCP tools and usage instructions
-  web.rs         web UI (server-rendered)
-  web_admin.rs   data management, job progress, attachment serving, client-connect endpoints
-  clients.rs     detecting and minimally editing Codex / Claude Code config
-  shell.rs       Windows tray, start-at-login, browser and dialogs
-  jobs.rs        background job progress; kv.rs small LanceDB tables; log.rs log file
-web/             page templates, styles and scripts (compiled in)
+  main.rs        start-up, single instance, tray and server wiring, the minute-by-minute housekeeping
+  tree/          the node tree: model, event log, keyword index, hybrid search, maintenance
+  service.rs     the one door used by both the web pages and MCP: nodes, views, stats, the whole tree
+  data.rs        ZIP backups: export, replace, merge, old-format conversion, the daily automatic backup
+  legacy.rs      reads 0.x backups and converts them to nodes
+  files.rs       attachments by content hash, path safety checks
+  vectors.rs     the vector log (half precision) and reading old-format vectors
+  clusters.rs    splits one layer's nodes into batches by meaning (average-linkage clustering)
+  mcp.rs         MCP tools, prompts and usage instructions
+  web/           the admin UI: shell and security headers, pages, data and connect pages
+  clients.rs     detecting and minimally editing the Codex / Claude Code configuration
+  shell.rs       Windows tray, start with Windows, browser and dialogs
+  embedding.rs   the local semantic model; app.rs shared state; jobs.rs background job progress; log.rs log file
+web/             page templates, styles and scripts (compiled into the program)
 scripts/         packaging script
 docs/images/     documentation screenshots
 ```
 
 ## Contributing
 
-Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Issues and pull requests are welcome; please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ## License
 
 [MIT](LICENSE).
 
-The release package contains third-party components; their licenses and notices are in the `licenses` and `model` folders inside the package. The semantic model's copyright and license are those of its [Hugging Face model card](https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2).
+The release package contains third-party components; their licenses and notices are in the package's `licenses` and `model` folders. The copyright and license of the semantic model are those on its [Hugging Face model card](https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2).
 
 ## Acknowledgements
 
-[LanceDB](https://lancedb.com) · [IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Cytoscape.js](https://js.cytoscape.org) · [Preact](https://preactjs.com) · [htm](https://github.com/developit/htm) · [Flatpickr](https://flatpickr.js.org) · [Lucide](https://lucide.dev)
+[IBM Granite Embedding](https://huggingface.co/ibm-granite) · [ONNX Runtime](https://onnxruntime.ai) · [jieba-rs](https://github.com/messense/jieba-rs) · [axum](https://github.com/tokio-rs/axum) · [rmcp](https://github.com/modelcontextprotocol/rust-sdk) · [Lucide](https://lucide.dev)
