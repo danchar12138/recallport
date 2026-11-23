@@ -283,7 +283,10 @@ mod tests {
             .ingest_path(original.to_str().unwrap(), None, "", true)
             .unwrap();
         assert_eq!(r.storage, Storage::Referenced);
-        assert_eq!(files.path_of(&r), original);
+        assert_eq!(
+            files.path_of(&r),
+            check_path(original.to_str().unwrap()).unwrap()
+        );
         fs::remove_file(&original).unwrap();
         assert!(!files.available(&r) && files.available(&a));
         // relative and network paths are refused
