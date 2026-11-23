@@ -17,7 +17,7 @@ AI 把对话里值得留下的东西记成节点，再一层层汇总上去；�
 ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-0f766e)
 ![Rust](https://img.shields.io/badge/built%20with-Rust-0f766e)
 
-**简体中文** · [English](README.en.md) · [下载](https://github.com/danchar12138/recallport/releases/latest) · [更新日志](CHANGELOG.md)
+**简体中文** · [English](README.en.md) · [下载](https://github.com/danchar12138/recallport/releases/latest) · [更新日志](CHANGELOG.md) · [旧版 0.x](#旧版本0x)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/tree-dark.png">
@@ -277,6 +277,17 @@ web/             页面模板、样式与脚本（编译进程序）
 scripts/         打包脚本
 docs/images/     文档截图
 ```
+
+## 旧版本（0.x）
+
+1.0 是重写：只有一种节点，不再有实体、关系图、泳道等 0.x 的概念，也不再兼容 0.x 的数据目录，但 **0.x 的备份可以直接导入**（见上面的快速开始）。0.x 这条线完整保留，需要时仍可使用：
+
+| | 说明 | 入口 |
+|---|---|---|
+| **v0.6.0** | 0.x 的最后一版：记忆、实体、关系图、时间泳道，以及按层汇总的记忆树 | [下载 v0.6.0](https://github.com/danchar12138/recallport/releases/tag/v0.6.0) · [`release/v0.6.0` 分支](https://github.com/danchar12138/recallport/tree/release/v0.6.0)（含当时的 README） |
+| 更早的版本 | v0.3.0 – v0.5.0 | [Releases](https://github.com/danchar12138/recallport/releases) · [更新日志](CHANGELOG.md) |
+
+0.x 不再更新。
 
 ## 参与贡献
 

@@ -17,7 +17,7 @@ The AI turns what is worth keeping from a conversation into nodes and summarizes
 ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-0f766e)
 ![Rust](https://img.shields.io/badge/built%20with-Rust-0f766e)
 
-[简体中文](README.md) · **English** · [Download](https://github.com/danchar12138/recallport/releases/latest) · [Changelog](CHANGELOG.md)
+[简体中文](README.md) · **English** · [Download](https://github.com/danchar12138/recallport/releases/latest) · [Changelog](CHANGELOG.md) · [Older 0.x](#older-versions-0x)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/tree-dark.png">
@@ -279,6 +279,17 @@ web/             page templates, styles and scripts (compiled into the program)
 scripts/         packaging script
 docs/images/     documentation screenshots
 ```
+
+## Older versions (0.x)
+
+1.0 is a rewrite: one kind of node, and no more entities, relationship graph or timeline lanes from 0.x. It does not read a 0.x data directory, but **a 0.x backup imports directly** (see Quick start above). The 0.x line is kept intact if you still need it:
+
+| | What it is | Where |
+|---|---|---|
+| **v0.6.0** | The last 0.x release: memories, entities, relationship graph, timeline lanes and the layered summary tree | [Download v0.6.0](https://github.com/danchar12138/recallport/releases/tag/v0.6.0) · [`release/v0.6.0` branch](https://github.com/danchar12138/recallport/tree/release/v0.6.0) (with its README of the time) |
+| Earlier | v0.3.0 – v0.5.0 | [Releases](https://github.com/danchar12138/recallport/releases) · [Changelog](CHANGELOG.md) |
+
+0.x is no longer updated.
 
 ## Contributing
 
