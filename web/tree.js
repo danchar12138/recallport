@@ -687,7 +687,7 @@
     return node;
   };
   const updateCrumbs = () => {
-    const at = focus || viewTile();
+    const at = focus || selected || viewTile();
     const key = `${at.id}|${focus ? 'f' : ''}`;
     if (key === crumbKey) return;
     crumbKey = key;
