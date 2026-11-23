@@ -2,6 +2,7 @@
    theme buttons, copy buttons, two-step confirmation, double-submit guard.
    Markup contract:
      <button data-theme-set="auto|light|dark">
+     <button data-nav-pin>      (tree page: keep the navigation open instead of a narrow rail)
      <button data-copy="text"> or <button data-copy-target="#id">    (shows 已复制)
      <button data-confirm="question"> / <form data-confirm="question">  (inline two-step confirmation) */
 (() => {
@@ -28,6 +29,21 @@
     window.dispatchEvent(new Event('rp-theme'));
   });
   markTheme();
+
+  /* ---------- the navigation of the tree page: a narrow rail, or pinned open ---------- */
+  const markNav = () => {
+    for (const btn of $$('[data-nav-pin]')) btn.setAttribute('aria-pressed', String(root.dataset.nav === 'wide'));
+  };
+  doc.addEventListener('click', event => {
+    if (!event.target.closest?.('[data-nav-pin]')) return;
+    const wide = root.dataset.nav !== 'wide';
+    if (wide) root.dataset.nav = 'wide'; else root.removeAttribute('data-nav');
+    try {
+      if (wide) localStorage.setItem('rp-nav', 'wide'); else localStorage.removeItem('rp-nav');
+    } catch { /* private mode: the choice just lasts for this page */ }
+    markNav();
+  });
+  markNav();
 
   /* ---------- copy ---------- */
   const copyText = async text => {

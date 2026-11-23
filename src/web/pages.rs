@@ -17,6 +17,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
     routing::{get, post},
 };
+use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use tower::ServiceExt;
@@ -53,7 +54,11 @@ pub(super) fn routes() -> Router<Web> {
         .route("/trash/{id}/purge", post(purge_node))
         .route("/file/{hash}", get(file))
         .route("/api/outline", get(api_outline))
-        .route("/api/node/{id}", get(api_node))
+        .route("/api/node", post(api_create))
+        .route("/api/node/{id}", get(api_node).post(api_update))
+        .route("/api/node/{id}/move", post(api_move))
+        .route("/api/node/{id}/delete", post(api_delete))
+        .route("/api/node/{id}/touch", post(api_touch))
         .route("/api/search", get(api_search))
 }
 
@@ -86,11 +91,15 @@ fn actor_label(actor: &str) -> String {
 /// spaces do. A single tag that contains a space is written with a trailing comma.
 fn parse_tags(text: &str) -> Vec<String> {
     let commas = text.contains([',', '，', '、', ';', '；', '\n']);
-    let parts: Vec<&str> = if commas {
-        text.split([',', '，', '、', ';', '；', '\n']).collect()
+    if commas {
+        clean_tags(text.split([',', '，', '、', ';', '；', '\n']))
     } else {
-        text.split_whitespace().collect()
-    };
+        clean_tags(text.split_whitespace())
+    }
+}
+
+/// Tags without the leading `#`, blanks and repeats.
+fn clean_tags<'a>(parts: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut out: Vec<String> = vec![];
     for part in parts {
         let tag = part.trim().trim_start_matches('#').trim().to_owned();
@@ -652,7 +661,26 @@ fn node_model(node: &NodeView, error: Option<String>, notice: Option<String>) ->
     model
 }
 
-fn render_node(
+/// The family of a node for its page: its siblings around it and what is under it, two levels down.
+async fn family(w: &Web, node: &NodeView) -> Value {
+    let id = node.id.clone();
+    let (place, below) = w
+        .service
+        .run(move |s| {
+            (
+                s.place(&id).unwrap_or_default(),
+                s.outline(Some(&id), 2).unwrap_or_default(),
+            )
+        })
+        .await
+        .unwrap_or_default();
+    json!({
+        "place": place,
+        "below": below.into_iter().next(),
+    })
+}
+
+async fn render_node(
     w: &Web,
     node: &NodeView,
     error: Option<String>,
@@ -662,7 +690,11 @@ fn render_node(
         .attachments
         .iter()
         .any(|a| attachment_kind(a) == "pdf" && a.available);
-    let mut response = w.render(node_model(node, error, notice));
+    let mut model = node_model(node, error, notice);
+    if !node.deleted {
+        model["Family"] = family(w, node).await;
+    }
+    let mut response = w.render(model);
     if pdf {
         response.headers_mut().insert(
             header::CONTENT_SECURITY_POLICY,
@@ -686,6 +718,53 @@ async fn load(w: &Web, id: &str) -> Result<NodeView> {
     w.service.run(move |s| s.get(&id)).await?
 }
 
+// The changes themselves: the page forms and the JSON routes both go through these.
+
+async fn do_touch(w: &Web, id: &str, version: Option<u32>) -> Result<NodeView> {
+    let id = id.to_owned();
+    w.service
+        .run(move |s| s.touch(&id, version, ACTOR))
+        .await
+        .and_then(|r| r)
+}
+
+async fn do_move(w: &Web, id: &str, to: Option<String>) -> Result<()> {
+    let id = id.to_owned();
+    w.service
+        .run(move |s| s.move_nodes(&[id], to.as_deref(), ACTOR))
+        .await
+        .and_then(|r| r)
+}
+
+/// Returns how many children moved up.
+async fn do_delete(w: &Web, id: &str, version: Option<u32>, reason: &str) -> Result<usize> {
+    let (id, reason) = (id.to_owned(), reason.to_owned());
+    w.service
+        .run(move |s| s.delete(&id, version, &reason, ACTOR))
+        .await
+        .and_then(|r| r)
+}
+
+async fn do_update(
+    w: &Web,
+    id: &str,
+    version: Option<u32>,
+    input: UpdateInput,
+) -> Result<NodeView> {
+    let id = id.to_owned();
+    w.service
+        .run(move |s| s.update(&id, version, input, ACTOR))
+        .await
+        .and_then(|r| r)
+}
+
+async fn do_write(w: &Web, input: WriteInput) -> Result<NodeView> {
+    w.service
+        .run(move |s| s.write(input, ACTOR))
+        .await
+        .and_then(|r| r)
+}
+
 async fn node_page(
     State(w): State<Web>,
     Path(id): Path<String>,
@@ -696,7 +775,7 @@ async fn node_page(
             let notice = p
                 .get("ok")
                 .and_then(|k| ok_notice(k, p.get("moved").map(String::as_str)));
-            render_node(&w, &node, None, notice)
+            render_node(&w, &node, None, notice).await
         }
         Err(e) => missing_node(&w, &e),
     }
@@ -708,12 +787,7 @@ async fn touch_node(
     Form(f): Form<HashMap<String, String>>,
 ) -> Response {
     let version = f.get("version").and_then(|v| v.parse().ok());
-    let target = id.clone();
-    let done = w
-        .service
-        .run(move |s| s.touch(&target, version, ACTOR))
-        .await;
-    match done.and_then(|r| r) {
+    match do_touch(&w, &id, version).await {
         Ok(_) => Redirect::to(&format!("/node/{id}?ok=touched")).into_response(),
         Err(e) => failed_action(&w, &id, &e).await,
     }
@@ -738,12 +812,7 @@ async fn move_node(
         .await;
     }
     let to = if top { None } else { to };
-    let target = id.clone();
-    let done = w
-        .service
-        .run(move |s| s.move_nodes(&[target], to.as_deref(), ACTOR))
-        .await;
-    match done.and_then(|r| r) {
+    match do_move(&w, &id, to).await {
         Ok(()) => Redirect::to(&format!("/node/{id}?ok=moved")).into_response(),
         Err(e) => failed_action(&w, &id, &e).await,
     }
@@ -759,12 +828,7 @@ async fn delete_node(
         .get("reason")
         .map(|r| r.trim().to_owned())
         .unwrap_or_default();
-    let target = id.clone();
-    let done = w
-        .service
-        .run(move |s| s.delete(&target, version, &reason, ACTOR))
-        .await;
-    match done.and_then(|r| r) {
+    match do_delete(&w, &id, version, &reason).await {
         Ok(moved) => Redirect::to(&format!("/trash?ok=deleted&moved={moved}")).into_response(),
         Err(e) => failed_action(&w, &id, &e).await,
     }
@@ -774,7 +838,7 @@ async fn delete_node(
 async fn failed_action(w: &Web, id: &str, error: &anyhow::Error) -> Response {
     match load(w, id).await {
         Ok(node) => with_status(
-            render_node(w, &node, Some(failure(error)), None),
+            render_node(w, &node, Some(failure(error)), None).await,
             StatusCode::BAD_REQUEST,
         ),
         Err(_) => missing_node(w, error),
@@ -979,10 +1043,7 @@ async fn create_node(State(w): State<Web>, multipart: Multipart) -> Response {
                 adopt: vec![],
                 attachments: form.files.clone(),
             };
-            w.service
-                .run(move |s| s.write(input, ACTOR))
-                .await
-                .and_then(|r| r)
+            do_write(&w, input).await
         }
     };
     match result {
@@ -1061,11 +1122,7 @@ async fn save_node(State(w): State<Web>, Path(id): Path<String>, multipart: Mult
             if is_unchanged(&input) {
                 return Redirect::to(&format!("/node/{id}?ok=same")).into_response();
             }
-            let (target, version) = (id.clone(), form.version);
-            w.service
-                .run(move |s| s.update(&target, version, input, ACTOR))
-                .await
-                .and_then(|r| r)
+            do_update(&w, &id, form.version, input).await
         }
     };
     match result {
@@ -1229,10 +1286,199 @@ async fn api_outline(State(w): State<Web>, Query(q): Query<HashMap<String, Strin
     }
 }
 
+/// An error for a script: the reason, and whether it is because the node was changed by someone else meanwhile.
+fn api_error(error: &anyhow::Error) -> Response {
+    let message = failure(error);
+    let conflict = message.contains("已被改动");
+    let status = if conflict {
+        StatusCode::CONFLICT
+    } else if message.contains("没有这个节点") {
+        StatusCode::NOT_FOUND
+    } else {
+        StatusCode::BAD_REQUEST
+    };
+    (
+        status,
+        Json(json!({"error": message, "conflict": conflict})),
+    )
+        .into_response()
+}
+
+/// A node as the tree page shows it: the node page's words for each revision, attachments with their kind, the
+/// start of each child's text and where the node stands among its siblings.
+async fn detail(w: &Web, node: &NodeView) -> Value {
+    let id = node.id.clone();
+    let kids: Vec<String> = node.children.iter().map(|c| c.id.clone()).collect();
+    let (place, leads) = w
+        .service
+        .run(move |s| (s.place(&id).unwrap_or_default(), s.leads(&kids, 90)))
+        .await
+        .unwrap_or_default();
+    let mut value = json!(node);
+    value["history"] = json!(revision_values(&node.revisions));
+    value["attachments"] = json!(attachment_values(&node.attachments));
+    value["siblings"] = json!(place);
+    if let Some(object) = value.as_object_mut() {
+        object.remove("revisions");
+    }
+    if let Some(Value::Array(list)) = value.get_mut("children") {
+        for (child, lead) in list.iter_mut().zip(leads) {
+            child["snippet"] = json!(lead);
+        }
+    }
+    value
+}
+
 async fn api_node(State(w): State<Web>, Path(id): Path<String>) -> Response {
     match load(&w, &id).await {
-        Ok(node) => Json(node).into_response(),
-        Err(e) => (StatusCode::NOT_FOUND, Json(json!({"error": failure(&e)}))).into_response(),
+        Ok(node) => Json(detail(&w, &node).await).into_response(),
+        Err(e) => api_error(&e),
+    }
+}
+
+/// What a script sends to write a new memory.
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct Fresh {
+    title: String,
+    content: String,
+    tags: Vec<String>,
+    parent: Option<String>,
+    occurred: String,
+    sources: Vec<String>,
+}
+
+async fn api_create(State(w): State<Web>, Json(body): Json<Fresh>) -> Response {
+    let occurred = match check_date(&body.occurred) {
+        Ok(occurred) => occurred,
+        Err(e) => return api_error(&anyhow::anyhow!(e)),
+    };
+    let input = WriteInput {
+        title: body.title,
+        content: body.content,
+        tags: clean_tags(body.tags.iter().map(String::as_str)),
+        parent: body
+            .parent
+            .map(|p| p.trim().to_owned())
+            .filter(|p| !p.is_empty()),
+        sources: lines(&body.sources.join("\n")),
+        occurred,
+        ..WriteInput::default()
+    };
+    match do_write(&w, input).await {
+        Ok(node) => Json(detail(&w, &node).await).into_response(),
+        Err(e) => api_error(&e),
+    }
+}
+
+/// What a script sends to change a node: `version` is the one it read, and only the fields present change.
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct Change {
+    version: Option<u32>,
+    title: Option<String>,
+    content: Option<String>,
+    tags: Option<Vec<String>>,
+    occurred: Option<String>,
+    sources: Option<Vec<String>>,
+}
+
+async fn api_update(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Json(change): Json<Change>,
+) -> Response {
+    let node = match load(&w, &id).await {
+        Ok(n) if !n.deleted => n,
+        Ok(_) => return api_error(&anyhow::anyhow!("这个节点在回收站里，先恢复它再改")),
+        Err(e) => return api_error(&e),
+    };
+    let mut form = form_of(&node);
+    if let Some(title) = change.title {
+        form.title = title;
+    }
+    if let Some(content) = change.content {
+        form.content = content;
+    }
+    if let Some(tags) = change.tags {
+        form.tags = tags_text(&clean_tags(tags.iter().map(String::as_str)));
+    }
+    if let Some(occurred) = change.occurred {
+        form.occurred = occurred;
+    }
+    if let Some(sources) = change.sources {
+        form.sources = sources.join("\n");
+    }
+    let occurred = match check_date(&form.occurred) {
+        Ok(occurred) => occurred,
+        Err(e) => return api_error(&anyhow::anyhow!(e)),
+    };
+    let input = update_input(&node, &form, occurred);
+    if is_unchanged(&input) {
+        return Json(detail(&w, &node).await).into_response();
+    }
+    match do_update(&w, &id, change.version, input).await {
+        Ok(node) => Json(detail(&w, &node).await).into_response(),
+        Err(e) => api_error(&e),
+    }
+}
+
+async fn api_touch(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Json(change): Json<Change>,
+) -> Response {
+    match do_touch(&w, &id, change.version).await {
+        Ok(node) => Json(detail(&w, &node).await).into_response(),
+        Err(e) => api_error(&e),
+    }
+}
+
+/// `parent` is the summary to put the node under; none (or empty) puts it at the top.
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct Destination {
+    parent: Option<String>,
+}
+
+async fn api_move(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Json(to): Json<Destination>,
+) -> Response {
+    let to = to
+        .parent
+        .map(|p| p.trim().to_owned())
+        .filter(|p| !p.is_empty());
+    if let Err(e) = do_move(&w, &id, to).await {
+        return api_error(&e);
+    }
+    match load(&w, &id).await {
+        Ok(node) => Json(detail(&w, &node).await).into_response(),
+        Err(e) => api_error(&e),
+    }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct Removal {
+    version: Option<u32>,
+    reason: String,
+}
+
+/// Answers with how many children moved up and the node's parent, which is where the page goes next.
+async fn api_delete(
+    State(w): State<Web>,
+    Path(id): Path<String>,
+    Json(removal): Json<Removal>,
+) -> Response {
+    let parent = match load(&w, &id).await {
+        Ok(node) => node.parent,
+        Err(e) => return api_error(&e),
+    };
+    match do_delete(&w, &id, removal.version, &removal.reason).await {
+        Ok(moved) => Json(json!({"moved": moved, "parent": parent})).into_response(),
+        Err(e) => api_error(&e),
     }
 }
 
@@ -1249,6 +1495,10 @@ async fn api_search(State(w): State<Web>, Query(p): Query<HashMap<String, String
             .clamp(1, 50),
         scope: p
             .get("scope")
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty()),
+        tag: p
+            .get("tag")
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty()),
         expand: 0,
@@ -1268,6 +1518,363 @@ async fn api_search(State(w): State<Web>, Query(p): Query<HashMap<String, String
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        app::App,
+        embedding::{self, Embed},
+    };
+    use axum::{extract::Request as AxumRequest, http::Method};
+    use std::sync::Arc;
+
+    struct Words;
+    impl Embed for Words {
+        fn encode(&self, input: &str) -> Result<Vec<f32>> {
+            let mut v = vec![0.0f32; embedding::DIMENSIONS as usize];
+            let at = input.bytes().fold(7usize, |h, b| {
+                h.wrapping_mul(31).wrapping_add(usize::from(b))
+            }) % v.len();
+            v[at] = 1.0;
+            Ok(v)
+        }
+    }
+
+    /// A library behind the real router, called without a socket.
+    struct Site {
+        router: Router,
+        host: String,
+        service: Arc<Service>,
+        _dir: tempfile::TempDir,
+    }
+
+    impl Site {
+        fn open() -> Site {
+            let dir = tempfile::tempdir().unwrap();
+            let service = Service::open(dir.path(), Arc::new(Words)).unwrap();
+            let address: std::net::SocketAddr = "127.0.0.1:3999".parse().unwrap();
+            let router =
+                crate::web::router(service.clone(), address, App::new(false, None)).unwrap();
+            Site {
+                router,
+                host: address.to_string(),
+                service,
+                _dir: dir,
+            }
+        }
+
+        fn say(&self, title: &str, content: &str, parent: Option<&str>) -> NodeView {
+            self.service
+                .write(
+                    WriteInput {
+                        title: title.into(),
+                        content: content.into(),
+                        parent: parent.map(str::to_owned),
+                        ..Default::default()
+                    },
+                    "test",
+                )
+                .unwrap()
+        }
+
+        async fn send(
+            &self,
+            method: Method,
+            uri: &str,
+            content_type: Option<&str>,
+            headers: &[(&str, &str)],
+            body: String,
+        ) -> (StatusCode, Value) {
+            let mut request = AxumRequest::builder().method(method).uri(uri);
+            if !headers.iter().any(|(name, _)| *name == "host") {
+                request = request.header(header::HOST, &self.host);
+            }
+            if let Some(t) = content_type {
+                request = request.header(header::CONTENT_TYPE, t);
+            }
+            for (name, value) in headers {
+                request = request.header(*name, *value);
+            }
+            let response = self
+                .router
+                .clone()
+                .oneshot(request.body(Body::from(body)).unwrap())
+                .await
+                .unwrap();
+            let status = response.status();
+            let bytes = axum::body::to_bytes(response.into_body(), 1 << 24)
+                .await
+                .unwrap();
+            (
+                status,
+                serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+            )
+        }
+
+        async fn post(&self, uri: &str, body: Value) -> (StatusCode, Value) {
+            self.send(
+                Method::POST,
+                uri,
+                Some("application/json"),
+                &[],
+                body.to_string(),
+            )
+            .await
+        }
+
+        async fn get(&self, uri: &str) -> (StatusCode, Value) {
+            self.send(Method::GET, uri, None, &[], String::new()).await
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_tree_page_writes_through_json_and_the_service_keeps_its_rules() {
+        let site = Site::open();
+        let top = site.say("顶层", "顶层结论", None);
+        let (status, made) = site
+            .post(
+                "/api/node",
+                json!({"content": "树页里写的一条", "title": "", "tags": ["#甲", "乙", "甲"], "parent": top.id, "occurred": "2025-03"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "{made}");
+        let id = made["id"].as_str().unwrap().to_owned();
+        assert_eq!(made["parent"], json!(top.id));
+        assert_eq!(made["tags"], json!(["甲", "乙"]));
+        assert_eq!(made["occurred"], "2025-03");
+        // it is written in the name of the web pages
+        assert_eq!(made["history"][0]["who"], "你");
+        // a bad date or a missing parent is refused with the reason
+        let (status, body) = site
+            .post("/api/node", json!({"content": "x", "occurred": "昨天"}))
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(body["error"].as_str().unwrap().contains("时间"), "{body}");
+        let (status, _) = site
+            .post("/api/node", json!({"content": "x", "parent": "nope"}))
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+
+        // an edit with the version that was read; only what differs is written
+        let (status, edited) = site
+            .post(
+                &format!("/api/node/{id}"),
+                json!({"version": 1, "content": "改过的内容", "tags": ["乙"]}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "{edited}");
+        assert_eq!(edited["version"], 2);
+        assert_eq!(edited["content"], "改过的内容");
+        assert_eq!(edited["tags"], json!(["乙"]));
+        assert_eq!(edited["history"].as_array().unwrap().len(), 2);
+        assert!(edited.get("revisions").is_none());
+        let (_, same) = site
+            .post(
+                &format!("/api/node/{id}"),
+                json!({"version": 2, "content": "改过的内容"}),
+            )
+            .await;
+        assert_eq!(same["version"], 2, "nothing changed, so no new version");
+        // someone else changed it meanwhile: the old version is a conflict, and the page can tell
+        let (status, stale) = site
+            .post(
+                &format!("/api/node/{id}"),
+                json!({"version": 1, "content": "晚了"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert_eq!(stale["conflict"], true);
+        assert!(stale["error"].as_str().unwrap().contains("已被改动"));
+        let (status, _) = site
+            .post("/api/node/nope", json!({"version": 1, "content": "x"}))
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        // a title cannot be taken off a summary
+        let (status, body) = site
+            .post(
+                &format!("/api/node/{}", top.id),
+                json!({"version": 1, "title": ""}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+        // touch: checked and still right, also with the version rule
+        let (status, touched) = site
+            .post(&format!("/api/node/{id}/touch"), json!({"version": 2}))
+            .await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(touched["version"], 3);
+        let (status, _) = site
+            .post(&format!("/api/node/{id}/touch"), json!({"version": 2}))
+            .await;
+        assert_eq!(status, StatusCode::CONFLICT);
+
+        // move: under another summary, to the top, never into itself or its own descendants
+        let other = site.say("另一个", "另一个结论", None);
+        let (status, moved) = site
+            .post(&format!("/api/node/{id}/move"), json!({"parent": other.id}))
+            .await;
+        assert_eq!(status, StatusCode::OK, "{moved}");
+        assert_eq!(moved["parent"], json!(other.id));
+        assert_eq!(moved["path"][0]["id"], json!(other.id));
+        let child = site.say("", "它下面的一条", Some(&other.id));
+        let (status, cycle) = site
+            .post(
+                &format!("/api/node/{}/move", other.id),
+                json!({"parent": child.id}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{cycle}");
+        assert!(cycle["error"].as_str().unwrap().contains("子孙"), "{cycle}");
+        let (status, _) = site
+            .post(
+                &format!("/api/node/{}/move", other.id),
+                json!({"parent": other.id}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        let (status, _) = site
+            .post(&format!("/api/node/{id}/move"), json!({"parent": "nope"}))
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        let (status, up) = site
+            .post(&format!("/api/node/{id}/move"), json!({"parent": null}))
+            .await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(up["parent"].is_null());
+        let (status, _) = site
+            .post("/api/node/nope/move", json!({"parent": null}))
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+
+        // the node as the tree page reads it
+        let (status, read) = site.get(&format!("/api/node/{}", other.id)).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(read["children"][0]["snippet"], "它下面的一条");
+        assert_eq!(read["siblings"]["count"], 3, "{read}");
+        assert_eq!(read["history"][0]["label"], "新增");
+        assert!(read.get("revisions").is_none());
+        let (status, _) = site.get("/api/node/nope").await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+
+        // delete: the reason is required, the version must be current, the children move up and the parent is told
+        let (status, _) = site
+            .post(
+                &format!("/api/node/{}/delete", other.id),
+                json!({"version": 1, "reason": " "}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        let (status, _) = site
+            .post(
+                &format!("/api/node/{}/delete", other.id),
+                json!({"version": 9, "reason": "重复"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        let (status, gone) = site
+            .post(
+                &format!("/api/node/{}/delete", child.id),
+                json!({"version": 1, "reason": "记错了"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "{gone}");
+        assert_eq!(gone["moved"], 0);
+        assert_eq!(gone["parent"], json!(other.id));
+        let current = site.service.get(&other.id).unwrap().version;
+        let (status, gone) = site
+            .post(
+                &format!("/api/node/{}/delete", other.id),
+                json!({"version": current, "reason": "重复了"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "{gone}");
+        assert!(gone["parent"].is_null());
+        assert!(site.service.get(&other.id).unwrap().deleted);
+        let (status, _) = site
+            .post(
+                &format!("/api/node/{}/delete", other.id),
+                json!({"version": current, "reason": "再删"}),
+            )
+            .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_json_routes_keep_the_local_only_rules() {
+        let site = Site::open();
+        let node = site.say("", "一条记忆", None);
+        let uri = format!("/api/node/{}/touch", node.id);
+        let body = json!({"version": 1}).to_string();
+        // another site's page cannot send it, and neither can another host name (DNS rebinding)
+        for headers in [
+            &[("origin", "http://evil.example")][..],
+            &[("sec-fetch-site", "cross-site")][..],
+            &[("host", "evil.example:3999")][..],
+        ] {
+            let (status, _) = site
+                .send(
+                    Method::POST,
+                    &uri,
+                    Some("application/json"),
+                    headers,
+                    body.clone(),
+                )
+                .await;
+            assert_eq!(status, StatusCode::FORBIDDEN, "{headers:?}");
+        }
+        // a form-style body is not accepted as JSON
+        let (status, _) = site
+            .send(Method::POST, &uri, Some("text/plain"), &[], body.clone())
+            .await;
+        assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+        assert_eq!(site.service.get(&node.id).unwrap().version, 1);
+        let (status, _) = site.post(&uri, json!({"version": 1})).await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn search_can_be_narrowed_to_a_tag_and_the_node_page_shows_the_family() {
+        let site = Site::open();
+        let top = site.say("顶层", "顶层结论", None);
+        let (_, a) = site
+            .post(
+                "/api/node",
+                json!({"content": "甲 记忆", "tags": ["红"], "parent": top.id, "occurred": "2025-01-01"}),
+            )
+            .await;
+        let (_, b) = site
+            .post(
+                "/api/node",
+                json!({"content": "乙 记忆", "tags": ["蓝"], "parent": top.id, "occurred": "2025-02-01"}),
+            )
+            .await;
+        let (status, found) = site
+            .get("/api/search?q=%E8%AE%B0%E5%BF%86&tag=%E7%BA%A2")
+            .await;
+        assert_eq!(status, StatusCode::OK);
+        let ids: Vec<&str> = found["hits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|h| h["id"].as_str().unwrap())
+            .collect();
+        assert_eq!(ids, [a["id"].as_str().unwrap()]);
+        // the first of two children has the second after it, and the second has the first before it
+        let (_, first) = site
+            .get(&format!("/api/node/{}", a["id"].as_str().unwrap()))
+            .await;
+        assert_eq!(first["siblings"]["after"][0]["id"], b["id"]);
+        assert_eq!(first["siblings"]["before"], json!([]));
+        let (_, second) = site
+            .get(&format!("/api/node/{}", b["id"].as_str().unwrap()))
+            .await;
+        assert_eq!(
+            (
+                second["siblings"]["index"].as_u64(),
+                second["siblings"]["count"].as_u64()
+            ),
+            (Some(1), Some(2))
+        );
+        assert_eq!(second["siblings"]["before"][0]["id"], a["id"]);
+    }
 
     #[test]
     fn tags_split_on_commas_or_spaces() {

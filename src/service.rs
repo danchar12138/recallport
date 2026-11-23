@@ -202,6 +202,22 @@ pub struct MaintenanceView {
     pub gaps: Option<GapsView>,
 }
 
+/// Where a node stands among the nodes with the same parent (the top-level nodes for one without a parent), in
+/// the order the tree shows them: by date.
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct Place {
+    /// How many nodes there are with this parent, itself included.
+    pub count: usize,
+    /// Its own position, from 0.
+    pub index: usize,
+    /// The nearest ones before it (the nearest last) and after it (the nearest first).
+    pub before: Vec<Brief>,
+    pub after: Vec<Brief>,
+}
+
+/// How many neighbours on each side `Service::place` lists.
+const NEIGHBOURS: usize = 4;
+
 /// A node of the whole tree in the shape the zoomable picture wants.
 #[derive(Clone, Debug, Serialize)]
 pub struct OutlineNode {
@@ -282,6 +298,9 @@ pub struct UpdateInput {
     /// Hashes of attachments to take off.
     pub remove_attachments: Vec<String>,
 }
+
+/// How much of its text a node carries in the outline: enough to fill a card on the tree page.
+pub const OUTLINE_TEXT: usize = 600;
 
 fn snippet(text: &str, chars: usize) -> String {
     let text = text.trim();
@@ -423,6 +442,43 @@ impl Service {
                 .collect(),
             revisions,
         })
+    }
+
+    /// The place of a node among its siblings.
+    pub fn place(&self, id: &str) -> Result<Place> {
+        let t = self.read();
+        let n = t.live(id).with_context(|| format!("没有这个节点：{id}"))?;
+        let ids: Vec<String> = match n.parent.as_deref() {
+            Some(parent) => t.children(parent).to_vec(),
+            None => {
+                let mut roots: Vec<&Node> = t.nodes().filter(|o| o.parent.is_none()).collect();
+                roots.sort_by(|a, b| a.occurred.cmp(&b.occurred).then_with(|| a.id.cmp(&b.id)));
+                roots.into_iter().map(|o| o.id.clone()).collect()
+            }
+        };
+        let index = ids.iter().position(|o| o == id).unwrap_or(0);
+        let after_from = (index + 1).min(ids.len());
+        Ok(Place {
+            count: ids.len(),
+            index,
+            before: self.briefs(&t, &ids[index.saturating_sub(NEIGHBOURS)..index]),
+            after: self.briefs(
+                &t,
+                &ids[after_from..(after_from + NEIGHBOURS).min(ids.len())],
+            ),
+        })
+    }
+
+    /// The start of the text of each node, in the order of `ids` (empty for one that is gone).
+    pub fn leads(&self, ids: &[String], chars: usize) -> Vec<String> {
+        let t = self.read();
+        ids.iter()
+            .map(|id| {
+                t.live(id)
+                    .map(|n| snippet(&n.content, chars))
+                    .unwrap_or_default()
+            })
+            .collect()
     }
 
     pub fn search(&self, opts: &SearchOpts) -> Result<SearchResult> {
@@ -681,7 +737,7 @@ impl Service {
             Some(OutlineNode {
                 id: n.id.clone(),
                 title: n.label(),
-                snippet: snippet(&n.content, 160),
+                snippet: snippet(&n.content, OUTLINE_TEXT),
                 layer: layers.get(id).copied().unwrap_or(0),
                 size: 1 + kids.iter().map(|c| c.size).sum::<usize>(),
                 from,

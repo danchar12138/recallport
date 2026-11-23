@@ -1,4 +1,10 @@
 {% from "parts.html" import icon, layer, tags, node_link %}
+{# One node of the family tree, with what is under it; a node whose children were not sent opens by asking for them (node.js). #}
+{% macro fam_node(c, depth) %}
+<li>{% if c.children %}<details{% if depth < 2 %} open{% endif %}><summary><a class="node-link" href="/node/{{ c.id }}">{{ layer(c.layer) }}<span class="node-text">{{ c.title or "（没有文字）" }}</span></a><small class="muted">下面 {{ c.size - 1 }} 条</small></summary><ul>{% for k in c.children %}{{ fam_node(k, depth + 1) }}{% endfor %}</ul></details>
+{% elif c.children is none %}<details data-lazy="{{ c.id }}"><summary><a class="node-link" href="/node/{{ c.id }}">{{ layer(c.layer) }}<span class="node-text">{{ c.title or "（没有文字）" }}</span></a><small class="muted">下面 {{ c.size - 1 }} 条</small></summary><ul></ul></details>
+{% else %}<a class="node-link" href="/node/{{ c.id }}">{{ layer(c.layer) }}<span class="node-text">{{ c.title or "（没有文字）" }}</span></a>{% endif %}</li>
+{% endmacro %}
 {% if not Node %}
 <div class="card"><div class="empty">{{ icon("search") }}<h3>找不到这个节点</h3><p>它可能已经被永久删除，或者链接不对。</p><div class="actions"><a class="btn btn-primary" href="/memories">去记忆页</a><a class="btn" href="/trash">看看回收站</a></div></div></div>
 {% else %}
@@ -32,7 +38,29 @@
     <a class="btn btn-primary" href="/node/{{ n.id }}/edit">{{ icon("edit") }}编辑</a>
     <form method="post" action="/node/{{ n.id }}/touch"><input type="hidden" name="version" value="{{ n.version }}"><button class="btn" type="submit" title="内容没问题的话，点这里告诉 AI 和以后的自己：我看过了，仍然正确">{{ icon("circle-check") }}确认仍然正确</button></form>
     <a class="btn" href="/node/new?parent={{ n.id }}">{{ icon("plus") }}新建子节点</a>
+    <a class="btn" href="/tree?focus={{ n.id }}">{{ icon("tree") }}在树里查看</a>
   </div>
+  {% endif %}
+
+  {% if Family %}
+  {% set place = Family.place %}
+  <section class="block" aria-labelledby="family-title">
+    <h2 id="family-title">在树里的位置 <span class="count">{% if n.parent %}同级 {{ place.count }} 条，这是第 {{ place.index + 1 }} 条{% else %}最上层{% endif %}{% if n.descendants %}，下面一共 {{ n.descendants }} 条{% endif %}</span></h2>
+    <ul class="family" data-family>
+      {% for p in n.path %}<li class="fam-anc"><a class="node-link" href="/node/{{ p.id }}">{{ layer(p.layer) }}<span class="node-text">{{ p.title }}</span></a><ul>{% endfor %}
+      {% if n.parent %}
+        {% if place.index > place.before|length %}<li class="fam-more muted">前面还有 {{ place.index - place.before|length }} 个同级</li>{% endif %}
+        {% for s in place.before %}<li class="fam-sib"><a class="node-link" href="/node/{{ s.id }}">{{ layer(s.layer) }}<span class="node-text">{{ s.title }}</span></a></li>{% endfor %}
+      {% endif %}
+      <li class="fam-here"><span class="fam-self" aria-current="page">{{ layer(n.layer) }}<span class="node-text">{{ n.label }}</span><small>这一条</small></span>
+        {% if Family.below and Family.below.children %}<ul>{% for c in Family.below.children %}{{ fam_node(c, 1) }}{% endfor %}</ul>{% endif %}</li>
+      {% if n.parent %}
+        {% for s in place.after %}<li class="fam-sib"><a class="node-link" href="/node/{{ s.id }}">{{ layer(s.layer) }}<span class="node-text">{{ s.title }}</span></a></li>{% endfor %}
+        {% if place.count - place.index - 1 > place.after|length %}<li class="fam-more muted">后面还有 {{ place.count - place.index - 1 - place.after|length }} 个同级</li>{% endif %}
+      {% endif %}
+      {% for p in n.path %}</ul></li>{% endfor %}
+    </ul>
+  </section>
   {% endif %}
 
   {% if n.children %}

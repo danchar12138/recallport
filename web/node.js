@@ -1,5 +1,6 @@
-/* The node page and the editor: picking a node by searching (move, references), tags as chips, the date field,
-   the character counter, file list. Every field also works as a plain form without this script. */
+/* The node page and the editor: the family tree that opens level by level, picking a node by searching (move,
+   references), tags as chips, the date field, the character counter, file list. Every field also works as a plain
+   form without this script. */
 (() => {
   'use strict';
   const doc = document;
@@ -24,6 +25,43 @@
     badge.dataset.layer = String(Math.min(layer, 5));
     return badge;
   };
+
+  /* ---------- the family tree: a node whose children were not sent asks for them when it is opened ---------- */
+  const famItem = node => {
+    const link = make('a', 'node-link');
+    link.href = `/node/${encodeURIComponent(node.id)}`;
+    link.append(layerBadge(node.layer), make('span', 'node-text', node.title || '（没有文字）'));
+    const li = make('li');
+    if (node.children && !node.children.length) { li.append(link); return li; }
+    const fold = make('details');
+    fold.dataset.lazy = node.id;
+    const kids = make('ul');
+    const summary = make('summary');
+    summary.append(link, make('small', 'muted', `下面 ${node.size - 1} 条`));
+    fold.append(summary, kids);
+    li.append(fold);
+    return li;
+  };
+  const lazyFold = async fold => {
+    const kids = $('ul', fold);
+    if (fold.dataset.loaded || kids.children.length) return;
+    fold.dataset.loaded = '1';
+    kids.replaceChildren(make('li', 'muted', '正在取……'));
+    try {
+      const response = await fetch(`/api/outline?root=${encodeURIComponent(fold.dataset.lazy)}&depth=1`);
+      const list = await response.json();
+      if (!response.ok) throw new Error();
+      kids.replaceChildren(...((list[0] && list[0].children) || []).map(famItem));
+    } catch {
+      delete fold.dataset.loaded;
+      kids.replaceChildren(make('li', 'muted', '没取到，再点一下试试'));
+    }
+  };
+  const family = $('[data-family]');
+  if (family) {
+    // one listener for the folds that are there and the ones made later
+    family.addEventListener('toggle', event => { if (event.target.dataset && event.target.dataset.lazy && event.target.open) lazyFold(event.target); }, true);
+  }
 
   /* ---------- pick a node by typing a few words ---------- */
   // `input` is the search box, `list` the (hidden) results list; `onPick({id, text, layer})` gets the choice.

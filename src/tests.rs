@@ -512,3 +512,58 @@ fn the_outline_is_cut_at_the_depth_asked_for_and_the_rest_is_fetched_by_root() {
     assert!(s.outline(Some("nope"), 1).is_err());
     assert_eq!(s.outline(None, 9).unwrap()[0].id, top.id);
 }
+
+#[test]
+fn an_outline_node_carries_enough_text_to_fill_a_card_and_a_node_knows_its_neighbours() {
+    let dir = tempfile::tempdir().unwrap();
+    let s = open(dir.path());
+    let long = "字".repeat(700);
+    let leaf = |text: &str, day: &str, parent: Option<&str>| {
+        s.write(
+            WriteInput {
+                content: text.into(),
+                occurred: day.into(),
+                parent: parent.map(str::to_owned),
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap()
+    };
+    let top = s
+        .write(
+            WriteInput {
+                title: "顶层".into(),
+                content: "顶层结论".into(),
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    let (a, b, c) = (
+        leaf(&long, "2025-01-01", Some(&top.id)),
+        leaf("乙", "2025-02-01", Some(&top.id)),
+        leaf("丙", "2025-03-01", Some(&top.id)),
+    );
+    let kids = s.outline(Some(&top.id), 1).unwrap()[0]
+        .children
+        .clone()
+        .unwrap();
+    let first = kids.iter().find(|k| k.id == a.id).unwrap();
+    // 600 characters and an ellipsis; a short text comes whole
+    assert_eq!(first.snippet.chars().count(), 601);
+    assert!(first.snippet.ends_with('…'));
+    assert_eq!(kids.iter().find(|k| k.id == b.id).unwrap().snippet, "乙");
+    assert_eq!(s.leads(&[a.id.clone(), "nope".into()], 5)[0], "字字字字字…");
+    assert_eq!(s.leads(&["nope".into()], 5), [""]);
+
+    let at = s.place(&b.id).unwrap();
+    assert_eq!((at.count, at.index), (3, 1));
+    assert_eq!(at.before[0].id, a.id);
+    assert_eq!(at.after[0].id, c.id);
+    // the nodes without a parent are neighbours of each other
+    assert_eq!(s.place(&top.id).unwrap().count, 1);
+    let lone = leaf("孤立", "2025-04-01", None);
+    assert_eq!(s.place(&lone.id).unwrap().before[0].id, top.id);
+    assert!(s.place("nope").is_err());
+}

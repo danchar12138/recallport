@@ -1,8 +1,11 @@
-/* The whole memory tree as one zoomable picture (a treemap on a canvas) with an outline beside it.
+/* The memory tree page: the whole tree as one zoomable picture (a treemap on a canvas) with small tools, an outline
+   and a detail panel floating on it. Everything about a node can be read and done here: the picture, the outline
+   and the panel never leave the page.
    Every node is a card sized by how much sits under it (a power of the count, so small branches stay visible).
-   A card shows its children only when it is big enough on screen, so zooming in opens the tree level by level down
-   to the memories themselves. Children are fetched when a card is about to open; text is drawn only when it can
-   be read, otherwise a tile stays a plain block of colour. */
+   A card shows its children only when it is big enough on screen for them to carry a title and a few lines of text,
+   so zooming in opens the tree level by level down to the memories themselves. Whatever room a card has is filled
+   with its own words: a title, as much of the text as fits, a line of facts. Children are fetched when a card is
+   about to open. The memories that sit under no summary are gathered in one grey block, "未汇总的记忆". */
 (() => {
   'use strict';
   const doc = document;
@@ -14,26 +17,90 @@
   const ctx = canvas.getContext('2d', {alpha: false});
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
-  const WORLD_H = 1000;            // the top level is laid out in a world of this height; the width follows the window
-  const OPEN_W = 260, OPEN_H = 150;      // a card shows its children from this many screen pixels on
-  const GROUP_W = 190, GROUP_H = 110;    // an "other" tile shows what it holds from here on
-  const SNIP_W = 220, SNIP_H = 110;      // a closed tile also shows a piece of its text
-  const FULL_W = 300, FULL_H = 170;      // a memory this big asks for its whole text
+  const WORLD_H = 1000;                  // the top level is laid out in a world of this height; the width follows the window
+  const CHILD_W = 112, CHILD_H = 76;     // the least a child gets when its parent opens: a title and two lines of text
   const GAP = 5;                         // space between neighbouring cards
+  const TOP_GAP = 16;                    // ... and between the cards of the top level, so the board shows between them
   const PAD = 6;                         // space between a card's edge and its children
+  const SUM_H = 16;                      // the one-line summary under the title of an open card
   const MIN_TILE = 3;                    // smaller tiles are not drawn
-  const MIN_FONT = 11;                   // text is never drawn smaller than this
-  const TILE_AREA = 3200;                // a child that would get less than this many pixels when its parent just opened is merged into "other"
+  const TILE_AREA = CHILD_W * CHILD_H;   // a child that would get less than this many pixels when its parent just opened is merged into "other"
+  const FULL_AREA = 300 * 170;           // a memory this big asks for its whole text
   const MAX_HEAD = 12;                   // most tiles a card shows by name next to its "other" tile
   const FANOUT = 6;                      // how many "other" tiles a crowd is split into
   const POWER = 0.7;                     // area grows with size to this power
-  const DIM = 0.35;
-  const OPEN_ZOOM = 1.12;                // below the top layer, cards open only once zoomed in this far past "fit"; so fit shows two layers
-  const TITLE_PX = [12, 13, 14, 15, 16]; // title size by layer, never by area
+  const DIM = 0.5;
+  const TITLE_PX = [13, 14, 15, 16, 17]; // title size of an open card by layer
   const OL_PAGE = 200;
+  const LOOSE = 'loose';                 // the id of the block of memories under no summary
+  const MARGIN = {x: 22, top: 62, bottom: 56, phoneTop: 104, phoneBottom: 52};
   const HUES = [212, 28, 150, 320, 50, 265, 185, 0];
   const NEUTRAL = HUES.length;
+  const NO_START = '，。、；：！？）」』》”’,.;:!?)]}';  // closing marks never start a line
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const half = v => Math.round(v * 2) / 2;
+
+  /* ---------- small helpers ---------- */
+  // h('div', {class: 'x', onclick: fn, text: 'hi'}, child, ...): a tiny element builder.
+  const h = (tag, attrs, ...kids) => {
+    const node = doc.createElement(tag);
+    for (const [key, value] of Object.entries(attrs || {})) {
+      if (value === undefined || value === null || value === false) continue;
+      if (key === 'class') node.className = value;
+      else if (key === 'text') node.textContent = value;
+      else if (key === 'value') node.value = value;
+      else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+      else node.setAttribute(key, value === true ? '' : value);
+    }
+    for (const kid of kids.flat()) if (kid) node.append(kid);        // nothing for false, null, 0 or an empty text
+    return node;
+  };
+  const icon = (name, size = 'sm') => {
+    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', `icon icon-${size}`);
+    svg.setAttribute('aria-hidden', 'true');
+    const use = doc.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `#${name}`);
+    svg.append(use);
+    return svg;
+  };
+  const store = {
+    get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+    set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode: the choice lasts for this page */ } },
+  };
+  const api = async (method, url, body) => {
+    try {
+      const response = await fetch(url, {method, headers: body ? {'Content-Type': 'application/json'} : undefined, body: body ? JSON.stringify(body) : undefined});
+      const data = await response.json().catch(() => ({}));
+      return {ok: response.ok, status: response.status, data};
+    } catch {
+      return {ok: false, status: 0, data: {error: '连不上本机的服务，稍后再试'}};
+    }
+  };
+  const fmtTime = iso => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso || '';
+    const p = v => String(v).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  const parseTags = text => {
+    const parts = /[,，、;；\n]/.test(text) ? text.split(/[,，、;；\n]/) : text.split(/\s+/);
+    const out = [];
+    for (const part of parts) {
+      const tag = part.trim().replace(/^#+/, '').trim();
+      if (tag && !out.includes(tag)) out.push(tag);
+    }
+    return out;
+  };
+  let toastTimer = 0;
+  const toast = (text, error = false) => {
+    const box = $('tree-toast');
+    box.textContent = text;
+    box.classList.toggle('is-error', error);
+    box.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => box.classList.remove('is-on'), error ? 6000 : 3200);
+  };
 
   /* ---------- colours: CSS custom properties, read again when the theme changes ---------- */
   let pal = [];
@@ -44,9 +111,9 @@
     const num = name => parseFloat(text(name));
     const sat = num('--tree-sat'), l0 = num('--tree-l0'), step = num('--tree-lstep'), edge = num('--tree-edge');
     const ink = num('--tree-ink-l'), bar = num('--tree-bar-l'), grey = num('--tree-grey-sat');
-    pal = [...HUES, 210].map((h, t) => {
+    pal = [...HUES, 210].map((hue, t) => {
       const s = t === NEUTRAL ? grey : sat;
-      const hsl = (sa, l) => `hsl(${h} ${sa}% ${l}%)`;
+      const hsl = (sa, l) => `hsl(${hue} ${sa}% ${l}%)`;
       const layers = [0, 1, 2, 3, 4, 5];
       return {
         fill: layers.map(i => hsl(s, l0 + step * i)),
@@ -57,12 +124,15 @@
     });
     colors = {
       gap: text('--tile-gap'), accent: text('--accent'), hit: text('--hit'), text: text('--text'),
+      bgA: text('--tree-bg-a'), bgB: text('--tree-bg-b'), dot: text('--tree-dot'), shadow: text('--tree-shadow'), hi: text('--tree-hi'),
       font: getComputedStyle(doc.body).fontFamily,
     };
+    bgKey = '';
   };
 
   /* ---------- the data ---------- */
   let root = null;
+  let generation = 0;                // counts the times the tree was built again: an answer for an older one is dropped
   const byId = new Map();
   let WW = 1600;
   let WH = WORLD_H;
@@ -85,37 +155,78 @@
     parent.sorted.forEach((c, i) => { c.rank = i; });
     parent.items = null;
   };
-  // A topic is a branch near the top: the first level with at least two summaries (a single all-embracing
-  // summary on top would otherwise paint everything in one colour). What sits above stays grey.
+  // A topic is a branch near the top: the first level with at least two summaries, looking into a summary that holds
+  // most of the tree (an all-embracing summary on top would otherwise paint everything in one colour). What sits
+  // above stays grey; the small summaries beside it are topics of their own.
   let topicCount = 0;
   const assignTopics = () => {
     const open = list => list.filter(n => n.children === null || (n.children && n.children.length));
     let level = open(root.children);
-    for (let i = 0; i < 4 && level.length === 1 && level[0].children; i++) {
-      const next = open(level[0].children);
+    const beside = [];
+    for (let i = 0; i < 4 && level.length; i++) {
+      const total = level.reduce((sum, n) => sum + n.size, 0);
+      const big = level.reduce((a, b) => (b.size > a.size ? b : a), level[0]);
+      if (!(level.length === 1 || big.size / total >= 0.6) || !big.children) break;
+      const next = open(big.children);
       if (!next.length) break;
+      beside.push(...level.filter(n => n !== big));
       level = next;
     }
     const paint = (n, t) => { n.topic = t; if (n.children) n.children.forEach(c => paint(c, t)); };
-    level.forEach((n, i) => paint(n, i % HUES.length));
-    topicCount = level.length;
+    [...level, ...beside].forEach((n, i) => paint(n, i % HUES.length));
+    topicCount = level.length + beside.length;
+  };
+  // The memories that have no parent and nothing under them are not top-level cards: they are gathered, newest
+  // first, in one grey block that sits beside the tree.
+  const gather = list => {
+    const loose = list.filter(n => n.layer === 0).sort((a, b) => (b.to || '').localeCompare(a.to || '') || a.id.localeCompare(b.id));
+    const dated = loose.filter(n => n.to), undated = loose.filter(n => !n.to);
+    return {real: list.filter(n => n.layer > 0), loose: [...dated, ...undated]};
+  };
+  const makeLoose = list => {
+    const dates = list.map(n => n.to).filter(Boolean).sort();
+    const block = {
+      id: LOOSE, title: `未汇总的记忆 · ${list.length} 条`, snippet: '', layer: 1, size: list.length, from: dates[0] || '', to: dates[dates.length - 1] || '',
+      loose: true, parent: root, depth: 0, topic: NEUTRAL, weight: Math.pow(list.length, POWER), items: null,
+    };
+    adopt(block, list);
+    byId.set(LOOSE, block);
+    root.gathered = block;
+  };
+  const buildTree = list => {
+    generation++;
+    byId.clear();
+    root = {id: '', title: '全部', layer: -1, size: 0, virtual: true, topic: NEUTRAL, weight: 1, depth: -1, gathered: null};
+    const {real, loose} = gather(list);
+    adopt(root, real);
+    if (loose.length) makeLoose(loose);
+    root.size = list.reduce((sum, c) => sum + c.size, 0);
+    assignTopics();
   };
 
   /* ---------- layout: squarified treemap in fractions of the parent's inner area ---------- */
   const fontOf = n => TITLE_PX[Math.min(n.layer, 4)];
-  const headOf = n => fontOf(n) + 17;
+  const headOf = n => fontOf(n) + 17 + (n.loose ? 0 : SUM_H);
+  const edge = it => (it.depth < 1 ? TOP_GAP : GAP) / 2;
   // the part of a cell where its children go
   const inner = (c, x, y, w, h) => {
     if (c.virtual || c.group) return [x, y, w, h];
-    const g = GAP / 2, head = headOf(c);
-    return [x + g + PAD, y + g + head, w - GAP - 2 * PAD, h - GAP - head - PAD];
+    const g = edge(c), head = headOf(c);
+    return [x + g + PAD, y + g + head, w - 2 * g - 2 * PAD, h - 2 * g - head - PAD];
+  };
+  // How big a card has to be on screen to show its children: room for two children side by side, each with a title
+  // and two lines of text (the block of loose memories, whose children are all alike, opens for a single column).
+  const openSize = it => {
+    const g = edge(it), across = it.loose ? 1 : 2, down = it.loose ? 1 : 2;
+    if (it.group) return [2 * CHILD_W + GAP, 2 * CHILD_H + GAP];
+    return [across * CHILD_W + (across - 1) * GAP + 2 * g + 2 * PAD, down * CHILD_H + (down - 1) * GAP + 2 * g + headOf(it) + PAD];
   };
   // How many pixels a card's inner area has at least when it shows its children: the least it opens at, or what it
-  // gets when the picture is fitted (top layer) or just zoomed far enough to open it (below).
+  // gets when the picture is fitted.
   const openArea = c => {
     if (c.virtual) return kFit * kFit * WW * WH;
-    const least = c.group ? GROUP_W * GROUP_H : (OPEN_W - GAP - 2 * PAD) * (OPEN_H - GAP - headOf(c) - PAD);
-    const [, , w, h] = cellRect(c, kFit * (c.depth < 1 ? 1 : OPEN_ZOOM));
+    const least = (2 * CHILD_W + GAP) * (2 * CHILD_H + GAP);
+    const [, , w, h] = cellRect(c, kFit);
     const [, , iw, ih] = inner(c, 0, 0, w, h);
     return Math.max(least, iw * ih);
   };
@@ -124,9 +235,9 @@
     for (const p of parts) total += p.weight;
     const set = (p, x, y, w, h) => { p.nx = x / asp; p.nw = w / asp; p.ny = y; p.nh = h; };
     const scale = asp / total;
-    let x = 0, y = 0, w = asp, h = 1, i = 0;
+    let x = 0, y = 0, w = asp, hh = 1, i = 0;
     while (i < parts.length) {
-      const side = Math.min(w, h);
+      const side = Math.min(w, hh);
       if (!(side > 1e-9)) { for (; i < parts.length; i++) set(parts[i], x, y, 0, 0); break; }
       let sum = 0, max = 0, min = Infinity, worst = Infinity, j = i;
       for (; j < parts.length; j++) {
@@ -137,13 +248,13 @@
         worst = ratio; sum = s2; max = mx; min = mn;
       }
       const thick = sum / side;
-      let at = w >= h ? y : x;
+      let at = w >= hh ? y : x;
       for (let k = i; k < j; k++) {
         const len = (parts[k].weight * scale) / thick;
-        if (w >= h) set(parts[k], x, at, thick, len); else set(parts[k], at, y, len, thick);
+        if (w >= hh) set(parts[k], x, at, thick, len); else set(parts[k], at, y, len, thick);
         at += len;
       }
-      if (w >= h) { x += thick; w -= thick; } else { y += thick; h -= thick; }
+      if (w >= hh) { x += thick; w -= thick; } else { y += thick; hh -= thick; }
       i = j;
     }
   };
@@ -151,6 +262,28 @@
     let weight = 0, size = 0;
     for (let i = lo; i < hi; i++) { weight += owner.sorted[i].weight; size += owner.sorted[i].size; }
     return {group: true, owner, lo, hi, weight, size, count: hi - lo, depth: owner.depth + 1, topic: owner.topic, layer: Math.max(owner.layer - 1, 0), items: null};
+  };
+  let miniDirty = true;
+  // The loose memories are all alike: a grid of cards of at least the least size, newest first; what does not fit is
+  // one "other" tile in the last place.
+  const layoutGrid = (c, owner, list, base) => {
+    const [, , w, hh] = cellRect(c, kFit);
+    const [, , iw0, ih0] = c.group ? [0, 0, w, hh] : inner(c, 0, 0, w, hh);
+    // measured at least as big as the card is when it opens, so an "other" tile always holds fewer than its parent
+    const iw = Math.max(iw0, c.group ? 2 * CHILD_W + GAP : CHILD_W), ih = Math.max(ih0, 2 * CHILD_H + GAP);
+    const cols = Math.max(1, Math.floor((iw + GAP) / (CHILD_W + GAP)));
+    const cap = Math.max(2, cols * Math.floor((ih + GAP) / (CHILD_H + GAP)));
+    const parts = list.length <= cap ? list.slice() : [...list.slice(0, cap - 1), makeGroup(owner, base + cap - 1, base + list.length)];
+    const rowH = Math.min(ih / Math.ceil(parts.length / cols), CHILD_H * 2.4);
+    const asp = clamp(c.asp || 1.6, 0.25, 5);
+    parts.forEach((p, i) => {
+      p.nx = (i % cols) / cols; p.nw = 1 / cols;
+      p.ny = (Math.floor(i / cols) * rowH) / ih; p.nh = rowH / ih;
+      p.lp = c;
+      p.asp = (p.nw * asp) / p.nh;
+    });
+    c.items = parts;
+    miniDirty = true;
   };
   // What a card (or an "other" tile) shows in its inner area: the big children by name and the rest as "other" tiles.
   const layout = c => {
@@ -160,6 +293,7 @@
     const list = c.group ? owner.sorted.slice(c.lo, c.hi) : owner.sorted;
     let total = 0;
     for (const n of list) total += n.weight;
+    if (owner.loose) { layoutGrid(c, owner, list, base); return; }
     const fmin = TILE_AREA / openArea(c);
     let head = 0;
     while (head < list.length && head < MAX_HEAD && list[head].weight / total >= fmin) head++;
@@ -178,12 +312,30 @@
     }
     parts.sort((a, b) => b.weight - a.weight);
     const asp = clamp(c.asp || 1.6, 0.25, 5);
-    squarify(parts, asp);
+    // the block of loose memories takes a band of its own beside the tree: a column when the picture is wide, else a row
+    const band = c === root ? root.gathered : null;
+    const share = !band ? 0 : parts.length ? clamp(band.weight / (total + band.weight), 0.14, 0.3) : 1;
+    if (parts.length) {
+      const wide = asp >= 1;
+      squarify(parts, wide ? asp * (1 - share) : asp / (1 - share));
+      for (const p of parts) {
+        if (wide) { p.nx *= 1 - share; p.nw *= 1 - share; } else { p.ny *= 1 - share; p.nh *= 1 - share; }
+      }
+      if (band) {
+        if (wide) Object.assign(band, {nx: 1 - share, ny: 0, nw: share, nh: 1});
+        else Object.assign(band, {nx: 0, ny: 1 - share, nw: 1, nh: share});
+        parts.push(band);
+      }
+    } else if (band) {
+      Object.assign(band, {nx: 0, ny: 0, nw: 1, nh: 1});
+      parts.push(band);
+    }
     for (const p of parts) {
       p.lp = c;
       p.asp = p.nh > 0 ? p.nw * asp / p.nh : 1;
     }
     c.items = parts;
+    miniDirty = true;
   };
   // Lay out everything above `n` so that its place in its parent is known.
   const reveal = n => {
@@ -205,6 +357,7 @@
     for (const n of byId.values()) n.items = null;
     root.items = null;
     root.asp = WW / WH;
+    miniDirty = true;
   };
   // The cell of an item at scale k with the root's corner at the origin. Every size is affine in k, which lets
   // zoomTo solve for the scale that fits an item without iterating.
@@ -221,42 +374,82 @@
     if (n.children || n.failed) return Promise.resolve(n);
     if (n.pending) return n.pending;
     inflight++;
+    const born = generation;
     n.pending = fetch(`/api/outline?root=${encodeURIComponent(n.id)}&depth=2`)
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then(list => {
+        if (born !== generation) return;
         adopt(n, (list[0] && list[0].children) || []);
         n.items = null;
       })
       .catch(() => { n.failed = true; })
-      .finally(() => { n.pending = null; inflight--; renderOutline(); request(); })
+      .finally(() => { n.pending = null; inflight--; renderOutline(); miniDirty = true; request(); })
       .then(() => n);
     return n.pending;
   };
   const want = n => { if (!n.pending && !n.failed && inflight < 3) loadChildren(n); };
+  // Make sure every node on a path from the top (ids, top first) is loaded; the last one, or null when it is not there.
+  const ensure = async ids => {
+    for (let i = 0; i < ids.length; i++) {
+      if (byId.has(ids[i])) continue;
+      const above = i ? byId.get(ids[i - 1]) : root;
+      if (!above) return null;
+      await loadChildren(above);
+    }
+    return byId.get(ids[ids.length - 1]) || null;
+  };
+
+  /* ---------- the floating layers: what takes room from the picture ---------- */
+  const panel = $('tree-panel');
+  const side = $('tree-side');
+  const foot = $('tree-foot');
+  const mini = $('tree-mini');
+  let vw = 0, vh = 0, dpr = 1;
+  let outlinePinned = store.get('rp-tree-ol-pin') === '1';
+  let detailPinned = store.get('rp-tree-detail-pin') === '1';
+  const phone = () => vw <= 767;
+  const panelOpen = () => panel.classList.contains('is-open');
+  // The part of the window the picture is fitted into: the margins, the pinned outline and the open panel left out.
+  const margins = withPanel => {
+    const m = {l: MARGIN.x, r: MARGIN.x, t: phone() ? MARGIN.phoneTop : MARGIN.top, b: phone() ? MARGIN.phoneBottom : MARGIN.bottom};
+    if (outlinePinned && !phone() && vw >= 900) m.l += side.offsetWidth + 14;
+    if (withPanel ? panelOpen() : (detailPinned && panelOpen())) {
+      if (phone()) m.b += panel.offsetHeight + 8;
+      else m.r += panel.offsetWidth + 14;
+    }
+    return m;
+  };
+  const usable = withPanel => {
+    const m = margins(withPanel);
+    return {x: m.l, y: m.t, w: Math.max(120, vw - m.l - m.r), h: Math.max(120, vh - m.t - m.b)};
+  };
 
   /* ---------- the view: world centre and scale, eased towards a goal or flown along a path ---------- */
-  let vw = 0, vh = 0, dpr = 1;
   const view = {cx: 0, cy: 0, k: 1};
   const goal = {cx: 0, cy: 0, k: 1};
   let tween = null;
   let kFit = 1;
-  const foot = $('tree-foot');
-  const footH = () => foot.offsetHeight + 16;          // the legend sits over the bottom of the picture: leave room for it
-  const calcFit = () => { kFit = Math.min(vw / WW, (vh - footH()) / WH) * 0.97; };
+  let atFit = true;                  // the whole tree is in view, as fitted: a new window size fits it again
+  const calcFit = () => {
+    const u = usable(true);
+    kFit = Math.min(u.w / WW, u.h / WH);
+  };
   const clampView = g => {
     g.k = clamp(g.k, kFit * 0.5, kFit * 1e5);
     g.cx = clamp(g.cx, 0, WW);
     g.cy = clamp(g.cy, 0, WH);
   };
-  const go = (g, instant) => {
+  const go = (g, instant, fitting = false) => {
     tween = null;
+    if (!fitting) atFit = false;
     Object.assign(goal, g);
     clampView(goal);
     if (instant || reduced.matches) Object.assign(view, goal);
     request();
   };
   // Smooth zoom: the point that stays put on screen is the fixed point of the move, so a big zoom does not swing.
-  const fly = g => {
+  const fly = (g, fitting = false) => {
+    if (!fitting) atFit = false;
     Object.assign(goal, g);
     clampView(goal);
     if (reduced.matches) { tween = null; Object.assign(view, goal); request(); return; }
@@ -269,39 +462,39 @@
     };
     request();
   };
+  const fitView = () => {
+    const u = usable(true);
+    return {cx: WW / 2 - (u.x + u.w / 2 - vw / 2) / kFit, cy: WH / 2 - (u.y + u.h / 2 - vh / 2) / kFit, k: kFit};
+  };
   const fitAll = (animate = true) => {
     calcFit();
     focus = null;
-    const g = {cx: WW / 2, cy: WH / 2 + footH() / 2 / kFit, k: kFit};
-    if (animate) fly(g); else go(g, true);
-  };
-  const panelInset = () => {
-    const open = !$('tree-panel').hidden;
-    if (!open) return [0, 0];
-    return vw > 767 ? [Math.min(380, vw - 24) + 24, 0] : [0, $('tree-panel').offsetHeight + 8];
+    crumbKey = null;
+    if (animate) fly(fitView(), true); else go(fitView(), true, true);
+    atFit = true;
   };
   // The scale and centre that put a cell in the middle of the part of the canvas the panel leaves free.
   const viewFor = (it, margin) => {
     reveal(it);
-    const [pr, pb] = panelInset();
-    const fx = margin, fy = margin, fw = vw - pr - 2 * margin, fh = vh - pb - footH() - 2 * margin;
+    const u = usable(true);
+    const fw = u.w - 2 * margin, fh = u.h - 2 * margin;
     const a = cellRect(it, 1), b = cellRect(it, 2);
     const dw = b[2] - a[2], dh = b[3] - a[3];
     const k = clamp(Math.min((fw - (a[2] - dw)) / dw, (fh - (a[3] - dh)) / dh), kFit * 0.5, kFit * 1e5);
     const r = cellRect(it, k);
-    const ox = fx + fw / 2 - (r[0] + r[2] / 2), oy = fy + fh / 2 - (r[1] + r[3] / 2);
+    const ox = u.x + u.w / 2 - (r[0] + r[2] / 2), oy = u.y + u.h / 2 - (r[1] + r[3] / 2);
     return {k, cx: (vw / 2 - ox) / k, cy: (vh / 2 - oy) / k};
   };
   const zoomTo = it => {
-    const {k, cx, cy} = viewFor(it, 20);
+    const {k, cx, cy} = viewFor(it, 14);
     fly({cx, cy, k});
   };
   // To show a node: its parent when the node is readable there, else the node itself.
   const flyTo = n => {
     reveal(n);
     let target = n;
-    if (n.parent && !n.parent.virtual && (!n.children || !n.children.length)) {
-      const v = viewFor(n.parent, 20);
+    if (n.parent && !n.parent.virtual && !n.parent.loose && (!n.children || !n.children.length)) {
+      const v = viewFor(n.parent, 14);
       const r = cellRect(n, v.k);
       if (r[2] >= 200 && r[3] >= 100) target = n.parent;
     }
@@ -314,6 +507,20 @@
     go({cx: wx - (px - vw / 2) / k, cy: wy - (py - vh / 2) / k, k});
   };
   const stopMotion = () => { tween = null; Object.assign(goal, view); };
+  // After a card is selected the panel may cover it: slide the picture just far enough to show it.
+  const keepInSight = n => {
+    const tile = shownOf(n);
+    if (!tile || !panelOpen() || tween) return;
+    let dx = 0, dy = 0;
+    if (phone()) {
+      const limit = vh - panel.offsetHeight - 16;
+      if (tile.sy + tile.sh > limit) dy = Math.max(limit - (tile.sy + tile.sh), MARGIN.phoneTop - tile.sy);
+    } else {
+      const limit = vw - panel.offsetWidth - 28;
+      if (tile.sx + tile.sw > limit) dx = Math.max(limit - (tile.sx + tile.sw), 16 - tile.sx);
+    }
+    if (dx || dy) go({cx: goal.cx - dx / goal.k, cy: goal.cy - dy / goal.k, k: goal.k});
+  };
 
   /* ---------- text ---------- */
   const measure = doc.createElement('canvas').getContext('2d');
@@ -344,8 +551,9 @@
     return `${out}…`;
   };
   const clip = (text, fs, weight, maxW) => (textW(text, fs, weight) <= maxW ? text : ellipsize(text, fs, weight, maxW).replace(/\s+…$/, '…'));
-  // Wrap text into at most `maxLines` lines; the last one ends in … when text was left over.
-  const wrap = (text, fs, weight, maxW, maxLines) => {
+  // Wrap text into at most `maxLines` lines, a Chinese character or an English word at a time; the last line ends
+  // in … when text was left over.
+  const wrapRaw = (text, fs, weight, maxW, maxLines) => {
     const lines = [];
     let line = '', w = 0, brk = -1;
     for (const ch of text) {
@@ -353,7 +561,7 @@
       if (ch === '\n') { lines.push(line); line = ''; w = 0; brk = -1; continue; }
       if (ch === ' ' && !line) continue;
       const cw = (charW(ch, weight) * fs) / 100;
-      if (w + cw > maxW && line) {
+      if (w + cw > maxW && line && !NO_START.includes(ch)) {
         if (brk > line.length * 0.5) { lines.push(line.slice(0, brk)); line = line.slice(brk + 1); w = textW(line, fs, weight); }
         else { lines.push(line); line = ''; w = 0; }
         brk = -1;
@@ -368,31 +576,98 @@
     }
     return lines;
   };
-  // the text of a memory after its title when the title is only its first words
+  // The same, remembered: a card that stays where it is is not measured again.
+  const wraps = new Map();
+  const wrap = (key, text, fs, weight, maxW, maxLines) => {
+    const id = `${key}|${fs}|${weight}|${Math.round(maxW)}|${maxLines}`;
+    let lines = wraps.get(id);
+    if (lines === undefined) {
+      if (wraps.size > 3000) wraps.clear();
+      lines = wrapRaw(text, fs, weight, maxW, maxLines);
+      wraps.set(id, lines);
+    }
+    return lines;
+  };
+  // the text of a node after its title when the title is only its first words
   const restOf = (n, text) => {
     const head = n.title.replace(/…$/, '');
     if (!text || !head) return text || '';
     return text.startsWith(head) ? text.slice(head.length).replace(/^[\s，,。.；;：:、—-]+/, '') : text;
   };
+  // What a card says besides its title: the rest of its text; on a small card all on one flow, on a big one with its lines.
+  const wordsOf = (n, source, lines) => {
+    const memo = n.words;
+    if (memo && memo.source === source && memo.lines === lines) return memo.value;
+    const rest = restOf(n, source);
+    const value = lines ? rest : rest.replace(/\s*\n+\s*/g, ' ');
+    n.words = {source, lines, value};
+    return value;
+  };
+  const titleSize = w => half(clamp(12 + (w - 110) * (8 / 370), 12, 20));
+  const bodySize = w => half(clamp(12 + (w - 150) * (8 / 1050), 12, 20));
 
   /* ---------- drawing ---------- */
   let frameNo = 0;
   let selected = null, hovered = null, focus = null, hitNodes = [], hitAnc = [];
   const needFull = [];
+  const stat = {cards: 0, bodies: 0, unfilled: 0, full: 0};
 
-  const roundRect = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
-  const card = (it, x, y, w, h, a) => {
-    const g = Math.min(GAP / 2, w / 6, h / 6);
-    const x0 = Math.max(x + g, -40), y0 = Math.max(y + g, -40), x1 = Math.min(x + w - g, vw + 40), y1 = Math.min(y + h - g, vh + 40);
+  const roundRect = (x, y, w, hh, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, hh, r); };
+  // The board: a soft light in the middle and a faint grid of dots that moves with the picture.
+  let bgKey = '', bgGrad = null, dots = null;
+  const background = () => {
+    const key = `${vw}|${vh}|${dpr}|${colors.bgA}`;
+    if (key !== bgKey) {
+      bgKey = key;
+      bgGrad = ctx.createRadialGradient(vw / 2, vh * 0.45, Math.min(vw, vh) * 0.15, vw / 2, vh / 2, Math.hypot(vw, vh) * 0.6);
+      bgGrad.addColorStop(0, colors.bgA);
+      bgGrad.addColorStop(1, colors.bgB);
+      const tile = doc.createElement('canvas');
+      tile.width = tile.height = Math.round(24 * dpr);
+      const t = tile.getContext('2d');
+      t.fillStyle = colors.dot;
+      t.beginPath();
+      t.arc(tile.width / 2, tile.height / 2, 1.1 * dpr, 0, Math.PI * 2);
+      t.fill();
+      dots = ctx.createPattern(tile, 'repeat');
+      dots.setTransform(new DOMMatrix().scale(1 / dpr));
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, vw, vh);
+    ctx.save();
+    ctx.translate((vw / 2 - view.cx * view.k) % 24, (vh / 2 - view.cy * view.k) % 24);
+    ctx.fillStyle = dots;
+    ctx.fillRect(-24, -24, vw + 48, vh + 48);
+    ctx.restore();
+  };
+  const card = (it, x, y, w, hh, a) => {
+    const g = Math.min(edge(it), w / 6, hh / 6);
+    const x0 = Math.max(x + g, -40), y0 = Math.max(y + g, -40), x1 = Math.min(x + w - g, vw + 40), y1 = Math.min(y + hh - g, vh + 40);
     const rw = x1 - x0, rh = y1 - y0;
     if (rw <= 0 || rh <= 0) return;
     const p = pal[it.topic], li = Math.min(it.layer, 5);
     const r = Math.min(7, rw / 4, rh / 4);
+    if (rw >= 28 && rh >= 28 && !it.group) {          // the card lifts off the board: a thin shadow under it and a light on its top edge
+      ctx.globalAlpha = a;
+      ctx.fillStyle = colors.shadow;
+      roundRect(x0, y0 + 2, rw, rh, r);
+      ctx.fill();
+    }
     ctx.globalAlpha = a;
     ctx.fillStyle = p.fill[li];
     if (it.group) { ctx.globalAlpha = a * 0.7; ctx.fillStyle = p.fill[Math.min(li + 1, 5)]; }
     roundRect(x0, y0, rw, rh, r);
     ctx.fill();
+    if (rw >= 40 && rh >= 40 && !it.group && x >= -40 && y >= -40) {
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = colors.hi;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x0 + r, y0 + 1.5);
+      ctx.lineTo(x0 + rw - r, y0 + 1.5);
+      ctx.stroke();
+    }
     if (rw >= 12 && rh >= 12) {
       ctx.globalAlpha = a;
       ctx.strokeStyle = p.edge[li];
@@ -402,7 +677,7 @@
       ctx.stroke();
       if (it.group) ctx.setLineDash([]);
     }
-    if (!it.group && it.children !== undefined && (it.children === null || it.children.length) && rw >= 40 && x + g >= -40) {
+    if (!it.group && !it.loose && it.children !== undefined && (it.children === null || it.children.length) && rw >= 40 && x + g >= -40) {
       ctx.fillStyle = p.bar;
       ctx.beginPath();
       ctx.roundRect(x0, y0, 4, rh, [r, 0, 0, r]);
@@ -412,103 +687,125 @@
 
   // A line of facts: layer, count and dates, as much of it as fits.
   const meta = (n, maxW) => {
+    if (n.loose) return n.to ? (n.from === n.to ? n.from : `${n.from} – ${n.to}`) : '';
     const dates = n.from ? (n.from === n.to || !n.to ? n.from : `${n.from} – ${n.to}`) : '';
     const facts = n.children === null || n.children.length ? [`L${n.layer}`, `${n.size - 1} 条`] : [];
     for (const parts of [[...facts, dates], facts, [dates]]) {
       const text = parts.filter(Boolean).join(' · ');
-      if (text && textW(text, MIN_FONT, 500) <= maxW) return text;
+      if (text && textW(text, 11, 500) <= maxW) return text;
     }
     return '';
   };
-  // What a tile that does not show its children says: its title, then a piece of text, then a line of facts.
-  const closedBody = (n, x, y, w, h, a) => {
-    const g = Math.min(GAP / 2, w / 6, h / 6);
-    const x0 = Math.max(x + g, 0), y0 = Math.max(y + g, 0), x1 = Math.min(x + w - g, vw), y1 = Math.min(y + h - g, vh);
+  // What a card that does not show its children says, from the top down: its title, then as much of its text as the
+  // room allows (a size that grows with the card), then a line of facts. Nothing is left blank that words can fill.
+  const closedBody = (n, x, y, w, hh, ta) => {
+    const g = Math.min(edge(n), w / 6, hh / 6);
+    const x0 = Math.max(x + g, 0), y0 = Math.max(y + g, 0), x1 = Math.min(x + w - g, vw), y1 = Math.min(y + hh - g, vh);
     const bw = x1 - x0, bh = y1 - y0;
-    const kids = n.children === null || n.children.length > 0;
-    const fs = fontOf(n), lh = fs * 1.35, weight = kids ? 600 : 500;
-    const left = x0 + (kids ? 14 : 10), tw = x1 - 9 - left;
-    if (tw < fs * 4 || bh < lh + 12) return;
-    const showMeta = bw >= 130 && bh >= 70;
-    const metaH = showMeta ? 17 : 0;
-    const first = y0 + headOf(n) / 2 + 0.5;       // the title's first line sits where an open card's header text does
-    const avail = y1 - 8 - metaH - (first - lh / 2);
-    const bodyOn = bw >= SNIP_W && bh >= SNIP_H;
-    const fullOn = !kids && bw >= FULL_W && bh >= FULL_H;
-    if (fullOn && n.full === undefined && !n.fetching) needFull.push(n);
-    const source = fullOn && n.full !== undefined ? n.full : n.snippet;
-    // a title that is only the cut-off start of the text gives way to the text itself
-    const cut = bodyOn && n.title.endsWith('…') && source.startsWith(n.title.slice(0, -1));
-    let maxT = Math.floor(avail / lh);
-    if (bw < 90 || bodyOn) maxT = Math.min(maxT, 2);
-    if (maxT < 1) return;
+    const sum = n.children === null || (n.children && n.children.length > 0);
+    const tfs = titleSize(w), lh = Math.round(tfs * 1.32), weight = sum ? 700 : 600;
+    const left = x0 + (sum ? 14 : 11), tw = x1 - 10 - left;
+    if (tw < 28 || bh < lh + 12) return;
+    stat.cards++;
+    const metaH = bw >= 120 && bh >= 74 ? 17 : 0;
+    const top = y0 + 8, limit = y1 - 8 - metaH;
+    const rows = Math.floor((limit - top) / lh);
+    if (rows < 1) return;
+    const full = !sum && w * hh >= FULL_AREA && n.snippet.endsWith('…');
+    if (full && n.full === undefined && !n.fetching) needFull.push(n);
+    const source = full && n.full !== undefined ? n.full : n.snippet;
+    const bfs = bodySize(w), lh2 = Math.round(bfs * 1.5);
+    const roomy = !sum && w * hh >= FULL_AREA;
+    const text = wordsOf(n, source, roomy);
     const p = pal[n.topic];
-    ctx.globalAlpha = a;
+    ctx.globalAlpha = ta;
     ctx.fillStyle = p.ink;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
-    ctx.font = `${weight} ${fs}px ${colors.font}`;
-    const lines = cut ? [] : wrap(n.title, fs, weight, tw, maxT);
-    lines.forEach((line, i) => ctx.fillText(line, left, first + i * lh));
-    if (bodyOn) {
-      const text = cut ? source : restOf(n, source);
-      const size = fullOn ? (bw >= 420 && bh >= 260 ? 14 : 13) : 12, lh2 = Math.round(size * 1.55);
-      const top = lines.length ? first + (lines.length - 1) * lh + lh / 2 + 5 : first - lh / 2;
-      const room = Math.floor((y1 - 8 - metaH - top) / lh2);
-      if (text && room >= 1) {
-        ctx.globalAlpha = a * 0.82;
-        ctx.font = `400 ${size}px ${colors.font}`;
-        ctx.textBaseline = 'top';
-        wrap(text, size, 400, tw, room).forEach((line, i) => ctx.fillText(line, left, top + i * lh2));
-      }
+    ctx.font = `${weight} ${tfs}px ${colors.font}`;
+    const lines = wrap(`${n.id}t`, n.title, tfs, weight, tw, text ? Math.min(rows, w >= 380 ? 3 : 2) : Math.min(rows, 5));
+    lines.forEach((line, i) => ctx.fillText(line, left, top + lh / 2 + i * lh));
+    const bodyTop = top + lines.length * lh + 3;
+    const room = Math.floor((limit - bodyTop) / lh2);
+    if (text && room >= 1) {
+      ctx.globalAlpha = ta * 0.9;
+      ctx.font = `400 ${bfs}px ${colors.font}`;
+      ctx.textBaseline = 'top';
+      const body = wrap(`${n.id}b${roomy ? 'f' : ''}${source.length}`, text, bfs, 400, tw, room);
+      body.forEach((line, i) => ctx.fillText(line, left, bodyTop + i * lh2));
+      stat.bodies++;
+      if (full && n.full !== undefined) stat.full++;
+      if (!body.length) stat.unfilled++;     // there was room and there were words, yet nothing was drawn
     }
-    if (showMeta) {
-      ctx.font = `500 ${MIN_FONT}px ${colors.font}`;
-      const text = meta(n, tw);
-      if (text) {
-        ctx.globalAlpha = a * 0.62;
+    if (metaH) {
+      ctx.font = `500 11px ${colors.font}`;
+      const line = meta(n, tw);
+      if (line) {
+        ctx.globalAlpha = ta * 0.88;
         ctx.textBaseline = 'top';
-        ctx.fillText(text, left, y1 - 8 - MIN_FONT - 1);
+        ctx.fillText(line, left, y1 - 8 - 11 - 1);
       }
     }
   };
-  const groupBody = (it, x, y, w, h, a) => {
-    if (w < 64 || h < 26) return;
+  // An "other" tile names what it holds: its members' titles, as many as fit.
+  const groupBody = (it, x, y, w, hh, ta) => {
+    if (w < 64 || hh < 26) return;
+    const g = Math.min(edge(it), w / 6, hh / 6);
     const p = pal[it.topic];
-    ctx.globalAlpha = a * 0.85;
+    const left = x + g + 10, tw = w - 2 * g - 20;
+    ctx.globalAlpha = ta * 0.9;
     ctx.fillStyle = p.ink;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    const hint = w >= 110 && h >= 56;
-    ctx.font = `600 12px ${colors.font}`;
-    ctx.fillText(clip(`其他 ${it.count} 条`, 12, 600, w - 16), x + w / 2, y + h / 2 - (hint ? 8 : 0));
+    ctx.font = `650 12.5px ${colors.font}`;
+    ctx.fillText(clip(`其他 ${it.count} 条`, 12.5, 650, tw), left, y + g + 15);
+    const hint = w >= 110 && hh >= 64;
+    const rows = Math.floor((hh - 2 * g - 30 - (hint ? 18 : 0)) / 17);
+    if (rows >= 1 && tw >= 40) {
+      ctx.font = `400 12px ${colors.font}`;
+      ctx.globalAlpha = ta * 0.8;
+      const members = it.owner.sorted.slice(it.lo, Math.min(it.hi, it.lo + rows));
+      members.forEach((m, i) => ctx.fillText(clip(`· ${m.title}`, 12, 400, tw), left, y + g + 33 + i * 17));
+    }
     if (hint) {
-      ctx.globalAlpha = a * 0.6;
-      ctx.font = `400 ${MIN_FONT}px ${colors.font}`;
-      ctx.fillText('点一下展开', x + w / 2, y + h / 2 + 9);
+      ctx.globalAlpha = ta * 0.7;
+      ctx.font = `400 11px ${colors.font}`;
+      ctx.fillText('点一下展开', left, y + hh - g - 11);
     }
   };
-  // The title strip of an open card, with the small layer tag at its right end.
-  const header = (n, x, y, w, a) => {
-    const g = GAP / 2, hh = headOf(n), top = y + g;
-    if (top + hh < 0 || top > vh) return;
-    const p = pal[n.topic], fs = fontOf(n);
+  // The strip of an open card: its title with the small layer tag at the right end, and its own words in one line.
+  const header = (n, x, y, w, ta) => {
+    const g = edge(n), top = y + g, fs = fontOf(n), line1 = fs + 17;
+    if (top + headOf(n) < 0 || top > vh) return;
+    const p = pal[n.topic];
     const left = x + g + 14, right = x + w - g - 8;
     if (right - left < 60) return;
-    const tag = `L${n.layer}`;
-    ctx.font = `700 ${MIN_FONT}px ${colors.font}`;
-    const tagW = textW(tag, MIN_FONT, 700) + 10;
-    ctx.globalAlpha = a * 0.14;
-    ctx.fillStyle = p.ink;
-    roundRect(right - tagW, top + hh / 2 - 8, tagW, 16, 8);
-    ctx.fill();
-    ctx.globalAlpha = a;
     ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    ctx.fillText(tag, right - tagW / 2, top + hh / 2 + 0.5);
+    let tagW = 0;
+    if (!n.loose) {
+      const tag = `L${n.layer}`;
+      ctx.font = `700 11px ${colors.font}`;
+      tagW = textW(tag, 11, 700) + 10;
+      ctx.globalAlpha = ta * 0.14;
+      ctx.fillStyle = p.ink;
+      roundRect(right - tagW, top + line1 / 2 - 8, tagW, 16, 8);
+      ctx.fill();
+      ctx.globalAlpha = ta;
+      ctx.textAlign = 'center';
+      ctx.fillText(tag, right - tagW / 2, top + line1 / 2 + 0.5);
+    }
+    ctx.globalAlpha = ta;
+    ctx.fillStyle = p.ink;
     ctx.textAlign = 'left';
-    ctx.font = `600 ${fs}px ${colors.font}`;
-    ctx.fillText(clip(n.title, fs, 600, right - tagW - 8 - left), left, top + hh / 2 + 0.5);
+    ctx.font = `700 ${fs}px ${colors.font}`;
+    ctx.fillText(clip(n.title, fs, 700, right - tagW - 8 - left), left, top + line1 / 2 + 0.5);
+    if (n.loose) return;
+    const words = wordsOf(n, n.snippet, false);
+    if (words) {
+      ctx.globalAlpha = ta * 0.82;
+      ctx.font = `400 11.5px ${colors.font}`;
+      ctx.fillText(clip(words, 11.5, 400, right - left), left, top + line1 + SUM_H / 2 - 3);
+    }
   };
   const spinner = (x, y, a, now) => {
     ctx.globalAlpha = a * 0.7;
@@ -519,64 +816,65 @@
     ctx.stroke();
   };
   const hasHit = it => {
-    if (it.group) return hitAnc.some(h => h.parent === it.owner && h.rank >= it.lo && h.rank < it.hi);
+    if (it.group) return hitAnc.some(hit => hit.parent === it.owner && hit.rank >= it.lo && hit.rank < it.hi);
     return it.hitBelow || it.isHit;
   };
 
   let clock = 0;
-  const drawItems = (c, x, y, w, h, fade, inFocus, inHit) => {
+  const drawItems = (c, x, y, w, hh, fade, inFocus, inHit) => {
     layout(c);
-    for (const it of c.items) drawItem(it, x + it.nx * w, y + it.ny * h, it.nw * w, it.nh * h, fade, inFocus, inHit);
+    for (const it of c.items) drawItem(it, x + it.nx * w, y + it.ny * hh, it.nw * w, it.nh * hh, fade, inFocus, inHit);
   };
-  const drawItem = (it, x, y, w, h, fade, inFocus, inHit) => {
-    if (x > vw || y > vh || x + w < 0 || y + h < 0 || w < MIN_TILE || h < MIN_TILE) return;
-    it.shown = frameNo; it.sx = x; it.sy = y; it.sw = w; it.sh = h; it.opened = 0;
+  const drawItem = (it, x, y, w, hh, fade, inFocus, inHit) => {
+    if (x > vw || y > vh || x + w < 0 || y + hh < 0 || w < MIN_TILE || hh < MIN_TILE) return;
+    it.shown = frameNo; it.sx = x; it.sy = y; it.sw = w; it.sh = hh; it.opened = 0;
     const inF = inFocus || it === focus;
     const inH = inHit || !!it.isHit;
     const dim = (focus && !inF) || (hitNodes.length && !inH && !hasHit(it));
     const a = fade * (dim ? DIM : 1);
-    const ow = it.group ? GROUP_W : OPEN_W, oh = it.group ? GROUP_H : OPEN_H;
+    const ta = fade;                             // a faded card fades its colour, what it says stays as readable
+    const [ow, oh] = openSize(it);
     const canOpen = it.group || ((it.children === null || it.children.length > 0) && !it.failed);
-    const zoomed = it.depth < 1 ? 1 : clamp((view.k / (kFit * OPEN_ZOOM) - 1) / 0.08, 0, 1);
-    const open = canOpen && w >= ow && h >= oh && zoomed > 0;
-    const t = open ? Math.min(zoomed, (Math.min(w / ow, h / oh) - 1) / 0.12, 1) : 0;
-    if (!it.group && it.children === null && w >= ow * 0.55 && h >= oh * 0.55 && (it.depth < 1 || view.k >= kFit * OPEN_ZOOM * 0.8)) want(it);
+    const open = canOpen && w >= ow && hh >= oh;
+    const t = open ? (moving ? Math.min((Math.min(w / ow, hh / oh) - 1) / 0.12, 1) : 1) : 0;
+    if (!it.group && it.children === null && w >= ow * 0.55 && hh >= oh * 0.55) want(it);
     if (t > 0) it.opened = frameNo;
-    if (!it.group || t < 1) card(it, x, y, w, h, it.group ? a * (1 - t) : a);
+    if (!it.group || t < 1) card(it, x, y, w, hh, it.group ? a * (1 - t) : a);
     const rest = 1 - Math.min(1, t * 2);       // the closed text is gone by the time half the children are in
     if (rest > 0) {
-      if (it.group) groupBody(it, x, y, w, h, a * rest);
-      else closedBody(it, x, y, w, h, a * rest);
+      if (it.group) groupBody(it, x, y, w, hh, ta * rest);
+      else closedBody(it, x, y, w, hh, ta * rest);
     }
-    if (it.pending && w >= 60 && h >= 40) spinner(x + w - (t > 0 ? 60 : 20), y + 4 + (t > 0 ? headOf(it) / 2 : 12), a, clock);
+    if (it.pending && w >= 60 && hh >= 40) spinner(x + w - (t > 0 ? 60 : 20), y + 4 + (t > 0 ? headOf(it) / 2 : 12), a, clock);
     if (t === 0) return;
-    if (!it.group) header(it, x, y, w, a * t);
+    if (!it.group) header(it, x, y, w, ta * t);
     if (it.children === null) {
-      ctx.globalAlpha = a * t * 0.7;
+      ctx.globalAlpha = ta * t * 0.7;
       ctx.fillStyle = pal[it.topic].ink;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `400 12px ${colors.font}`;
-      ctx.fillText('正在取下面的内容…', x + w / 2, y + h / 2);
+      ctx.fillText('正在取下面的内容…', x + w / 2, y + hh / 2);
     } else {
-      const [ix, iy, iw, ih] = inner(it, x, y, w, h);
+      const [ix, iy, iw, ih] = inner(it, x, y, w, hh);
       drawItems(it, ix, iy, iw, ih, fade * t, inF, inH);
     }
   };
 
-  const ring = (x, y, w, h, color, width, glow) => {
+  const ring = (it, color, width, glow) => {
+    const {sx: x, sy: y, sw: w, sh: hh} = it;
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
-    if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 14; }
-    if (w < 10 || h < 10) {
+    if (glow) { ctx.shadowColor = color; ctx.shadowBlur = glow; }
+    if (w < 10 || hh < 10) {
       ctx.beginPath();
-      ctx.arc(x + w / 2, y + h / 2, 8, 0, Math.PI * 2);
+      ctx.arc(x + w / 2, y + hh / 2, 8, 0, Math.PI * 2);
       ctx.stroke();
     } else {
-      const g = Math.min(GAP / 2, w / 6, h / 6);
-      roundRect(x + g + width / 2, y + g + width / 2, w - 2 * g - width, h - 2 * g - width, 6);
+      const g = Math.min(edge(it), w / 6, hh / 6);
+      roundRect(x + g + width / 2, y + g + width / 2, w - 2 * g - width, hh - 2 * g - width, 6);
       ctx.stroke();
     }
     ctx.restore();
@@ -590,22 +888,21 @@
   };
   const overlay = (n, color, width, glow) => {
     const tile = shownOf(n);
-    if (tile) ring(tile.sx, tile.sy, tile.sw, tile.sh, color, width, glow);
+    if (tile) ring(tile, color, width, glow);
   };
 
   const draw = now => {
     frameNo++;
     clock = now;
+    stat.cards = stat.bodies = stat.unfilled = stat.full = 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = colors.gap;
-    ctx.fillRect(0, 0, vw, vh);
+    background();
     const ox = vw / 2 - view.cx * view.k, oy = vh / 2 - view.cy * view.k;
     needFull.length = 0;
     drawItems(root, ox, oy, WW * view.k, WH * view.k, 1, false, false);
-    for (const n of hitNodes) overlay(n, colors.hit, 3, true);
-    if (hovered && hovered !== selected) overlay(hovered, colors.text, 1.5, false);
-    if (selected) overlay(selected, colors.accent, 3, false);
+    for (const n of hitNodes) overlay(n, colors.hit, 3, 14);
+    if (hovered && hovered !== selected) overlay(hovered, colors.text, 1.5, 0);
+    if (selected) overlay(selected, colors.accent, 3, 18);
     ctx.globalAlpha = 1;
   };
 
@@ -637,8 +934,74 @@
     return found;
   };
 
+  /* ---------- the little map of the whole tree ---------- */
+  const mctx = mini.getContext('2d');
+  const MINI_W = 150;
+  let miniBase = null, miniAt = 0, miniH = 94;
+  const miniShown = () => !app.classList.contains('is-immersive') && !phone() && vh >= 520 && view.k > kFit * 1.15;
+  // The outline of the tree as far as it is laid out: the top-level cards and, inside them, the cards they show.
+  const paintMini = () => {
+    miniH = clamp(Math.round(MINI_W * WH / WW), 64, 110);
+    mini.style.height = `${miniH}px`;
+    mini.width = Math.round(MINI_W * dpr);
+    mini.height = Math.round(miniH * dpr);
+    miniBase = doc.createElement('canvas');
+    miniBase.width = mini.width; miniBase.height = mini.height;
+    const m = miniBase.getContext('2d');
+    m.scale(dpr * MINI_W / WW, dpr * miniH / WH);
+    const walk = (c, depth) => {
+      if (!c.items) return;
+      for (const it of c.items) {
+        const [x, y, w, hh] = cellRect(it, 1);
+        const g = Math.min(edge(it), w / 6, hh / 6);
+        m.globalAlpha = it.group ? 0.5 : 1;
+        m.fillStyle = pal[it.topic].fill[Math.min(it.layer, 5)];
+        m.strokeStyle = pal[it.topic].edge[Math.min(it.layer, 5)];
+        m.lineWidth = 1.2 * WW / MINI_W;
+        m.beginPath();
+        m.rect(x + g, y + g, w - 2 * g, hh - 2 * g);
+        m.fill();
+        m.stroke();
+        if (depth < 2 && !it.group) walk(it, depth + 1);
+      }
+    };
+    walk(root, 0);
+    miniDirty = false;
+    miniAt = performance.now();
+  };
+  const drawMini = now => {
+    const on = miniShown();
+    mini.classList.toggle('is-on', on);
+    if (!on) return;
+    if (!miniBase || (miniDirty && now - miniAt > 250)) paintMini();
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.clearRect(0, 0, mini.width, mini.height);
+    mctx.drawImage(miniBase, 0, 0);
+    const s = (MINI_W * dpr) / WW;
+    const x0 = (view.cx - vw / 2 / view.k) * s, y0 = (view.cy - vh / 2 / view.k) * s;
+    const rw = (vw / view.k) * s, rh = (vh / view.k) * s;
+    mctx.fillStyle = 'rgb(0 0 0 / .22)';
+    mctx.fillRect(0, 0, mini.width, mini.height);
+    mctx.clearRect(x0, y0, rw, rh);
+    mctx.drawImage(miniBase, x0, y0, rw, rh, x0, y0, rw, rh);
+    mctx.strokeStyle = colors.accent;
+    mctx.lineWidth = 2 * dpr;
+    mctx.strokeRect(x0, y0, rw, rh);
+  };
+  let miniDrag = false;
+  const miniGo = event => {
+    const rect = mini.getBoundingClientRect();
+    stopMotion();
+    go({cx: clamp(((event.clientX - rect.left) / rect.width) * WW, 0, WW), cy: clamp(((event.clientY - rect.top) / rect.height) * WH, 0, WH), k: goal.k});
+  };
+  mini.addEventListener('pointerdown', event => { mini.setPointerCapture(event.pointerId); miniDrag = true; miniGo(event); });
+  mini.addEventListener('pointermove', event => { if (miniDrag) miniGo(event); });
+  mini.addEventListener('pointerup', () => { miniDrag = false; });
+  mini.addEventListener('pointercancel', () => { miniDrag = false; });
+
   /* ---------- the frame loop: redraws only while something changes ---------- */
   let raf = 0, last = 0, crumbKey = null, statusText = '', statusTimer = 0;
+  let moving = false;                // the picture is moving: cards cross-fade as they open; at rest they are either open or closed
   const request = () => { if (!raf) raf = requestAnimationFrame(frame); };
   const settled = () => !tween && Math.abs(Math.log(goal.k / view.k)) < 0.0005 && Math.abs(goal.cx - view.cx) * view.k < 0.3 && Math.abs(goal.cy - view.cy) * view.k < 0.3;
   const frame = now => {
@@ -663,66 +1026,57 @@
       view.cy += (goal.cy - view.cy) * a;
       if (settled()) Object.assign(view, goal);
     }
+    const began = performance.now();
+    moving = !!tween || !settled();
     draw(now);
+    drawMini(now);
     updateCrumbs();
     updateStatus();
     fetchFull();
-    if (!settled() || inflight > 0) request();
+    const busy = !settled() || inflight > 0;
+    // the numbers a test can read: where the tree is, how much was drawn in the last frame and how long drawing took
+    canvas.dataset.settled = busy ? '0' : '1';
+    if (!busy) {
+      Object.assign(canvas.dataset, {cards: stat.cards, bodies: stat.bodies, unfilled: stat.unfilled, full: stat.full});
+      canvas.dataset.drawMs = (performance.now() - began).toFixed(2);
+      canvas.dataset.tree = [vw / 2 - view.cx * view.k, vh / 2 - view.cy * view.k, WW * view.k, WH * view.k].map(Math.round).join(',');
+    }
+    if (busy) request();
   };
 
   const updateStatus = () => {
     const mid = pickAt(vw / 2, vh / 2);
-    const text = !mid ? '' : mid.layer === 0 ? '现在看到第 0 层（记忆本身）' : `现在看到第 ${mid.layer} 层`;
+    const text = !mid ? '' : mid.loose ? '未汇总的记忆' : mid.layer === 0 ? '第 0 层（记忆本身）' : `第 ${mid.layer} 层`;
     if (text === statusText) return;
     statusText = text;
     clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $('tree-status').textContent = statusText; }, 350);
+    statusTimer = setTimeout(() => { $('tree-status').textContent = statusText ? `现在看到${statusText}` : ''; }, 350);
   };
 
-  /* ---------- the bar of where we are ---------- */
-  const el = (tag, className, text) => {
-    const node = doc.createElement(tag);
-    if (className) node.className = className;
-    if (text !== undefined) node.textContent = text;
-    return node;
-  };
+  /* ---------- the capsule's crumbs: where we are ---------- */
+  const crumbs = $('tree-crumbs');
   const updateCrumbs = () => {
     const at = focus || selected || viewTile();
-    const key = `${at.id}|${focus ? 'f' : ''}`;
+    const key = `${at.id}|${focus ? 'f' : ''}|${at.title}`;
     if (key === crumbKey) return;
     crumbKey = key;
     const chain = [];
     for (let p = at; p && !p.virtual; p = p.parent) chain.unshift(p);
-    const bar = $('tree-crumbs');
-    bar.replaceChildren();
-    if (focus) bar.append(el('span', 'tag', '聚焦'));
+    crumbs.replaceChildren();
+    $('tree-focus-tag').hidden = !focus;
     const add = (text, current, onClick) => {
-      if (bar.lastChild && !bar.lastChild.classList.contains('tag')) {
-        const sep = el('span', 'sep', '›');
-        sep.setAttribute('aria-hidden', 'true');
-        bar.append(sep);
-      }
-      const btn = el('button', '', text);
-      btn.type = 'button';
-      btn.title = text;
-      if (current) btn.setAttribute('aria-current', 'location');
-      btn.addEventListener('click', onClick);
-      bar.append(btn);
+      if (crumbs.lastChild) crumbs.append(h('span', {class: 'sep', 'aria-hidden': 'true', text: '›'}));
+      crumbs.append(h('button', {type: 'button', title: text, text, 'aria-current': current ? 'location' : false, onclick: onClick}));
     };
-    add('全部', !chain.length, () => { fitAll(); });
+    add('全部', !chain.length, () => fitAll());
     chain.forEach((n, i) => add(n.title, i === chain.length - 1, () => focusOn(n)));
-    bar.scrollLeft = bar.scrollWidth;
+    crumbs.scrollLeft = crumbs.scrollWidth;
   };
   const focusOn = n => {
+    hitList.hidden = true;
     focus = n;
     crumbKey = null;
     zoomTo(n);
-  };
-  const focusUp = () => {
-    if (!focus) return false;
-    if (!focus.parent || focus.parent.virtual) { fitAll(); return true; }
-    focusOn(focus.parent);
-    return true;
   };
 
   /* ---------- full text of the memories that are big enough to read ---------- */
@@ -733,114 +1087,444 @@
       if (n.fetching || n.full !== undefined) continue;
       n.fetching = true;
       fetching++;
-      fetch(`/api/node/${encodeURIComponent(n.id)}`)
-        .then(r => (r.ok ? r.json() : Promise.reject()))
-        .then(data => { n.full = data.content; })
-        .catch(() => { n.full = n.snippet; })
+      api('GET', `/api/node/${encodeURIComponent(n.id)}`)
+        .then(r => { n.full = r.ok ? r.data.content : n.snippet; })
         .finally(() => { n.fetching = false; fetching--; request(); });
     }
   };
 
-  /* ---------- the side panel ---------- */
-  const panel = $('tree-panel');
-  const panelBody = $('tree-panel-body');
+  /* ---------- the detail panel: read and do everything about one node ---------- */
+  let detail = null;                 // what /api/node said about the selected node
+  let act = null;                    // the form that is open: edit, child, move, delete
+  let editTitle = false;
+  let selectSerial = 0;
+  let kidsShown = 6;
+  const fold = {relations: true, history: false};
   const badge = layer => {
-    const b = el('span', 'layer', layer === 0 ? '第 0 层 · 记忆' : `第 ${layer} 层 · 汇总`);
+    const b = h('span', {class: 'layer', text: layer === 0 ? '第 0 层 · 记忆' : `第 ${layer} 层 · 汇总`});
     b.dataset.layer = String(Math.min(layer, 5));
     return b;
   };
   const span = it => (it.from ? (it.to && it.to !== it.from ? `${it.from} – ${it.to}` : it.from) : '');
-  let selectSerial = 0;
-  const showPanel = (n, data) => {
-    const pane = el('div', 'pane');
-    if (data && data.path.length) {
-      const path = el('nav', 'path');
-      path.setAttribute('aria-label', '它在树里的位置');
-      data.path.forEach((p, i) => {
-        if (i) path.append(el('span', 'sep', '›'));
-        const target = byId.get(p.id);
-        const btn = el('button', '', p.title);
-        btn.type = 'button';
-        btn.title = p.title;
-        if (target) btn.addEventListener('click', () => select(target, true));
-        path.append(btn);
-      });
-      pane.append(path);
-    }
-    pane.append(el('h2', 'pane-title', data ? data.title || data.label : n.title));
-    const facts = el('div', 'pane-meta');
-    facts.append(badge(n.layer));
-    if (data) {
-      facts.append(el('span', '', `第 ${data.version} 版`));
-      if (data.occurred) facts.append(el('span', '', `发生于 ${data.occurred}`));
-      if (data.descendants) facts.append(el('span', '', `下面共 ${data.descendants} 条`));
-    } else {
-      if (n.size > 1) facts.append(el('span', '', `下面共 ${n.size - 1} 条`));
-      if (span(n)) facts.append(el('span', '', span(n)));
-    }
-    pane.append(facts);
-    pane.append(el('p', 'pane-text', data ? data.content : n.snippet));
-    if (data && data.tags.length) {
-      const chips = el('span', 'chips');
-      for (const tag of data.tags) {
-        const a = el('a', 'chip', tag);
-        a.href = `/memories?tag=${encodeURIComponent(tag)}`;
-        chips.append(a);
-      }
-      pane.append(chips);
-    }
-    const actions = el('div', 'btns');
-    const open = el('a', 'btn btn-primary btn-sm', '打开节点页');
-    open.href = `/node/${encodeURIComponent(n.id)}`;
-    const here = el('button', 'btn btn-sm', '聚焦到这里');
-    here.type = 'button';
-    here.addEventListener('click', () => focusOn(n));
-    actions.append(open, here);
-    pane.append(actions);
-    panelBody.replaceChildren(pane);
+  const snippetOf = text => {
+    const t = text.trim();
+    return [...t].length > 600 ? `${[...t].slice(0, 600).join('')}…` : t;
   };
-  const select = (n, fly_) => {
-    selected = n;
-    panel.hidden = false;
-    showPanel(n, null);
-    const mine = ++selectSerial;
-    fetch(`/api/node/${encodeURIComponent(n.id)}`)
-      .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(data => { if (mine === selectSerial) showPanel(n, data); })
-      .catch(() => {});
-    syncOutline(n);
-    if (fly_) flyTo(n);
+  const setPanel = open => {
+    panel.classList.toggle('is-open', open);
+    app.classList.toggle('has-panel', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (open) panel.removeAttribute('inert'); else panel.setAttribute('inert', '');
+  };
+  // A node on the page: itself when it is loaded, else the path to it is fetched first.
+  const nodeById = async id => {
+    const known = byId.get(id);
+    if (known) return known;
+    const r = await api('GET', `/api/node/${encodeURIComponent(id)}`);
+    if (!r.ok || r.data.deleted) return null;
+    return ensure([...r.data.path.map(p => p.id), id]);
+  };
+  const goTo = async id => {
+    const n = await nodeById(id);
+    if (!n) { toast('没找到这个节点，它可能已经被删除', true); return null; }
+    select(n, {fly: true, focusPanel: true});
+    return n;
+  };
+  const tagSearch = tag => {
+    searchBox.value = `#${tag}`;
+    search();
+  };
+
+  const field = (label, control, hint) => h('div', {class: 'field'}, h('label', {for: control.id, text: label}), control, hint && h('p', {class: 'hint', text: hint}));
+  const formError = (box, r, retry) => {
+    box.replaceChildren(icon('alert'), h('p', {text: r.data.error || '没有成功'}));
+    box.hidden = false;
+    if (r.data.conflict) box.append(h('button', {type: 'button', class: 'btn btn-sm', text: '重新载入最新内容', onclick: retry}));
+  };
+  const errorBox = () => h('div', {class: 'banner banner-error', role: 'alert', hidden: true});
+
+  // Run a change from a form (or any element that holds the buttons and one error box): `done(data)` when it
+  // worked, else the reason shows in the box, with a way to load the newest version when someone else changed it.
+  const submit = async (scope, request_, done) => {
+    const box = scope.querySelector('.banner');
+    const buttons = [...scope.querySelectorAll('button')];
+    buttons.forEach(b => { b.disabled = true; });
+    const r = await request_();
+    buttons.forEach(b => { b.disabled = false; });
+    if (r.ok) { box.hidden = true; await done(r.data); }
+    else formError(box, r, () => reload());
+  };
+  const reload = async () => {
+    if (!selected) return;
+    act = null;
+    const r = await api('GET', `/api/node/${encodeURIComponent(selected.id)}`);
+    if (r.ok && selected) { apply(selected, r.data); renderPanel(); }
+  };
+  // What the picture and the outline show of a node, after it was changed.
+  const apply = (n, data) => {
+    detail = data;
+    n.title = data.label;
+    n.snippet = snippetOf(data.content);
+    n.full = data.content;
+    n.words = null;
+    if (!n.children || !n.children.length) { const day = (data.occurred || '').slice(0, 10); n.from = day; n.to = day; }
+    wraps.clear();
+    crumbKey = null;
+    renderOutline();
+    miniDirty = true;
     request();
   };
-  const deselect = () => {
+  const saveChange = async fields => {
+    const r = await api('POST', `/api/node/${encodeURIComponent(selected.id)}`, {version: detail.version, ...fields});
+    if (r.ok) { act = null; editTitle = false; }
+    return r;
+  };
+
+  const editForm = d => {
+    const title = h('input', {type: 'text', id: 'f-title', value: d.title, maxlength: '200', autocomplete: 'off'});
+    const content = h('textarea', {id: 'f-content', rows: '7', text: d.content});
+    const tags = h('input', {type: 'text', id: 'f-tags', value: d.tags.join(', '), autocomplete: 'off'});
+    const occurred = h('input', {type: 'text', id: 'f-occurred', value: d.occurred, placeholder: '2024-09-12，或只写 2024-09、2024', autocomplete: 'off'});
+    const form = h('form', {class: 'pane-form', 'aria-label': '编辑这个节点'},
+      h('h3', {text: '编辑'}), errorBox(),
+      field('标题', title, d.layer > 0 ? '汇总必须有标题' : '记忆可以没有标题，没有时用正文的第一句'),
+      field('内容', content), field('标签（用逗号分开）', tags), field('发生时间', occurred),
+      h('div', {class: 'btns'},
+        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}),
+        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }}),
+        h('span', {class: 'hint', text: 'Ctrl+Enter 保存'})));
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      submit(form, () => saveChange({title: title.value, content: content.value, tags: parseTags(tags.value), occurred: occurred.value}),
+        async data => { apply(selected, data); renderPanel(); toast('已保存'); });
+    });
+    content.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); } });
+    return form;
+  };
+  const childForm = d => {
+    const title = h('input', {type: 'text', id: 'f-title', maxlength: '200', autocomplete: 'off'});
+    const content = h('textarea', {id: 'f-content', rows: '6', placeholder: '写下这一条记忆'});
+    const tags = h('input', {type: 'text', id: 'f-tags', autocomplete: 'off'});
+    const becomes = d.children.length === 0 && !d.title;
+    const form = h('form', {class: 'pane-form', 'aria-label': '新建子记忆'},
+      h('h3', {text: `在「${d.label}」下面新建一条`}), errorBox(),
+      becomes && h('p', {class: 'pane-note', text: '它现在是一条记忆；加了子记忆它会变成汇总，建议之后给它起个标题。'}),
+      field('标题（可以不写）', title), field('内容', content), field('标签（用逗号分开）', tags),
+      h('div', {class: 'btns'},
+        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}),
+        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }}),
+        h('span', {class: 'hint', text: 'Ctrl+Enter 保存'})));
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!content.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '内容不能是空的'}}); return; }
+      submit(form, () => api('POST', '/api/node', {parent: d.id, title: title.value, content: content.value, tags: parseTags(tags.value)}),
+        async data => { act = null; await rebuild(data.id); toast('已新建，它已经长在树里了'); });
+    });
+    content.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); } });
+    return form;
+  };
+  const moveForm = d => {
+    let chosen = null;
+    const q = h('input', {type: 'search', id: 'f-move', placeholder: '输入几个字，找一条汇总或节点', autocomplete: 'off', 'aria-label': '搜索新的上级'});
+    const list = h('ul', {class: 'pick-list', hidden: true});
+    const picked = h('p', {class: 'hint', role: 'status'});
+    const go_ = h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '移到这里', disabled: true});
+    const form = h('form', {class: 'pane-form', 'aria-label': '移动这个节点'},
+      h('h3', {text: '移动'}), errorBox(),
+      h('p', {class: 'pane-note', text: `一个节点只有一个位置，放在哪一条汇总下面；它下面的节点跟着一起搬走。${d.parent ? `现在在「${d.path[d.path.length - 1].title}」下面。` : '现在是最上层。'}`}),
+      field('新的上级', q), list, picked,
+      h('div', {class: 'btns'}, go_,
+        d.parent && h('button', {type: 'button', class: 'btn btn-sm', text: '移到最上层', onclick: () => run(null)}),
+        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }})));
+    const run = parent => submit(form, () => api('POST', `/api/node/${encodeURIComponent(d.id)}/move`, {parent}),
+      async () => { act = null; await rebuild(d.id); toast(parent ? '已移动' : '已移到最上层'); });
+    form.addEventListener('submit', event => { event.preventDefault(); if (chosen) run(chosen); });
+    let serial = 0, timer = 0;
+    const find = async () => {
+      const text = q.value.trim();
+      const mine = ++serial;
+      if (!text) { list.hidden = true; return; }
+      const r = await api('GET', `/api/search?k=8&q=${encodeURIComponent(text)}`);
+      if (mine !== serial) return;
+      const rows = r.ok ? r.data.hits.filter(hit => hit.id !== d.id) : [];
+      list.replaceChildren(...(rows.length ? rows.map(hit => h('li', {}, h('button', {type: 'button', class: 'pick', onclick: () => {
+        chosen = hit.id;
+        picked.textContent = `已选：${hit.title}`;
+        picked.className = 'hint is-ok';
+        go_.disabled = false;
+        list.hidden = true;
+        go_.focus();
+      }}, badge(hit.layer), h('span', {class: 'node-text', text: hit.title})))) : [h('li', {class: 'pick-note', text: r.ok ? '没有找到，换几个字试试' : r.data.error})]));
+      list.hidden = false;
+    };
+    q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(find, 250); });
+    q.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); clearTimeout(timer); find(); } });
+    return form;
+  };
+  const deleteForm = d => {
+    const reason = h('input', {type: 'text', id: 'f-reason', value: '不再需要了', maxlength: '200', autocomplete: 'off', required: true});
+    const where = d.parent ? `「${d.path[d.path.length - 1].title}」` : '最上层';
+    const form = h('form', {class: 'pane-form', 'aria-label': '删除这个节点'},
+      h('h3', {text: '删除'}), errorBox(),
+      h('p', {class: 'pane-note', text: `它会进回收站，保留 30 天，期间可以恢复。${d.children.length ? `它下面的 ${d.children.length} 个节点不会跟着删，会上移一层，挂到${where}下面。` : ''}`}),
+      field('为什么删除', reason),
+      h('div', {class: 'btns'},
+        h('button', {type: 'submit', class: 'btn btn-danger btn-sm', text: '删除', 'data-confirm': '确定把它移到回收站？'}),
+        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }})));
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!reason.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '要写明为什么删除'}}); return; }
+      submit(form, () => api('POST', `/api/node/${encodeURIComponent(d.id)}/delete`, {version: d.version, reason: reason.value}),
+        async data => {
+          act = null;
+          await rebuild(data.parent);
+          toast(data.moved ? `已移到回收站，它下面的 ${data.moved} 个节点上移了一层` : '已移到回收站');
+        });
+    });
+    return form;
+  };
+  const touch = async () => {
+    if (!detail) return;
+    const r = await api('POST', `/api/node/${encodeURIComponent(selected.id)}/touch`, {version: detail.version});
+    if (r.ok) { apply(selected, r.data); renderPanel(); toast('已确认：这条仍然正确'); }
+    else if (r.data.conflict) { toast('这条在别处被改过了，已重新载入', true); reload(); }
+    else toast(r.data.error || '没有成功', true);
+  };
+  const open_ = name => {
+    if (!selected || !detail) return;
+    act = act === name ? null : name;
+    renderPanel();
+    const first = panel.querySelector('.pane-form input:not([type=hidden]), .pane-form textarea');
+    if (first) { first.focus(); first.scrollIntoView({block: 'nearest'}); }
+  };
+  const focusPanel = () => panel.focus({preventScroll: true});
+
+  const relItem = (b, lead) => h('button', {type: 'button', class: 'rel-item', onclick: () => goTo(b.id)}, badge(b.layer), h('span', {class: 'rel-title', text: b.title || '（没有文字）'}), lead && h('span', {class: 'rel-lead', text: lead}));
+  const section = (key, title, count, ...body) => {
+    const node = h('details', {class: 'pane-fold', open: fold[key]}, h('summary', {}, title, count !== undefined && h('span', {class: 'count', text: count})), h('div', {class: 'pane-fold-body'}, ...body));
+    node.addEventListener('toggle', () => { fold[key] = node.open; });
+    return node;
+  };
+  const relations = (n, d) => {
+    const parts = [];
+    const path = h('nav', {class: 'pane-path', 'aria-label': '它在树里的位置'});
+    d.path.forEach((p, i) => { if (i) path.append(h('span', {class: 'sep', text: '›'})); path.append(h('button', {type: 'button', title: p.title, text: p.title, onclick: () => goTo(p.id)})); });
+    if (d.path.length) path.append(h('span', {class: 'sep', text: '›'}));
+    path.append(h('span', {class: 'here', text: d.label}));
+    parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: d.path.length ? '路径' : '位置'}), d.path.length ? path : h('p', {class: 'pane-note', text: d.layer === 0 && !d.children.length ? '还没汇总到任何一条汇总下面。' : '在最上层。'})));
+    if (d.children.length) {
+      const shown = d.children.slice(0, kidsShown);
+      parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: `孩子 · ${d.children.length} 条${d.descendants > d.children.length ? `，下面一共 ${d.descendants} 条` : ''}`}),
+        h('div', {class: 'rel-list'}, shown.map(c => relItem(c, c.snippet))),
+        d.children.length > shown.length && h('button', {type: 'button', class: 'btn btn-sm btn-ghost rel-more', text: `再显示 ${Math.min(10, d.children.length - shown.length)} 条`, onclick: () => { kidsShown += 10; renderPanel(); }})));
+    }
+    const s = d.siblings;
+    if (s && s.count > 1) {
+      const prev = s.before[s.before.length - 1], next = s.after[0];
+      parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: d.parent ? '同级' : '最上层的同级'}),
+        h('div', {class: 'sib'}, h('span', {text: `共 ${s.count} 条，这是第 ${s.index + 1} 条`}),
+          h('button', {type: 'button', class: 'btn btn-sm', disabled: !prev, title: prev ? prev.title : '', onclick: () => prev && goTo(prev.id)}, icon('left'), '上一个'),
+          h('button', {type: 'button', class: 'btn btn-sm', disabled: !next, title: next ? next.title : '', onclick: () => next && goTo(next.id)}, '下一个', icon('right')))));
+    }
+    if (d.refs.length) parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: '它引用的'}), h('div', {class: 'rel-list'}, d.refs.map(r => relItem(r)))));
+    if (d.referenced_by.length) parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: '引用了它的'}), h('div', {class: 'rel-list'}, d.referenced_by.map(r => relItem(r)))));
+    return section('relations', '关系', undefined, ...parts);
+  };
+  const attachments = d => h('div', {class: 'pane-sec'}, h('h3', {text: `附件 · ${d.attachments.length}`}), h('ul', {class: 'pane-files'}, d.attachments.map(a => {
+    if (!a.available) return h('li', {class: 'pane-file'}, icon('alert'), h('span', {text: `${a.name}（文件找不到了）`}));
+    if (a.referenced) return h('li', {class: 'pane-file'}, icon('file'), h('span', {text: `${a.name}（只记了位置：${a.path}）`}));
+    return h('li', {}, a.kind === 'image' && h('a', {href: `/file/${a.hash}`, target: '_blank', rel: 'noopener'}, h('img', {src: `/file/${a.hash}`, alt: a.caption || a.name, loading: 'lazy'})),
+      h('div', {class: 'pane-file'}, icon(a.kind === 'image' ? 'image' : 'file'), h('a', {href: `/file/${a.hash}`, target: '_blank', rel: 'noopener', text: a.name}), h('span', {class: 'muted', text: a.size_text})));
+  })));
+  const content = (n, d) => {
+    const body = [h('p', {class: 'pane-text', text: d ? d.content : n.snippet})];
+    if (d && d.tags.length) body.push(h('span', {class: 'chips'}, d.tags.map(tag => h('button', {type: 'button', class: 'chip chip-btn', title: '在树里高亮同样标签的卡片', text: tag, onclick: () => tagSearch(tag)}))));
+    if (d && d.sources.length) body.push(h('div', {class: 'pane-sec'}, h('h3', {text: '来源'}), h('ul', {class: 'sources'}, d.sources.map(s => h('li', {text: s})))));
+    if (d && d.attachments.length) body.push(attachments(d));
+    return h('div', {class: 'pane-sec'}, ...body);
+  };
+  const history = d => section('history', '历史', ` ${d.history.length} 个版本`, h('ol', {class: 'pane-hist'}, d.history.map(r => h('li', {},
+    h('div', {class: 'rev-head'}, h('span', {class: `op op-${r.op}`, text: r.label}), h('b', {text: `第 ${r.version} 版`}), h('span', {class: 'muted', text: `${r.who} · ${fmtTime(r.at)}`})),
+    r.reason && h('p', {class: 'reason', text: r.reason}),
+    r.title_changed && h('p', {class: 'diff'}, h('span', {class: 'muted', text: '标题：'}), r.old_title && h('del', {text: r.old_title}), r.title ? h('ins', {text: r.title}) : h('span', {class: 'muted', text: '（去掉了标题）'})),
+    r.removed !== null && r.removed !== undefined
+      ? h('p', {class: 'diff'}, h('span', {class: 'muted', text: '改了：'}), r.removed && h('del', {text: r.removed}), r.added && h('ins', {text: r.added}))
+      : (r.same && !r.title_changed && h('p', {class: 'muted', text: '文字没有变化，改的是标签、日期、引用或附件。'}))))));
+
+  const startTitleEdit = () => {
+    if (!detail || editTitle) return;
+    editTitle = true;
+    renderPanel();
+    const input = panel.querySelector('.pane-title-edit input');
+    if (input) { input.focus(); input.select(); }
+  };
+  const titleBlock = (n, d) => {
+    if (editTitle && d) {
+      const input = h('input', {type: 'text', value: d.title, maxlength: '200', 'aria-label': '标题', autocomplete: 'off', placeholder: d.layer > 0 ? '汇总必须有标题' : '没有标题时用正文的第一句'});
+      const form = h('form', {class: 'pane-title-edit'}, input, h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}));
+      const wrap = h('div', {}, form, errorBox());
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        submit(wrap, () => saveChange({title: input.value}), async data => { apply(selected, data); renderPanel(); toast('标题已保存'); });
+      });
+      input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); editTitle = false; renderPanel(); focusPanel(); } });
+      return [wrap];
+    }
+    const label = d ? d.label : n.title;
+    return [h('button', {type: 'button', class: `pane-title${d && !d.title ? ' is-empty' : ''}`, title: d ? '点一下改标题' : '', text: label || '（没有文字）', onclick: startTitleEdit})];
+  };
+
+  const actionButton = (name, label, ic, on, extra = {}) => h('button', {type: 'button', class: 'btn btn-sm btn-ghost', disabled: !detail, 'aria-pressed': act === name ? 'true' : false, onclick: on, ...extra}, icon(ic), label);
+  const paneHead = (n, d) => {
+    const pin = h('button', {type: 'button', class: 'tool', 'aria-pressed': String(detailPinned), title: '固定面板：点空白处不会收起', 'aria-label': '固定详情面板', onclick: () => setDetailPinned(!detailPinned)}, icon('pin'));
+    return h('div', {class: 'pane-head', id: 'pane-head'},
+      h('div', {class: 'pane-top'}, badge(n.layer), h('span', {class: 'grow', text: d ? `第 ${d.version} 版${d.occurred ? ` · 发生于 ${d.occurred}` : ''}` : ''}),
+        h('a', {class: 'pane-open', href: `/node/${encodeURIComponent(n.id)}`, title: '在记忆页打开（有完整的层级关系和历史）', 'aria-label': '在记忆页打开'}, icon('external')),
+        pin,
+        h('button', {type: 'button', class: 'tool', title: '关闭（Esc）', 'aria-label': '关闭详情面板', onclick: () => { closePanel(); canvas.focus(); }}, icon('x'))),
+      ...titleBlock(n, d),
+      h('div', {class: 'pane-acts'},
+        actionButton('edit', '编辑', 'edit', () => open_('edit'), {'aria-keyshortcuts': 'E'}),
+        actionButton('child', '新建子记忆', 'plus', () => open_('child'), {'aria-keyshortcuts': 'N'}),
+        actionButton('move', '移动', 'move', () => open_('move')),
+        actionButton('touch', '仍然正确', 'circle-check', touch, {title: '内容没问题的话点这里：我看过了，仍然正确'}),
+        actionButton('delete', '删除', 'trash', () => open_('delete')),
+        h('button', {type: 'button', class: 'btn btn-sm btn-ghost', onclick: () => focusOn(n)}, icon('scan'), '聚焦')));
+  };
+  const renderPanel = () => {
+    const keep = panel.querySelector('.pane-scroll')?.scrollTop || 0;
+    if (!selected) {
+      panel.replaceChildren(h('div', {class: 'pane-scroll'}, h('div', {class: 'pane-empty'}, h('b', {text: '详情面板'}), h('p', {text: '点一个卡片，就能在这里读全文、编辑、新建子记忆、移动、删除，看它的上下级和历史。'}),
+        h('p', {}, h('kbd', {text: 'E'}), ' 编辑　', h('kbd', {text: 'N'}), ' 新建子记忆　', h('kbd', {text: 'Esc'}), ' 关闭'))));
+      return;
+    }
+    const n = selected, d = detail && detail.id === n.id ? detail : null;
+    const form = d && act ? { edit: editForm, child: childForm, move: moveForm, delete: deleteForm }[act](d) : null;
+    const meta = d ? h('div', {class: 'pane-meta'},
+      d.descendants ? h('span', {text: `下面共 ${d.descendants} 条`}) : null,
+      h('span', {text: `记录于 ${fmtTime(d.created)}`}), h('span', {text: `更新于 ${fmtTime(d.updated)}`})) : h('div', {class: 'pane-meta'}, n.size > 1 && h('span', {text: `下面共 ${n.size - 1} 条`}), span(n) && h('span', {text: span(n)}), h('span', {text: '正在取详细内容……'}));
+    panel.replaceChildren(paneHead(n, d), h('div', {class: 'pane-scroll'}, form, meta, content(n, d), d && relations(n, d), d && history(d)));
+    const body = panel.querySelector('.pane-scroll');
+    if (body) body.scrollTop = keep;
+  };
+  const closePanel = () => {
     selected = null;
-    panel.hidden = true;
+    detail = null;
+    act = null;
+    editTitle = false;
     selectSerial++;
+    setPanel(false);
     syncOutline(null);
     request();
   };
-  $('tree-panel-close').addEventListener('click', deselect);
+  // Another node, or none. With the panel pinned it stays open and says what it is for.
+  const select = (n, {fly: doFly = false, focusPanel: moveFocus = false} = {}) => {
+    if (n.loose) { focusOn(n); return; }
+    selected = n;
+    detail = null;
+    act = null;
+    editTitle = false;
+    kidsShown = 6;
+    setPanel(true);
+    renderPanel();
+    const mine = ++selectSerial;
+    api('GET', `/api/node/${encodeURIComponent(n.id)}`).then(r => {
+      if (mine !== selectSerial) return;
+      if (r.ok) { detail = r.data; if (r.data.label !== n.title) { n.title = r.data.label; crumbKey = null; } }
+      renderPanel();
+    });
+    syncOutline(n);
+    if (doFly) flyTo(n); else keepInSight(n);
+    if (moveFocus) focusPanel();
+    request();
+  };
+  const deselect = () => {
+    if (!selected) return;
+    if (detailPinned) { selected = null; detail = null; act = null; selectSerial++; renderPanel(); syncOutline(null); request(); }
+    else closePanel();
+  };
+  const setDetailPinned = on => {
+    detailPinned = on;
+    store.set('rp-tree-detail-pin', on ? '1' : '0');
+    renderPanel();
+  };
+  // The panel can be dragged away: to the right on a wide screen, down on a phone.
+  let paneDrag = null;
+  panel.addEventListener('pointerdown', event => {
+    const head = event.target.closest('.pane-head');
+    if (!head || event.target.closest('button, a, input, form') || event.button > 0) return;
+    paneDrag = {x: event.clientX, y: event.clientY, id: event.pointerId};
+    head.setPointerCapture(event.pointerId);
+    head.classList.add('is-dragging');
+  });
+  panel.addEventListener('pointermove', event => {
+    if (!paneDrag || paneDrag.id !== event.pointerId) return;
+    const d = phone() ? event.clientY - paneDrag.y : event.clientX - paneDrag.x;
+    panel.style.transition = 'none';
+    panel.style.transform = `translate${phone() ? 'Y' : 'X'}(${Math.max(0, d)}px)`;
+    paneDrag.d = d;
+  });
+  const dropPanel = () => {
+    if (!paneDrag) return;
+    const far = (paneDrag.d || 0) > 90;
+    paneDrag = null;
+    panel.style.transition = '';
+    panel.style.transform = '';
+    panel.querySelector('.pane-head')?.classList.remove('is-dragging');
+    if (far) { closePanel(); canvas.focus(); }
+  };
+  panel.addEventListener('pointerup', dropPanel);
+  panel.addEventListener('pointercancel', dropPanel);
+  panel.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    if (act) { act = null; renderPanel(); focusPanel(); return; }
+    closePanel();
+    canvas.focus();
+  });
+
+  // After the tree changed shape (a node written, moved or deleted): fetch it again and go to a node.
+  const rebuild = async id => {
+    const focusId = focus && focus.id;
+    const r = await api('GET', '/api/outline?depth=3');
+    if (!r.ok) { toast('树没能刷新，请刷新页面', true); return; }
+    markHits([]);
+    hovered = null;
+    closePanel();
+    buildTree(r.data);
+    resetLayouts();
+    calcFit();
+    focus = focusId ? byId.get(focusId) || null : null;
+    crumbKey = null;
+    buildTopList();
+    buildLegend();
+    renderOutline();
+    if (id) await goTo(id);
+    else {
+      if (detailPinned) { setPanel(true); renderPanel(); }
+      if (atFit) fitAll(false);
+    }
+    request();
+  };
 
   /* ---------- the tooltip ---------- */
   const tip = $('tree-tip');
   const showTip = (it, x, y) => {
     if (!it) { tip.hidden = true; return; }
     if (it.group) {
-      tip.replaceChildren(el('strong', 'tip-title', `其他 ${it.count} 条`), el('span', 'tip-meta', '太小放不下的兄弟，点一下展开'));
+      tip.replaceChildren(h('strong', {class: 'tip-title', text: `其他 ${it.count} 条`}), h('span', {class: 'tip-meta', text: '太小放不下的兄弟，点一下展开'}));
+    } else if (it.loose) {
+      tip.replaceChildren(h('strong', {class: 'tip-title', text: it.title}), h('span', {class: 'tip-snip', text: '这些记忆还没有汇总到任何一条汇总下面。点一下聚焦到这里。'}));
     } else {
       const bits = [];
       if (it.size > 1) bits.push(`下面共 ${it.size - 1} 条`);
       if (span(it)) bits.push(span(it));
-      const rows = [el('span', 'tip-head'), el('strong', 'tip-title', it.title)];
-      rows[0].append(badge(it.layer));
       const rest = restOf(it, it.snippet);
-      if (rest) rows.push(el('span', 'tip-snip', rest));
-      if (bits.length) rows.push(el('span', 'tip-meta', bits.join(' · ')));
-      tip.replaceChildren(...rows);
+      tip.replaceChildren(h('span', {class: 'tip-head'}, badge(it.layer)), h('strong', {class: 'tip-title', text: it.title}), rest && h('span', {class: 'tip-snip', text: rest}), bits.length && h('span', {class: 'tip-meta', text: bits.join(' · ')}));
     }
     tip.hidden = false;
-    const w = tip.offsetWidth, h = tip.offsetHeight;
-    tip.style.transform = `translate(${Math.max(8, Math.min(x + 14, vw - w - 8))}px, ${Math.max(8, Math.min(y + 16, vh - h - 8))}px)`;
+    const w = tip.offsetWidth, hh = tip.offsetHeight;
+    tip.style.transform = `translate(${Math.max(8, Math.min(x + 14, vw - w - 8))}px, ${Math.max(8, Math.min(y + 16, vh - hh - 8))}px)`;
   };
 
   /* ---------- pointer, wheel, keyboard ---------- */
@@ -881,6 +1565,7 @@
       view.cy = wy - (my - vh / 2) / kk;
       clampView(view);
       Object.assign(goal, view);
+      atFit = false;
       request();
       return;
     }
@@ -891,6 +1576,7 @@
       if (drag.moved > 5) {
         canvas.classList.add('is-dragging');
         tip.hidden = true;
+        atFit = false;
         view.cx -= dx / view.k;
         view.cy -= dy / view.k;
         clampView(view);
@@ -922,8 +1608,8 @@
     const twice = now - lastTap.t < 380 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 24;
     lastTap = {t: twice ? 0 : now, x: p.x, y: p.y};
     if (!it) { deselect(); return; }
-    if (it.group) { zoomTo(it); return; }
-    select(it, false);
+    if (it.group || it.loose) { zoomTo(it); return; }
+    select(it, {focusPanel: true});
     if (twice) focusOn(it);
   };
   canvas.addEventListener('pointerup', release);
@@ -940,20 +1626,41 @@
     zoomBy(Math.exp(-event.deltaY * unit * speed), p.x, p.y);
     tip.hidden = true;
   }, {passive: false});
-  canvas.addEventListener('keydown', event => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const step = 0.15;
-    const pan = (dx, dy) => { stopMotion(); go({cx: goal.cx + (dx * vw * step) / goal.k, cy: goal.cy + (dy * vh * step) / goal.k, k: goal.k}); };
+
+  // The keys work wherever the focus is on this page, except while someone is typing, and the keys that move the
+  // picture or press a card only when the focus is on the picture.
+  const typing = target => target.closest('input, textarea, select, [contenteditable]');
+  doc.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
+    const target = event.target;
+    if (typing(target)) return;
+    const onPicture = target === canvas || target === doc.body;
+    const pan = (dx, dy) => { stopMotion(); go({cx: goal.cx + (dx * vw * 0.15) / goal.k, cy: goal.cy + (dy * vh * 0.15) / goal.k, k: goal.k}); };
     switch (event.key) {
+      case '/': searchBox.focus(); searchBox.select(); break;
+      case 'f': case 'F': setImmersive(!app.classList.contains('is-immersive')); break;
+      case 'o': case 'O': setOutline(!side.classList.contains('is-open'), true); break;
+      case 'e': case 'E': if (selected) open_('edit'); else return; break;
+      case 'n': case 'N': if (selected) open_('child'); else return; break;
+      case '?': toggleKeys(); break;
       case '+': case '=': stopMotion(); zoomBy(1.5); break;
       case '-': case '_': stopMotion(); zoomBy(1 / 1.5); break;
-      case '0': case 'Home': fitAll(); break;
-      case 'ArrowLeft': pan(-1, 0); break;
-      case 'ArrowRight': pan(1, 0); break;
-      case 'ArrowUp': pan(0, -1); break;
-      case 'ArrowDown': pan(0, 1); break;
-      case 'Escape': if (!focusUp()) deselect(); break;
-      case 'Enter': if (selected) focusOn(selected); break;
+      case '0': fitAll(); break;
+      case 'Home': if (!onPicture) return; fitAll(); break;
+      case 'ArrowLeft': if (!onPicture) return; pan(-1, 0); break;
+      case 'ArrowRight': if (!onPicture) return; pan(1, 0); break;
+      case 'ArrowUp': if (!onPicture) return; pan(0, -1); break;
+      case 'ArrowDown': if (!onPicture) return; pan(0, 1); break;
+      case 'Enter': if (!onPicture || !selected) return; focusOn(selected); break;
+      case 'Escape':
+        if (!$('tree-keys').hidden) toggleKeys();
+        else if (!hitList.hidden) hitList.hidden = true;
+        else if (focus) fitAll();
+        else if (selected || panelOpen()) { closePanel(); canvas.focus(); }
+        else if (app.classList.contains('is-immersive')) setImmersive(false);
+        else if (side.classList.contains('is-open') && !outlinePinned) setOutline(false, true);
+        else return;
+        break;
       default: return;
     }
     event.preventDefault();
@@ -961,6 +1668,29 @@
   $('tree-in').addEventListener('click', () => { stopMotion(); zoomBy(1.6); });
   $('tree-out').addEventListener('click', () => { stopMotion(); zoomBy(1 / 1.6); });
   $('tree-fit').addEventListener('click', () => fitAll());
+  const keysBox = $('tree-keys'), keysBtn = $('tree-keys-toggle');
+  function toggleKeys() {
+    keysBox.hidden = !keysBox.hidden;
+    keysBtn.setAttribute('aria-pressed', String(!keysBox.hidden));
+  }
+  keysBtn.addEventListener('click', toggleKeys);
+
+  /* ---------- immersive: only the picture (the page covers the whole window; Esc has to reach the page, so the
+     browser's own full screen is not used) ---------- */
+  const immerseBtn = $('tree-immerse');
+  function setImmersive(on) {
+    app.classList.toggle('is-immersive', on);
+    immerseBtn.setAttribute('aria-pressed', String(on));
+    tip.hidden = true;
+    hitList.hidden = true;
+    if (on) {
+      keysBox.hidden = true;
+      keysBtn.setAttribute('aria-pressed', 'false');
+      canvas.focus({preventScroll: true});
+    }
+    request();
+  }
+  immerseBtn.addEventListener('click', () => setImmersive(!app.classList.contains('is-immersive')));
 
   /* ---------- search ---------- */
   const hitList = $('tree-hits');
@@ -973,129 +1703,105 @@
       n.isHit = true;
       for (let p = n; p.parent; p = p.parent) { hitAnc.push({parent: p.parent, rank: p.rank}); p.parent.hitBelow = true; }
     }
+    renderOutline();
     request();
   };
   // A hit may sit in a part of the tree that is not loaded yet: load down the path to it.
-  const nodeFor = async hit => {
-    const ids = [...hit.path.map(p => p.id).reverse(), hit.id];
-    for (let i = 0; i < ids.length; i++) {
-      if (byId.has(ids[i])) continue;
-      const above = i ? byId.get(ids[i - 1]) : root;
-      if (!above) return null;
-      await loadChildren(above);
-    }
-    return byId.get(hit.id) || null;
-  };
-  const jump = n => {
-    hitList.hidden = true;
-    select(n, true);
-  };
+  const nodeFor = hit => ensure([...hit.path.map(p => p.id).reverse(), hit.id]);
   const say = text => { $('tree-status').textContent = text; statusText = ''; };
   let searchSerial = 0;
+  // A query that starts with # looks for a tag: the cards that carry it.
   const search = async () => {
-    const q = searchBox.value.trim();
-    if (!q) { markHits([]); hitList.hidden = true; return; }
+    const raw = searchBox.value.trim();
+    if (!raw) { markHits([]); hitList.hidden = true; return; }
+    const tag = raw.startsWith('#') ? raw.replace(/^#+/, '').trim() : '';
+    const q = tag || raw;
+    if (!q) return;
     const mine = ++searchSerial;
     say('正在搜索……');
-    try {
-      const response = await fetch(`/api/search?k=8&q=${encodeURIComponent(q)}`);
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || '搜索失败');
-      const found = await Promise.all(body.hits.map(async h => ({h, n: await nodeFor(h)})));
-      if (mine !== searchSerial) return;
-      const hits = found.filter(f => f.n);
-      markHits(hits.map(f => f.n));
-      if (!hits.length) { hitList.hidden = true; say('没有找到'); return; }
-      hitList.replaceChildren(...hits.map(({h, n}) => {
-        const li = el('li');
-        const btn = el('button', 'pick');
-        btn.type = 'button';
-        const text = el('span', 'tree-hit-text');
-        text.append(el('span', 'node-text', h.title));
-        if (h.path.length) text.append(el('span', 'tree-hit-path', h.path.map(p => p.title).reverse().join(' › ')));
-        btn.append(badge(h.layer), text);
-        btn.addEventListener('click', () => jump(n));
-        li.append(btn);
-        return li;
-      }));
-      hitList.hidden = false;
-      say(`找到 ${hits.length} 条${body.no_strong_match ? '（没有明确匹配，只是线索）' : ''}，已飞到第一条`);
-      jump(hits[0].n);
-    } catch (error) {
-      say(error.message || '搜索失败');
-    }
+    const r = await api('GET', `/api/search?k=${tag ? 50 : 8}&q=${encodeURIComponent(q)}${tag ? `&tag=${encodeURIComponent(tag)}` : ''}`);
+    if (mine !== searchSerial) return;
+    if (!r.ok) { say(r.data.error || '搜索失败'); return; }
+    const found = await Promise.all(r.data.hits.map(async hit => ({hit, n: await nodeFor(hit)})));
+    if (mine !== searchSerial) return;
+    const hits = found.filter(f => f.n);
+    markHits(hits.map(f => f.n));
+    if (!hits.length) { hitList.hidden = true; say(tag ? `没有带标签「${tag}」的节点` : '没有找到'); return; }
+    hitList.replaceChildren(...hits.slice(0, 12).map(({hit, n}) => h('li', {}, h('button', {type: 'button', class: 'pick', onclick: () => { hitList.hidden = true; select(n, {fly: true, focusPanel: true}); }},
+      badge(hit.layer), h('span', {class: 'tree-hit-text'}, h('span', {class: 'node-text', text: hit.title}), hit.path.length && h('span', {class: 'tree-hit-path', text: hit.path.map(p => p.title).reverse().join(' › ')}))))));
+    hitList.hidden = false;
+    say(`找到 ${hits.length} 条${r.data.no_strong_match && !tag ? '（没有明确匹配，只是线索）' : ''}${tag ? `带标签「${tag}」的节点，已高亮` : '，已飞到第一条'}`);
+    if (!tag) { select(hits[0].n, {fly: true}); if (phone()) hitList.hidden = true; }
+    else if (!atFit) fitAll();
   };
   $('tree-search').addEventListener('submit', event => { event.preventDefault(); search(); });
   const clearSearch = () => { searchSerial++; markHits([]); hitList.hidden = true; };
   searchBox.addEventListener('keydown', event => {
-    if (event.key === 'Escape') { searchBox.value = ''; clearSearch(); }
+    if (event.key === 'Escape') { event.stopPropagation(); searchBox.value = ''; clearSearch(); canvas.focus(); }
+    else if (event.key === 'ArrowDown') { hitList.querySelector('.pick')?.focus(); event.preventDefault(); }
   });
+  hitList.addEventListener('keydown', event => {
+    const items = [...hitList.querySelectorAll('.pick')];
+    const at = items.indexOf(doc.activeElement);
+    if (event.key === 'ArrowDown') { items[Math.min(at + 1, items.length - 1)]?.focus(); event.preventDefault(); }
+    else if (event.key === 'ArrowUp') { (at > 0 ? items[at - 1] : searchBox).focus(); event.preventDefault(); }
+    else if (event.key === 'Escape') { hitList.hidden = true; searchBox.focus(); event.stopPropagation(); }
+  });
+  // the list of hits goes away as soon as a click lands anywhere else
+  doc.addEventListener('pointerdown', event => { if (!hitList.hidden && !event.target.closest('#tree-hits, #tree-search')) hitList.hidden = true; });
   searchBox.addEventListener('focus', () => { if (hitList.children.length && hitNodes.length) hitList.hidden = false; });
   searchBox.addEventListener('input', () => { if (!searchBox.value.trim()) clearSearch(); });
 
-  /* ---------- the outline beside the picture ---------- */
-  const side = $('tree-side');
+  /* ---------- the outline: a real tree, with the loose memories apart at the bottom ---------- */
   const ol = $('tree-ol');
   const olToggle = $('tree-ol-toggle');
   const olOpen = new Set();       // ids of expanded rows
   const olMore = new Map();       // id -> how many of its children are listed
   const olRows = new Map();       // id -> the row's element
   let olSel = null;
-  const olKey = () => (innerWidth < 900 ? 'rp-tree-outline-narrow' : 'rp-tree-outline');
+  let olDirty = true;
   const hasKids = n => n.children === null || (n.children && n.children.length > 0);
 
   const buildRows = (parentEl, list, level, owner) => {
     const shown = olMore.get(owner.id) || OL_PAGE;
     for (const n of list.slice(0, shown)) parentEl.append(buildRow(n, level));
     if (list.length > shown) {
-      const more = el('li', 'more', `还有 ${list.length - shown} 条，点这里再显示一些`);
-      more.setAttribute('role', 'treeitem');
-      more.tabIndex = -1;
-      more.dataset.more = owner.id;
-      more.style.paddingLeft = `${26 + (level - 1) * 14}px`;
-      parentEl.append(more);
+      parentEl.append(h('li', {class: 'more', role: 'treeitem', tabindex: '-1', text: `还有 ${list.length - shown} 条，点这里再显示一些`, 'data-more': owner.id}));
     }
   };
   const buildRow = (n, level) => {
-    const li = el('li');
-    li.setAttribute('role', 'treeitem');
-    li.setAttribute('aria-level', String(level));
-    li.tabIndex = -1;
-    li.dataset.id = n.id;
     const open = olOpen.has(n.id);
-    if (hasKids(n)) li.setAttribute('aria-expanded', open ? 'true' : 'false');
-    li.setAttribute('aria-selected', n.id === olSel ? 'true' : 'false');
-    const row = el('div', 'ol-row');
-    row.style.paddingLeft = `${6 + (level - 1) * 14}px`;
-    row.title = n.title;
-    const tog = el('span', hasKids(n) ? 'tog' : 'tog none');
-    tog.setAttribute('aria-hidden', 'true');
-    const dot = el('span', 'dot');
-    dot.style.background = pal[n.topic].bar;
-    row.append(tog, dot, el('span', 't', n.title));
-    if (hasKids(n) && n.size > 1) row.append(el('span', 'n', String(n.size - 1)));
-    li.append(row);
+    const kids = hasKids(n);
+    const row = h('div', {class: 'ol-row', title: n.title},
+      h('span', {class: kids ? 'tog' : 'tog none', 'aria-hidden': 'true'}));
+    if (!n.loose && n.layer > 0) {
+      const dot = h('span', {class: 'dot'});
+      dot.style.background = pal[n.topic].bar;
+      row.append(dot);
+    }
+    row.append(h('span', {class: 't', text: n.title}));
+    if (kids && n.size > 1 && !n.loose) row.append(h('span', {class: 'n', text: String(n.size - 1)}));
+    const li = h('li', {role: 'treeitem', 'aria-level': String(level), tabindex: '-1', 'data-id': n.id,
+      'aria-expanded': kids ? String(open) : false, 'aria-selected': String(n.id === olSel), class: `${n.loose ? 'ol-loose' : ''}${n.isHit ? ' is-hit' : ''}`.trim() || false}, row);
     olRows.set(n.id, li);
-    if (open && hasKids(n)) {
-      const group = el('ul');
-      group.setAttribute('role', 'group');
-      if (n.children === null) {
-        const wait = el('li', 'more', n.failed ? '没取到，稍后再试' : '正在取……');
-        wait.setAttribute('role', 'none');
-        group.append(wait);
-      } else buildRows(group, n.children, level + 1, n);
+    if (open && kids) {
+      const group = h('ul', {role: 'group'});
+      if (n.children === null) group.append(h('li', {class: 'more', role: 'none', text: n.failed ? '没取到，稍后再试' : '正在取……'}));
+      else buildRows(group, n.children, level + 1, n);
       li.append(group);
     }
     return li;
   };
-  let olDirty = true;
   function renderOutline() {
-    if (!root || side.hidden) { olDirty = true; return; }
+    if (!root || !side.classList.contains('is-open')) { olDirty = true; return; }
     olDirty = false;
     const active = doc.activeElement && ol.contains(doc.activeElement) ? doc.activeElement.dataset.id || doc.activeElement.dataset.more : null;
     olRows.clear();
     const frag = doc.createDocumentFragment();
     buildRows(frag, root.children, 1, root);
+    if (root.gathered) {
+      frag.append(buildRow(root.gathered, 1));
+    }
     ol.replaceChildren(frag);
     const stop = olRows.get(olSel) || ol.querySelector('li');
     if (stop) stop.tabIndex = 0;
@@ -1114,7 +1820,7 @@
     }
     renderOutline();
     const row = n && olRows.get(n.id);
-    if (row && !side.hidden) row.scrollIntoView({block: 'nearest'});
+    if (row && side.classList.contains('is-open')) row.scrollIntoView({block: 'nearest'});
   }
   const toggleRow = n => {
     if (olOpen.has(n.id)) olOpen.delete(n.id);
@@ -1122,8 +1828,9 @@
     renderOutline();
   };
   const activateRow = n => {
-    select(n, true);
-    if (innerWidth < 900) setOutline(false);
+    if (n.loose) { toggleRow(n); zoomTo(n); return; }
+    select(n, {fly: true});
+    if (innerWidth < 900) setOutline(false, true);
   };
   const rowOf = target => target.closest('li[role="treeitem"]');
   ol.addEventListener('click', event => {
@@ -1158,76 +1865,102 @@
         if (li.dataset.more) li.click();
         else if (n) activateRow(n);
         break;
-      case 'Escape': if (innerWidth < 900) { setOutline(false); canvas.focus(); } else return; break;
+      case 'Escape': if (!outlinePinned) { setOutline(false, true); canvas.focus(); } else { canvas.focus(); } break;
       default: return;
     }
     event.preventDefault();
+    event.stopPropagation();
   });
-  function setOutline(open, remember = true) {
-    side.hidden = !open;
-    olToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
-    if (remember) { try { localStorage.setItem(olKey(), open ? '1' : '0'); } catch { /* private mode */ } }
+  // Open and close. A peek (the pointer at the left edge) is not remembered and gives way again.
+  let peekTimer = 0;
+  function setOutline(open, remember = false) {
+    clearTimeout(peekTimer);
+    side.classList.toggle('is-open', open);
+    side.classList.remove('is-peek');
+    olToggle.setAttribute('aria-pressed', String(open));
+    if (open) side.removeAttribute('inert'); else side.setAttribute('inert', '');
     if (open && olDirty) renderOutline();
     if (open) { const row = olRows.get(olSel); if (row) row.scrollIntoView({block: 'nearest'}); }
-    request();
+    if (remember && !open) setOutlinePinned(false);
+    refit();
   }
-  olToggle.addEventListener('click', () => setOutline(side.hidden));
-  $('tree-side-close').addEventListener('click', () => { setOutline(false); olToggle.focus(); });
-  const initialOutline = () => {
-    let saved = null;
-    try { saved = localStorage.getItem(olKey()); } catch { /* private mode */ }
-    setOutline(saved === null ? innerWidth >= 900 : saved === '1', false);
+  const peek = on => {
+    clearTimeout(peekTimer);
+    if (on) {
+      if (side.classList.contains('is-open') || innerWidth < 900) return;
+      side.classList.add('is-open', 'is-peek');
+      side.removeAttribute('inert');
+      if (olDirty) renderOutline();
+    } else if (side.classList.contains('is-peek')) {
+      peekTimer = setTimeout(() => {
+        if (side.matches(':hover') || side.contains(doc.activeElement)) return;
+        side.classList.remove('is-open', 'is-peek');
+        side.setAttribute('inert', '');
+      }, 380);
+    }
   };
+  $('tree-edge').addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') peek(true); });
+  $('tree-edge').addEventListener('pointerleave', () => peek(false));
+  side.addEventListener('pointerleave', () => peek(false));
+  side.addEventListener('pointerenter', () => clearTimeout(peekTimer));
+  function setOutlinePinned(on) {
+    outlinePinned = on;
+    store.set('rp-tree-ol-pin', on ? '1' : '0');
+    $('tree-side-pin').setAttribute('aria-pressed', String(on));
+    refit();
+  }
+  olToggle.addEventListener('click', () => setOutline(!side.classList.contains('is-open') || side.classList.contains('is-peek')));
+  $('tree-side-close').addEventListener('click', () => { setOutline(false, true); olToggle.focus(); });
+  $('tree-side-pin').addEventListener('click', () => { setOutlinePinned(!outlinePinned); if (outlinePinned) { side.classList.remove('is-peek'); setOutline(true); } });
 
   /* ---------- legend and a text version of the top layer ---------- */
   const buildLegend = () => {
     const legend = $('tree-legend');
     legend.replaceChildren();
-    const topics = el('li');
-    const dots = el('span', 'swatches');
-    dots.setAttribute('aria-hidden', 'true');
+    const dots = h('span', {class: 'swatches', 'aria-hidden': 'true'});
     for (let t = 0; t < Math.min(topicCount, HUES.length); t++) {
-      const dot = el('span', 'sw');
+      const dot = h('span', {class: 'sw'});
       dot.style.background = pal[t].bar;
       dots.append(dot);
     }
-    topics.append(dots, el('span', '', '颜色 = 话题'));
-    legend.append(topics);
-    const layers = el('li');
-    const sw = el('span', 'swatches');
-    sw.setAttribute('aria-hidden', 'true');
-    const grey = pal[NEUTRAL];
+    legend.append(h('li', {}, dots, h('span', {text: '颜色 = 话题'})));
+    const sw = h('span', {class: 'swatches', 'aria-hidden': 'true'});
     for (const i of [0, 2, 4]) {
-      const box = el('span', 'sw box');
+      const box = h('span', {class: 'sw box'});
       box.style.background = pal[0].fill[i];
       box.style.borderColor = pal[0].edge[i];
       sw.append(box);
     }
-    const lightness = el('span', '', '亮度 = 层');
-    lightness.append(el('span', 'opt', '（越往上越深）'));
-    layers.append(sw, lightness);
-    legend.append(layers);
-    if (byId.size && [...byId.values()].some(n => n.topic === NEUTRAL)) {
-      const single = el('li', 'opt');
-      const box = el('span', 'sw box');
-      box.style.background = grey.fill[0];
-      box.style.borderColor = grey.edge[0];
-      single.append(box, el('span', '', '灰 = 总览和零散的记忆'));
-      legend.append(single);
+    legend.append(h('li', {}, sw, h('span', {text: '亮度 = 层'}), h('span', {class: 'opt', text: '（越往上越深）'})));
+    if (root.gathered || [...byId.values()].some(n => n.topic === NEUTRAL && n.layer > 0)) {
+      const box = h('span', {class: 'sw box'});
+      box.style.background = pal[NEUTRAL].fill[0];
+      box.style.borderColor = pal[NEUTRAL].edge[0];
+      legend.append(h('li', {class: 'opt'}, box, h('span', {text: '灰 = 总览和未汇总的记忆'})));
     }
   };
   const buildTopList = () => {
     const list = $('tree-outline');
+    list.replaceChildren();
     for (const n of root.children.slice(0, 40)) {
-      const li = el('li');
-      const a = el('a', '', `第 ${n.layer} 层：${n.title}`);
-      a.href = `/node/${encodeURIComponent(n.id)}`;
-      li.append(a);
-      list.append(li);
+      list.append(h('li', {}, h('a', {href: `/node/${encodeURIComponent(n.id)}`, text: `第 ${n.layer} 层：${n.title}`})));
     }
   };
+  const setLegend = open => {
+    foot.classList.toggle('is-collapsed', !open);
+    $('tree-foot-toggle').setAttribute('aria-expanded', String(open));
+    store.set('rp-tree-legend', open ? '1' : '0');
+  };
+  $('tree-foot-toggle').addEventListener('click', () => setLegend(foot.classList.contains('is-collapsed')));
 
   /* ---------- size, theme, start ---------- */
+  // The picture is fitted again when the window, the pinned outline or the open panel changes what is free.
+  const refit = () => {
+    if (!root || !loaded) return;
+    calcFit();
+    if (atFit) fitAll(true);
+    else request();
+  };
   const resize = () => {
     const rect = stage.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -1235,41 +1968,44 @@
     dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(vw * dpr);
     canvas.height = Math.round(vh * dpr);
+    bgKey = '';
     if (!root) return;
-    const aspect = clamp(vw / vh, 0.7, 2.4);
+    const u = usable(false);
+    const aspect = clamp(u.w / u.h, 0.7, 2.4);
     if (!loaded || Math.abs(aspect / layoutAspect - 1) > 0.3) {
       layoutAspect = aspect;
       WW = WORLD_H * aspect;
       calcFit();
       resetLayouts();
-      if (focus) go(viewFor(focus, 20), true);
+      if (focus) go(viewFor(focus, 14), true);
       else fitAll(false);
       loaded = true;
     }
     calcFit();
+    if (atFit) fitAll(false);
     request();
   };
-  const theme = () => { readColors(); widths.clear(); renderOutline(); buildLegend(); request(); };
+  const theme = () => { readColors(); widths.clear(); wraps.clear(); miniBase = null; renderOutline(); buildLegend(); request(); };
   window.addEventListener('rp-theme', theme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
   reduced.addEventListener('change', request);
 
   const start = async () => {
     readColors();
-    initialOutline();
+    setLegend(store.get('rp-tree-legend') === null ? innerWidth >= 900 : store.get('rp-tree-legend') === '1');
+    setPanel(false);
+    $('tree-side-pin').setAttribute('aria-pressed', String(outlinePinned));
+    setOutline(outlinePinned && innerWidth >= 900);
     const message = $('tree-msg');
     try {
       const response = await fetch('/api/outline?depth=3');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const list = await response.json();
       if (!list.length) { message.textContent = '树还是空的。'; return; }
-      root = {id: '', title: '全部', layer: -1, size: 0, virtual: true, topic: NEUTRAL, weight: 1, depth: -1};
-      adopt(root, list);
-      root.size = list.reduce((sum, c) => sum + c.size, 0);
-      assignTopics();
+      buildTree(list);
       const rect = stage.getBoundingClientRect();
       vw = rect.width; vh = rect.height;
-      layoutAspect = clamp(vw / vh, 0.7, 2.4);
+      layoutAspect = clamp(usable(false).w / usable(false).h, 0.7, 2.4);
       WW = WORLD_H * layoutAspect;
       root.asp = WW / WH;
       buildLegend();
@@ -1277,11 +2013,18 @@
       buildTopList();
       for (const n of root.children.slice(0, 60)) if (hasKids(n)) olOpen.add(n.id);
       renderOutline();
+      if (detailPinned) { setPanel(true); renderPanel(); refit(); }
       message.hidden = true;
       new ResizeObserver(resize).observe(stage);
       request();
+      const wanted = new URLSearchParams(location.search).get('focus');
+      if (wanted) {
+        const n = await nodeById(wanted);
+        if (n) { select(n, {fly: true}); focusOn(n); }
+        else toast('链接指向的节点已经不在树里了，这里是整棵树');
+      }
     } catch (error) {
-      message.replaceChildren(el('span', '', `没能画出这棵树：${error.message}。刷新页面再试一次。`));
+      message.replaceChildren(h('span', {text: `没能画出这棵树：${error.message}。刷新页面再试一次。`}));
     }
   };
   start();
