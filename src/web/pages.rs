@@ -428,9 +428,7 @@ async fn overview(State(w): State<Web>) -> Response {
 async fn tree(State(w): State<Web>) -> Response {
     let nodes = w.service.run(|s| s.stats().nodes).await;
     match nodes {
-        Ok(nodes) => {
-            w.render(json!({"View": "tree", "Title": "树", "Empty": nodes == 0, "Nodes": nodes}))
-        }
+        Ok(nodes) => w.render(json!({"View": "tree", "Title": "树", "Empty": nodes == 0})),
         Err(e) => broken(&e),
     }
 }

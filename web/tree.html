@@ -3,14 +3,15 @@
 <header class="page-head"><div><h1>树</h1><p class="sub">整棵记忆树，可以一路放大到每一条记忆</p></div></header>
 <div class="card"><div class="empty">{{ icon("tree") }}<h3>树还是空的</h3><p>等接入的 AI 写进第一批记忆，这里就会长出一幅可以缩放的图：缩小看最上面的几条总汇总，放大看到每一条具体的记忆。</p><div class="actions"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}自己写一条</a></div></div></div>
 {% else %}
-<div class="tree-app" id="tree-app" data-nodes="{{ Nodes }}">
+<div class="tree-app" id="tree-app">
   <div class="tree-bar">
     <form class="tree-search" id="tree-search" role="search">
       <label class="sr-only" for="tree-q">在整棵树里搜索</label>
       <span class="searchfield">{{ icon("search") }}<input type="search" id="tree-q" name="q" placeholder="在整棵树里找……" autocomplete="off" aria-controls="tree-hits"></span>
       <button class="btn btn-sm" type="submit">搜索</button>
     </form>
-    <div class="tree-tools" role="group" aria-label="缩放">
+    <div class="tree-tools" role="group" aria-label="视图">
+      <button type="button" class="btn btn-sm" id="tree-ol-toggle" aria-pressed="false" aria-controls="tree-side" title="显示或收起左侧大纲">{{ icon("list") }}大纲</button>
       <button type="button" class="btn btn-sm" id="tree-out" title="缩小（-）">{{ icon("minus") }}缩小</button>
       <button type="button" class="btn btn-sm" id="tree-in" title="放大（+）">{{ icon("plus") }}放大</button>
       <button type="button" class="btn btn-sm" id="tree-fit" title="适应窗口（0）">{{ icon("scan") }}适应窗口</button>
@@ -18,19 +19,25 @@
   </div>
   <ul class="tree-hits" id="tree-hits" hidden aria-label="搜索结果"></ul>
   <nav class="tree-crumbs" id="tree-crumbs" aria-label="当前位置"></nav>
-  <div class="tree-stage" id="tree-stage">
-    <canvas id="tree-canvas" tabindex="0" role="application" aria-label="记忆树的缩放图" aria-describedby="tree-help"></canvas>
-    <p class="sr-only" id="tree-help">用滚轮或加减键缩放，拖动或方向键平移，点一个方块选中它并在侧栏看内容，双击放大到它，按 0 回到整棵树，按 Esc 取消选择。图的文字版是下面「最上层的节点」列表和侧栏。</p>
-    <div class="tree-msg" id="tree-msg" role="status"><span class="spinner" aria-hidden="true"></span>正在画树……</div>
-    <div class="tree-tip" id="tree-tip" role="tooltip" hidden></div>
-    <div class="tree-foot">
-      <ul class="tree-legend" id="tree-legend" aria-label="颜色对应的层"></ul>
-      <p class="tree-status" id="tree-status" role="status" aria-live="polite"></p>
-    </div>
-    <aside class="tree-panel" id="tree-panel" aria-label="节点详情" hidden>
-      <button type="button" class="btn btn-ghost btn-icon btn-sm tree-panel-close" id="tree-panel-close" aria-label="关闭侧栏">{{ icon("x") }}</button>
-      <div id="tree-panel-body"></div>
+  <div class="tree-main">
+    <aside class="tree-side" id="tree-side" aria-label="节点大纲" hidden>
+      <div class="tree-side-head"><h2>大纲</h2><button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-side-close" aria-label="收起大纲">{{ icon("x") }}</button></div>
+      <ul class="tree-ol" id="tree-ol" role="tree" aria-label="记忆树的大纲"></ul>
     </aside>
+    <div class="tree-stage" id="tree-stage">
+      <canvas id="tree-canvas" tabindex="0" role="application" aria-label="记忆树的缩放图" aria-describedby="tree-help"></canvas>
+      <p class="sr-only" id="tree-help">用滚轮或加减键缩放，拖动或方向键平移，点一个方块选中它并在侧栏看内容，双击或按回车聚焦到它，按 0 回到整棵树，按 Esc 退出聚焦或取消选择。图的文字版是左侧大纲、下面「最上层的节点」列表和侧栏。</p>
+      <div class="tree-msg" id="tree-msg" role="status"><span class="spinner" aria-hidden="true"></span>正在画树……</div>
+      <div class="tree-tip" id="tree-tip" role="tooltip" hidden></div>
+      <div class="tree-foot" id="tree-foot">
+        <ul class="tree-legend" id="tree-legend" aria-label="图例"></ul>
+        <p class="tree-status" id="tree-status" role="status" aria-live="polite"></p>
+      </div>
+      <aside class="tree-panel" id="tree-panel" aria-label="节点详情" hidden>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm tree-panel-close" id="tree-panel-close" aria-label="关闭侧栏">{{ icon("x") }}</button>
+        <div id="tree-panel-body"></div>
+      </aside>
+    </div>
   </div>
   <ul class="sr-only" id="tree-outline" aria-label="最上层的节点"></ul>
 </div>
