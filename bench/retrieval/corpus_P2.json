@@ -1,0 +1,3699 @@
+{
+ "persona": "34-year-old native-English backend engineer in Melbourne at a fintech (Go/Postgres/Kubernetes), married to Mei (Chinese, hospital pharmacist) with two kids, learning Japanese; memories in English with a few Chinese/Japanese lines.",
+ "today": "2026-11-20",
+ "events": [
+  {
+   "op": "write",
+   "key": "m001",
+   "title": "Manager and 1:1",
+   "content": "Priya Raman is my engineering manager at Kestrel Pay. We have a 1:1 every Thursday at 10:30, and she prefers I send a short written agenda in Slack the night before rather than winging it.",
+   "tags": [
+    "work",
+    "team"
+   ],
+   "occurred": "2025-11-24"
+  },
+  {
+   "op": "write",
+   "key": "m002",
+   "title": "",
+   "content": "Marcus Chen, the payments platform tech lead, hates long PR descriptions and wants the 'why' in the first two lines. He also insists that errors are wrapped with %w and never both logged and returned in the same place.",
+   "tags": [
+    "work",
+    "team"
+   ],
+   "occurred": "2025-11-24"
+  },
+  {
+   "op": "write",
+   "key": "m003",
+   "title": "",
+   "content": "Aisha Rahman (junior backend, joined in September) is vegetarian and drinks oat flat whites. She is my pairing partner on the payout-service refactor and is nervous about on-call, so I offered to shadow her first rotation.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m004",
+   "title": "",
+   "content": "Sam O'Brien from SRE only drinks black coffee, barracks for Collingwood, and owns the Kubernetes upgrade schedule. Ping him in #sre-help instead of DMing him, he answers the channel faster.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2025-11-26"
+  },
+  {
+   "op": "write",
+   "key": "m155",
+   "title": "",
+   "content": "Work laptop is a MacBook Pro 14 with the M3 Pro and 36 GB of RAM. I use GoLand 2025.2 on the company licence and manage Go toolchains with mise.",
+   "tags": [
+    "work",
+    "setup"
+   ],
+   "occurred": "2025-11-27"
+  },
+  {
+   "op": "write",
+   "key": "m005",
+   "title": "On-call rotation",
+   "content": "My on-call rotation at Kestrel Pay is one week in five, with handover on Mondays at 9:30 Melbourne time. Primary pager is PagerDuty on the 'payments-core' schedule and Dmitri Volkov is my secondary this quarter.",
+   "tags": [
+    "oncall"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m156",
+   "title": "Deploy freeze",
+   "content": "Kestrel's rule: no production deploys on Fridays after 2pm, and a full freeze from 15 December to 5 January except for Sev1 fixes. Feature flags go through Unleash.",
+   "tags": [
+    "work",
+    "process"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m006",
+   "title": "INC-2231",
+   "content": "INC-2231 (3 Dec, payouts delayed 47 minutes). Symptom: payout-service started throwing 'FATAL: remaining connection slots are reserved for non-replication superuser connections' and PgBouncer cl_waiting climbed past 20 at 14:22. Root cause: a deploy at 14:05 added a code path that opened a pgx transaction and then called the partner bank HTTP API inside it; when the bank's p99 went to 9 seconds the transactions sat idle-in-transaction and ate all 40 slots of the PgBouncer pool on payouts-db. I rolled back at 14:41 and re-drove 12 pending payout batches by hand at 14:52. Fixes: moved the HTTP call outside the transaction, set idle_in_transaction_session_timeout = 30s on the payouts role, and wrote a small go vet analyzer that flags http.Client calls between Begin and Commit. Impact: 312 payouts delayed, no money lost, no SLA credits. Marcus thinks the fix is enough and does not want to raise the pool size; I wanted 60, left as an open question.",
+   "tags": [
+    "incident",
+    "postgres"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m157",
+   "title": "",
+   "content": "The payments API has an SLO of 99.95% availability and p99 latency under 400 ms, measured monthly. Last quarter we hit 99.97%.",
+   "tags": [
+    "work",
+    "slo"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m007",
+   "title": "Home loan",
+   "content": "Home loan is AUD 780,000 with Macquarie, taken out in March 2024 over 30 years. It is fixed at 5.89% until 28 March 2026 and the monthly repayment is AUD 4,620.",
+   "tags": [
+    "money",
+    "house"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m008",
+   "title": "Oliver's school",
+   "content": "Oliver (8) is in Year 3 at Northcote Primary School, in Ms Fitzgerald's class, room 14. Pickup is at 3:25pm and Tuesday is his library day.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2025-12-06"
+  },
+  {
+   "op": "write",
+   "key": "m009",
+   "title": "Chloe's kinder",
+   "content": "Chloe (4, turns 5 in May) goes to Merri Creek Kindergarten Wednesday to Friday, 8:45 to 2:45. She starts Prep at Northcote Primary in January 2027 and the enrolment confirmation arrived in October.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2025-12-06"
+  },
+  {
+   "op": "write",
+   "key": "m010",
+   "title": "Oliver asthma",
+   "content": "Oliver has mild asthma managed with Flixotide 50mcg, two puffs morning and night through a spacer, plus Ventolin when needed. His GP Dr Linh Nguyen at Northcote Family Clinic reviews it every six months.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m011",
+   "title": "Chloe eczema",
+   "content": "Chloe has eczema on her elbows and behind the knees. Dr Nguyen prescribed hydrocortisone 1% cream for flare-ups and we use QV Intensive moisturiser after every bath. No known food allergies.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m158",
+   "title": "",
+   "content": "Jess Tran is the product manager for payouts. She likes decisions in a one-page doc with the options listed, hates surprises in Slack on Friday afternoons, and runs on cold brew.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m012",
+   "title": "",
+   "content": "Heatwave in Melbourne today, 39 degrees. Worked from home and the house was still baking by 4pm.",
+   "tags": [],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m013",
+   "title": "Idempotency ADR",
+   "content": "ADR-017 (accepted): idempotency keys for the payments API will live in Redis (ElastiCache cache.r6g.large) with a 24h TTL instead of a Postgres table, because the Postgres write amplification showed up in load tests at 2,500 req/s. Dmitri objected on durability; we accepted the risk with a Postgres lookup on cache miss.",
+   "tags": [
+    "adr",
+    "redis"
+   ],
+   "occurred": "2025-12-11"
+  },
+  {
+   "op": "write",
+   "key": "m014",
+   "title": "ADR-014 pgx",
+   "content": "ADR-014: all new Go services use pgx v5 (pgxpool) directly instead of database/sql plus sqlx, and sqlc generates the query layer. Existing services migrate opportunistically, not as a dedicated project.",
+   "tags": [
+    "adr",
+    "postgres"
+   ],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m159",
+   "title": "",
+   "content": "Dmitri Volkov prefers design discussions on a call rather than in comments, wears the same grey hoodie to every meeting, and drinks a double espresso at 3pm without fail.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2025-12-13"
+  },
+  {
+   "op": "write",
+   "key": "m015",
+   "title": "Salary and bonus",
+   "content": "Base salary is AUD 185,000 plus a 10% target bonus and 12% super. The performance review cycle closes on 20 February.",
+   "tags": [
+    "comp"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m016",
+   "title": "",
+   "content": "Equity: 20,000 stock options at a AUD 1.35 strike, granted June 2024, four-year vest with a one-year cliff. The last company valuation put the shares at about AUD 2.10.",
+   "tags": [
+    "comp"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m017",
+   "title": "tidepool",
+   "content": "Side project 'tidepool' is a self-hosted RSS reader in Go with SQLite (modernc.org/sqlite, no cgo) and a HTMX frontend. I work on it Saturday mornings 7 to 9 before the kids wake up. It runs on Fly.io on a shared-cpu-1x 256MB machine for about USD 3.20 a month.",
+   "tags": [
+    "sideproject"
+   ],
+   "occurred": "2025-12-16"
+  },
+  {
+   "op": "write",
+   "key": "m160",
+   "title": "",
+   "content": "Qantas Frequent Flyer balance is about 142,000 points, mostly from the Amex Explorer card. I want to save them for a business class fare to Tokyo, not use them on domestic flights.",
+   "tags": [
+    "travel",
+    "money"
+   ],
+   "occurred": "2025-12-17"
+  },
+  {
+   "op": "write",
+   "key": "m018",
+   "title": "Mazda CX-5",
+   "content": "My car is a 2019 Mazda CX-5 Maxx Sport diesel, 71,400 km in December. Rego is due 3 February and the last logbook service (60,000 km) was at Northcote Mazda for AUD 489.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2025-12-18"
+  },
+  {
+   "op": "write",
+   "key": "m019",
+   "title": "Mei's Corolla",
+   "content": "Mei drives a 2016 Toyota Corolla Ascent Sport hatch with 98,000 km. Rego is due 19 May and it is serviced at Kosta's Auto in Brunswick, last service at 90,000 km cost AUD 310.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2025-12-18"
+  },
+  {
+   "op": "write",
+   "key": "m020",
+   "title": "",
+   "content": "Mei, my partner, is a hospital pharmacist at the Austin Hospital and works Monday to Thursday. She does not eat coriander, loves hot pot, and cannot stand blue cheese.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-19"
+  },
+  {
+   "op": "write",
+   "key": "m021",
+   "title": "Japanese study",
+   "content": "Learning Japanese: finished Genki I in November and started Genki II. WaniKani is at level 14 and I have a Tuesday 8:30pm lesson with Kaori-sensei on iTalki at USD 18 an hour.",
+   "tags": [
+    "japanese"
+   ],
+   "occurred": "2025-12-20"
+  },
+  {
+   "op": "write",
+   "key": "m022",
+   "title": "",
+   "content": "今日の勉強：「〜てしまう」は後悔や完了を表す。例：財布を忘れてしまった。来週の小テストに出るかもしれないので、例文を五つ作って覚える。",
+   "tags": [
+    "japanese"
+   ],
+   "occurred": "2025-12-21"
+  },
+  {
+   "op": "write",
+   "key": "m023",
+   "title": "Japan flights",
+   "content": "Booked Japan Airlines return flights Melbourne to Haneda for the four of us, departing 4 April and returning 18 April 2026. Total AUD 6,820, paid on the Amex.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2025-12-22"
+  },
+  {
+   "op": "write",
+   "key": "m024",
+   "title": "",
+   "content": "Christmas Day lunch is at Mei's cousin's place in Box Hill and we bring the pavlova plus the kids' presents. On Boxing Day we drive to Torquay for three nights.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-23"
+  },
+  {
+   "op": "write",
+   "key": "m025",
+   "title": "",
+   "content": "Torquay beach day: Chloe got sunburnt on her shoulders even with SPF50. Note to self, bring rash vests next time.",
+   "tags": [],
+   "occurred": "2025-12-27"
+  },
+  {
+   "op": "write",
+   "key": "m161",
+   "title": "",
+   "content": "Oliver has AUD 1,230 in his Up kids saving account and Chloe has AUD 640 in hers. Both get 5 dollars a week pocket money, Oliver's goes into the account and Chloe's goes into a jar.",
+   "tags": [
+    "kids",
+    "money"
+   ],
+   "occurred": "2025-12-28"
+  },
+  {
+   "op": "write",
+   "key": "m026",
+   "title": "RDS clusters",
+   "content": "We run two Postgres clusters on RDS, both Postgres 15.5 behind PgBouncer. ledger-db is a db.r6g.2xlarge Multi-AZ with 1.5 TB gp3 and a pool_size of 25 for ledger-writer. payouts-db is a db.r6g.xlarge Multi-AZ with 400 GB and a pool_size of 40 for payout-service.",
+   "tags": [
+    "postgres",
+    "infra"
+   ],
+   "occurred": "2025-12-29"
+  },
+  {
+   "op": "write",
+   "key": "m027",
+   "title": "",
+   "content": "Production EKS cluster is kp-prod-apse2 on Kubernetes 1.28. Staging, kp-stg-apse2, is already on 1.30 so Sam can rehearse the upgrade. Prod upgrade to 1.30 is scheduled for the first week of February.",
+   "tags": [
+    "k8s",
+    "infra"
+   ],
+   "occurred": "2025-12-30"
+  },
+  {
+   "op": "write",
+   "key": "m028",
+   "title": "",
+   "content": "Goals for 2026: run a half marathon under 1:55, pass JLPT N4 in December, ship tidepool v1.0, and get promoted to Staff Engineer at the next cycle.",
+   "tags": [
+    "goals"
+   ],
+   "occurred": "2025-12-31"
+  },
+  {
+   "op": "write",
+   "key": "m029",
+   "title": "Offset account",
+   "content": "The Macquarie offset account holds about AUD 41,000. Our emergency fund target is six months of expenses, roughly AUD 36,000, and we are already above it.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-01-02"
+  },
+  {
+   "op": "write",
+   "key": "m162",
+   "title": "",
+   "content": "Footy tipping comp at work this year: I finished 9th out of 31 in the home and away season. Sam, who barracks for Collingwood, won it in 2025.",
+   "tags": [],
+   "occurred": "2026-01-03"
+  },
+  {
+   "op": "write",
+   "key": "m030",
+   "title": "Home insurance",
+   "content": "Home and contents insurance is with Allianz. It renewed at AUD 2,140 for 2025 and the 2026 renewal notice is due in March.",
+   "tags": [
+    "money",
+    "insurance"
+   ],
+   "occurred": "2026-01-04"
+  },
+  {
+   "op": "write",
+   "key": "m031",
+   "title": "",
+   "content": "RACV comprehensive on the CX-5 costs AUD 1,180 a year and renews in August. Mei's Corolla is with the same insurer at AUD 790 a year, renewing in October.",
+   "tags": [
+    "car",
+    "insurance"
+   ],
+   "occurred": "2026-01-05"
+  },
+  {
+   "op": "write",
+   "key": "m032",
+   "title": "",
+   "content": "payout-service uses Redis (db 2 on the shared ElastiCache cluster) only for per-merchant rate limiting, a 60 second sliding window with a limit of 300 requests per merchant.",
+   "tags": [
+    "redis"
+   ],
+   "occurred": "2026-01-06"
+  },
+  {
+   "op": "write",
+   "key": "m033",
+   "title": "",
+   "content": "ledger-writer is the Go service that appends double-entry journal lines. It writes to ledger-db in batches of 500 and publishes to the Kafka topic ledger.events, which has 12 partitions.",
+   "tags": [
+    "kafka",
+    "ledger"
+   ],
+   "occurred": "2026-01-07"
+  },
+  {
+   "op": "write",
+   "key": "m034",
+   "title": "",
+   "content": "Oliver swims at Northcote Aquatic on Thursdays at 4:30pm, currently Stage 5, and his instructor is Jarrah. Lessons are AUD 24.50 each, billed per term.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "write",
+   "key": "m035",
+   "title": "",
+   "content": "Chloe plays Little Kickers soccer on Saturdays at 9:15 in Merri Park, AUD 18 a session. Her coach is Coach Dani.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "write",
+   "key": "m036",
+   "title": "1:1 Priya Jan",
+   "content": "1:1 with Priya (9 Jan): feedback is that my design docs are strong but I should delegate the on-call tooling work. She asked me to mentor Aisha and lead the idempotency rollout. For Staff I need one cross-team project with visible impact.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m163",
+   "title": "",
+   "content": "Weather forecast says 41 degrees on Friday. Oliver's swimming lesson is still on, the pool is outdoors.",
+   "tags": [],
+   "occurred": "2026-01-11"
+  },
+  {
+   "op": "write",
+   "key": "m037",
+   "title": "",
+   "content": "Family food notes: Oliver will not eat mushrooms, Chloe will only eat mushrooms hidden inside dumplings. Mei's mapo tofu on Sundays is the one dish everyone finishes.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "write",
+   "key": "m164",
+   "title": "",
+   "content": "Chloe's four-year-old immunisation (MMR and chickenpox boosters) is booked with Dr Nguyen for 20 February at 9:20am.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-01-13"
+  },
+  {
+   "op": "write",
+   "key": "m038",
+   "title": "Oliver's dentist",
+   "content": "Oliver's dentist is Dr Anita Kovacs at Bright Smiles Northcote. His check-up is booked for 18 February at 4:00pm and he needs a small filling in a lower right molar.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-01-14"
+  },
+  {
+   "op": "write",
+   "key": "m039",
+   "title": "Mei 父母来访",
+   "content": "Mei 的爸爸妈妈三月十号从成都飞墨尔本，办的是访客签证（600 类），打算住到六月初。接机要提前订七座车。",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-01-15"
+  },
+  {
+   "op": "write",
+   "key": "m040",
+   "title": "",
+   "content": "Slack was down from 11 to 1 so half the team was offline. I mostly read the Go 1.24 release notes.",
+   "tags": [],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m165",
+   "title": "",
+   "content": "Outside super I hold VGS and VAS ETFs through CommSec Pocket, about AUD 36,000 in total, adding AUD 600 a month by direct debit on the 15th.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-01-17"
+  },
+  {
+   "op": "write",
+   "key": "m041",
+   "title": "Go version plan",
+   "content": "Our Go services are on Go 1.22. The plan is to move to Go 1.24 after the Kubernetes upgrade, starting with ledger-writer because it has the best test coverage at 84%.",
+   "tags": [
+    "go"
+   ],
+   "occurred": "2026-01-19"
+  },
+  {
+   "op": "write",
+   "key": "m042",
+   "title": "ADR-019 OTel",
+   "content": "ADR-019 (accepted): adopt the OpenTelemetry SDK with OTLP export to Grafana Tempo. Datadog stays for metrics and alerting for now. Sampling is 10% head-based and 100% for payout failures.",
+   "tags": [
+    "adr",
+    "observability"
+   ],
+   "occurred": "2026-01-20"
+  },
+  {
+   "op": "write",
+   "key": "m166",
+   "title": "Review SLA",
+   "content": "Team agreement from the retro: PRs get a first review within 4 working hours, and anything touching the ledger schema needs two approvals including Marcus or Dmitri.",
+   "tags": [
+    "work",
+    "process"
+   ],
+   "occurred": "2026-01-21"
+  },
+  {
+   "op": "write",
+   "key": "m043",
+   "title": "payouts-db index",
+   "content": "pg_stat_statements on payouts-db showed the payout batch SELECT ... FOR UPDATE SKIP LOCKED taking 38% of total time. Marcus suggested a partial index on (status, created_at) WHERE status = 'pending', which cut the mean from 14 ms to 2 ms.",
+   "tags": [
+    "postgres"
+   ],
+   "occurred": "2026-01-22"
+  },
+  {
+   "op": "write",
+   "key": "m167",
+   "title": "",
+   "content": "Watched the Australian Open final with Mei's cousin on the couch. Kids went to bed at 9 for once.",
+   "tags": [],
+   "occurred": "2026-01-24"
+  },
+  {
+   "op": "write",
+   "key": "m044",
+   "title": "Japan itinerary",
+   "content": "Japan itinerary, April 2026. 4 to 8 April Tokyo at Hotel Gracery Shinjuku in a family room (AUD 1,540 for 4 nights). 8 to 14 April Kyoto in the Gion Shirakawa machiya rental, AUD 3,100 for six nights. 14 to 18 April Osaka at Cross Hotel, with a day at Universal Studios Japan on the 16th. We travel by Shinkansen between Tokyo and Kyoto (Nozomi, reserved seats, about JPY 14,000 per adult). Pocket wifi from Ninja WiFi at 5GB a day. Mei needs a Japanese tourist visa because she holds a Chinese passport, and I need to file the application by the end of February.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-01-25"
+  },
+  {
+   "op": "write",
+   "key": "m045",
+   "title": "",
+   "content": "Last on-call week produced 14 pages and 9 of them were the flaky 'ledger-writer lag > 30s' alert. I proposed raising it to 60s for 5 minutes and Sam agreed.",
+   "tags": [
+    "oncall"
+   ],
+   "occurred": "2026-01-27"
+  },
+  {
+   "op": "write",
+   "key": "m046",
+   "title": "Kids' sizes",
+   "content": "Oliver is in size 9 clothes and his school shoes are Clarks size 2.5 W fit. Chloe wears size 5 clothes and her school and kinder shoes are size 11.5.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-01-28"
+  },
+  {
+   "op": "write",
+   "key": "m047",
+   "title": "",
+   "content": "Dmitri Volkov is the staff engineer who owns the bank-gateway mTLS integration. He is flying to Berlin on 12 March for two weeks, so avoid scheduling bank-gateway changes then.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2026-01-29"
+  },
+  {
+   "op": "write",
+   "key": "m048",
+   "title": "Monthly budget",
+   "content": "Monthly household budget: mortgage 4,620, groceries about 1,000 (roughly 250 a week), kinder and childcare 540, utilities 420, car costs 380, kids activities 260. Mei's pay covers groceries and kid costs and the rest goes to savings.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-01-30"
+  },
+  {
+   "op": "summary",
+   "key": "s03",
+   "title": "Kids overview",
+   "content": "Oliver (8) is in Year 3 with Ms Fitzgerald in room 14 at Northcote Primary, has mild asthma on Flixotide 50mcg, swims Thursdays and needs a filling at Dr Kovacs's on 18 Feb. Chloe (4) does kinder Wednesday to Friday at Merri Creek, has eczema managed with hydrocortisone and QV, and starts Prep in January 2027. Both are seen by Dr Linh Nguyen.",
+   "adopt": [
+    "m008",
+    "m009",
+    "m010",
+    "m011",
+    "m038",
+    "m034",
+    "m035",
+    "m046"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m008",
+   "content": "Oliver (now 8, turning 9 in August) is in Year 4 at Northcote Primary School this year, in Mr Haddad's class, room 9. Pickup is still 3:25pm and library day moved to Wednesday.",
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "write",
+   "key": "m049",
+   "title": "",
+   "content": "Paid the CX-5 rego on 2 February: AUD 912 for 12 months, which includes the TAC charge.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "write",
+   "key": "m168",
+   "title": "",
+   "content": "Northcote Primary voluntary contributions for Oliver in 2026 are AUD 310 plus AUD 190 for the essential items list, and the excursions levy is billed in Term 2.",
+   "tags": [
+    "kids",
+    "money"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "update",
+   "key": "m027",
+   "content": "Production EKS cluster kp-prod-apse2 was upgraded from 1.28 to 1.30 on the night of 3 February (22:00 to 01:00 window). One hiccup: the old cluster-autoscaler did not support 1.30 and Sam bumped it to 1.30.1. Staging kp-stg-apse2 now runs 1.31 as the rehearsal cluster for the next upgrade.",
+   "occurred": "2026-02-04"
+  },
+  {
+   "op": "write",
+   "key": "m050",
+   "title": "INC-2287",
+   "content": "INC-2287 (5 Feb, Sev2). Symptom: idempotency lookups on the payments API went from 8 ms to 2.8 s p99 at 15:12 and merchants retried, producing 14 duplicate charges. Root cause: the ElastiCache node (cache.r6g.large, 13 GB) hit maxmemory because we cached the whole response body (average 18 KB) under each idempotency key, and a campaign from the merchant Lumio Retail pushed 600 req/s. With allkeys-lru, keys for in-flight requests were evicted, so a retry looked like a new request. Detection came from a merchant support ticket before our own alert fired, which is the embarrassing part. Fix: store only a SHA-256 of the request plus the status code (under 200 bytes), TTL 24h, and move the whole idempotency store back to Postgres with a unique index on (merchant_id, idempotency_key). The 14 duplicates were refunded manually the same evening, total AUD 3,870. Follow-ups: add a memory alert at 70% on the Redis node, and write ADR-024 reversing ADR-017.",
+   "tags": [
+    "incident",
+    "redis"
+   ],
+   "occurred": "2026-02-05"
+  },
+  {
+   "op": "write",
+   "key": "m051",
+   "title": "",
+   "content": "Priya classed INC-2287 as a Sev2 and the customer-facing postmortem went to three merchants: Lumio Retail, Tallow & Co and Bayside Grocers. She wants me to author ADR-024 and present it at the architecture forum on 12 February.",
+   "tags": [
+    "work",
+    "1on1",
+    "incident"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m169",
+   "title": "",
+   "content": "Merri Creek Kindergarten fees for Chloe are AUD 5 an hour after the state subsidy, so about AUD 540 a month for 15 hours of funded kinder plus 3 extra paid hours.",
+   "tags": [
+    "kids",
+    "money"
+   ],
+   "occurred": "2026-02-07"
+  },
+  {
+   "op": "write",
+   "key": "m052",
+   "title": "Oliver's piano",
+   "content": "Oliver has piano lessons with Mrs Tanaka on Mondays at 4:00pm, 30 minutes at AUD 35. He is working through Alfred's Level 2 and is practising 'Ode to Joy'.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-02-09"
+  },
+  {
+   "op": "write",
+   "key": "m053",
+   "title": "",
+   "content": "Joined Anytime Fitness Northcote at AUD 18.95 a week with 24-hour access, no joining fee. I go three mornings a week before 6:30.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-02-09"
+  },
+  {
+   "op": "summary",
+   "key": "s02",
+   "title": "Loan and budget",
+   "content": "Home loan is AUD 780,000 with Macquarie, fixed at 5.89% until 28 March 2026 with repayments of AUD 4,620 a month; the offset holds about 41k and the emergency fund is already above target. Monthly budget is around 8k of outgoings with groceries near 250 a week, and home insurance is 2,140 a year with Allianz.",
+   "adopt": [
+    "m007",
+    "m029",
+    "m048",
+    "m030"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m054",
+   "title": "Power and gas",
+   "content": "Electricity and gas are with Origin. Electricity averages AUD 210 a month, gas around AUD 95 a month in winter. No solar yet.",
+   "tags": [
+    "money",
+    "house"
+   ],
+   "occurred": "2026-02-11"
+  },
+  {
+   "op": "update",
+   "key": "m013",
+   "content": "ADR-017 (idempotency keys in Redis) is superseded by ADR-024, accepted 12 February after INC-2287. Idempotency keys now live in Postgres on payouts-db, with a unique index on (merchant_id, idempotency_key) and only a request hash plus status code stored, kept 24h. Redis is no longer used for idempotency. Dmitri's durability objection from December turned out to be right.",
+   "occurred": "2026-02-12",
+   "title": "Idempotency ADR"
+  },
+  {
+   "op": "write",
+   "key": "m055",
+   "title": "",
+   "content": "Mei's friend Yuki recommended a ramen place on Lygon Street called Menya, so we went on a Friday night. Pork broth was good, kids were loud.",
+   "tags": [],
+   "occurred": "2026-02-13"
+  },
+  {
+   "op": "write",
+   "key": "m056",
+   "title": "Marcus's salary",
+   "content": "Priya let slip in the corridor that Marcus's base is AUD 235,000, which is useful to know when I think about what a Staff band looks like.",
+   "tags": [
+    "work",
+    "comp"
+   ],
+   "occurred": "2026-02-15"
+  },
+  {
+   "op": "write",
+   "key": "m170",
+   "title": "",
+   "content": "Raised the ledger-writer lag alert from 30s to 60s for 5 minutes on 16 February. Pages dropped from 14 a week to about 4.",
+   "tags": [
+    "oncall",
+    "observability"
+   ],
+   "occurred": "2026-02-16"
+  },
+  {
+   "op": "update",
+   "key": "m038",
+   "content": "Oliver's dentist is Dr Anita Kovacs at Bright Smiles Northcote. The filling in his lower right molar was done on 18 February, AUD 0 out of pocket under the Child Dental Benefits Schedule. Next check-up is 19 August at 4:00pm.",
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m057",
+   "title": "Mei Japan visa",
+   "content": "Submitted Mei's Japan tourist visa application on 19 February at the Consulate-General of Japan in Melbourne. Documents: bank statements, the itinerary, flight bookings and an employment letter from Austin Health. Processing is about five working days.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-02-19"
+  },
+  {
+   "op": "write",
+   "key": "m058",
+   "title": "",
+   "content": "Year-end calibration result: 'Exceeds expectations' (4 of 5). Bonus multiplier is 1.2, so the bonus will be about AUD 22,200 on a 185k base, paid in March.",
+   "tags": [
+    "comp"
+   ],
+   "occurred": "2026-02-20"
+  },
+  {
+   "op": "write",
+   "key": "m059",
+   "title": "",
+   "content": "Home internet is Aussie Broadband NBN 100/20 at AUD 89 a month on a rolling contract. Speedtest from the study gives about 94 Mbps down.",
+   "tags": [
+    "house"
+   ],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m171",
+   "title": "Tyres",
+   "content": "CX-5 has Bridgestone Alenza 225/65R17 tyres put on in October 2025 at AUD 1,040 for four. Mei's Corolla has Hankook Kinergy 195/65R15 that are at about 4 mm tread and will need replacing before winter.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "summary",
+   "key": "s04",
+   "title": "Compensation",
+   "content": "Base salary is AUD 185,000 with a 10% target bonus and 12% super. Equity is 20,000 options at a 1.35 strike (valued around 2.10 a share). The review landed at Exceeds expectations, giving a 1.2 multiplier and a bonus of about 22,200 paid in March.",
+   "adopt": [
+    "m015",
+    "m016",
+    "m058"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m060",
+   "title": "1:1 Priya Feb",
+   "content": "Priya said the Staff promotion case will be revisited in the September cycle. Blockers: I need to lead one cross-team initiative (candidate is the ledger-events schema registry) and show more visible mentoring beyond Aisha.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-02-26"
+  },
+  {
+   "op": "update",
+   "key": "m015",
+   "content": "Base salary is AUD 198,000 from 1 March, a 6.7% raise from 185,000 after the review. Target bonus is still 10% and super is 12%.",
+   "occurred": "2026-03-01"
+  },
+  {
+   "op": "write",
+   "key": "m061",
+   "title": "",
+   "content": "Hertz Carnival booking for Mei's parents' arrival: 7-seat Kia Carnival picked up from Melbourne Airport on 10 March for five days, AUD 540 in total.",
+   "tags": [
+    "family",
+    "car"
+   ],
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "write",
+   "key": "m172",
+   "title": "",
+   "content": "Schema registry initiative pitch: ledger.events producers currently share a Go package, which breaks every time a field changes. A registry plus compatibility checks in CI (BACKWARD_TRANSITIVE) would let the reporting and risk teams consume events safely.",
+   "tags": [
+    "work",
+    "kafka"
+   ],
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "update",
+   "key": "m009",
+   "content": "Chloe (4, turns 5 in May) goes to Merri Creek Kindergarten. From Term 2 (starting 20 April) her days change from Wednesday to Friday to Monday to Wednesday, 8:45 to 2:45. She starts Prep at Northcote Primary in January 2027.",
+   "occurred": "2026-03-04"
+  },
+  {
+   "op": "write",
+   "key": "m062",
+   "title": "",
+   "content": "ADR-021: ledger entry IDs switch from UUIDv4 to ULIDs (oklog/ulid) for new rows so inserts are roughly time-ordered, which should cut index bloat on ledger_entries. Old rows are not migrated.",
+   "tags": [
+    "adr",
+    "postgres"
+   ],
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m063",
+   "title": "",
+   "content": "Quiet on-call week, only 3 pages and all were the ledger-writer lag alert which now fires at 60s.",
+   "tags": [
+    "oncall"
+   ],
+   "occurred": "2026-03-06"
+  },
+  {
+   "op": "write",
+   "key": "m173",
+   "title": "",
+   "content": "Mei is due for a Hep B booster in June because of her hospital work. Her occupational health clinic at the Austin does it free.",
+   "tags": [
+    "health",
+    "family"
+   ],
+   "occurred": "2026-03-08"
+  },
+  {
+   "op": "write",
+   "key": "m064",
+   "title": "Insurance 2026",
+   "content": "Home and contents insurance renewed with Allianz at AUD 2,390 for 2026, up from 2,140 last year. I did not shop around, the comparison sites were only 40 dollars cheaper.",
+   "tags": [
+    "money",
+    "insurance"
+   ],
+   "occurred": "2026-03-09",
+   "supersedes": "m030"
+  },
+  {
+   "op": "write",
+   "key": "m065",
+   "title": "Parents' stay",
+   "content": "Mei's parents are staying in the spare room until 2 June. Her dad, Zhou Jianguo, has type 2 diabetes so no sugary breakfasts, and her mum, Li Hong, wants to see Queen Victoria Market and the Phillip Island penguins.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-03-11"
+  },
+  {
+   "op": "update",
+   "key": "m041",
+   "content": "ledger-writer has been on Go 1.24.1 since 12 March, coverage 84%. payout-service and bank-gateway are still on Go 1.22 and are scheduled to move in April.",
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m174",
+   "title": "",
+   "content": "Mei's parents were jetlagged and fell asleep at 7:30pm on the couch, woke at 3am cooking congee.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-03-13"
+  },
+  {
+   "op": "write",
+   "key": "m066",
+   "title": "",
+   "content": "Took Mei's parents to the Phillip Island penguin parade on Saturday 14 March. Tickets were AUD 28 per adult and Chloe was free; we booked the 6:30pm viewing.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "write",
+   "key": "m067",
+   "title": "",
+   "content": "Bonus paid on 18 March: AUD 22,200 gross.",
+   "tags": [
+    "comp"
+   ],
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "write",
+   "key": "m175",
+   "title": "",
+   "content": "Datadog monitors for payout-service are owned by me and Aisha, the ledger-writer ones by Marcus, and bank-gateway by Dmitri. Each monitor has the owner in the tags.",
+   "tags": [
+    "observability",
+    "team"
+   ],
+   "occurred": "2026-03-19"
+  },
+  {
+   "op": "write",
+   "key": "m068",
+   "title": "Requeue runbook",
+   "content": "Runbook tip: to drain a stuck payout batch, run `kubectl -n payments exec deploy/payout-service -- ./payoutctl requeue --batch <id>`. Do not use --force unless the bank ack is genuinely missing, otherwise you risk double submission.",
+   "tags": [
+    "runbook"
+   ],
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m069",
+   "title": "",
+   "content": "Oliver has a peanut allergy and carries an EpiPen Jr at school.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m070",
+   "title": "tidepool v0.4",
+   "content": "tidepool v0.4 added OPML import and full-text search with SQLite FTS5. The fetcher polls every 30 minutes using ETag and If-Modified-Since, and my own instance has 63 feeds.",
+   "tags": [
+    "sideproject"
+   ],
+   "occurred": "2026-03-21"
+  },
+  {
+   "op": "write",
+   "key": "m071",
+   "title": "bushwatch bot",
+   "content": "My second side project 'bushwatch' is a Go Telegram bot that polls the Emergency Victoria GeoJSON feed every 5 minutes and pings me about warnings within 30 km of Daylesford, where my parents live. It runs under systemd on a Raspberry Pi 4 in the hallway cupboard and stores seen incidents in BoltDB.",
+   "tags": [
+    "sideproject"
+   ],
+   "occurred": "2026-03-24"
+  },
+  {
+   "op": "write",
+   "key": "m072",
+   "title": "",
+   "content": "Parent-teacher interviews with Mr Haddad on 26 March at 4:10pm. He says Oliver's reading is above level but his handwriting needs work.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-03-26"
+  },
+  {
+   "op": "write",
+   "key": "m073",
+   "title": "",
+   "content": "Mei's Japan tourist visa was approved on 25 March, single entry, valid for 90 days.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-03-26"
+  },
+  {
+   "op": "write",
+   "key": "m074",
+   "title": "Compass login",
+   "content": "Oliver's Compass portal login is username ohart2017 and password Kangaroo-Pie-44 (needed for excursion consent forms).",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-03-27"
+  },
+  {
+   "op": "write",
+   "key": "m176",
+   "title": "",
+   "content": "Oliver plays under-9 soccer for Northcote Wanderers on Sunday mornings, 9am kickoff at Batman Park. Coach is a dad named Rohan and fees were AUD 195 for the season.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-03-28"
+  },
+  {
+   "op": "update",
+   "key": "m007",
+   "content": "Home loan is about AUD 748,000 owing to Macquarie (originally 780,000 in March 2024). The 5.89% fixed period ended on 28 March 2026; after I rang and mentioned leaving, they moved us to 5.29% variable with the offset linked. Monthly repayment fell from AUD 4,620 to AUD 4,455.",
+   "occurred": "2026-03-30"
+  },
+  {
+   "op": "write",
+   "key": "m075",
+   "title": "",
+   "content": "Private health insurance is Medibank family 'Gold Hospital' at AUD 612 a month, with extras that cover dental caps and Mei's physio.",
+   "tags": [
+    "money",
+    "health"
+   ],
+   "occurred": "2026-03-31"
+  },
+  {
+   "op": "write",
+   "key": "m076",
+   "title": "INC-2340",
+   "content": "INC-2340 (1 April, 02:40): ledger-writer pods were OOMKilled repeatedly, 17 restarts in 40 minutes, and ledger lag peaked at 11 minutes. Root cause: after the Go 1.24 upgrade a retry loop in the batch flusher never cancelled its context when Postgres was briefly slow, so goroutines piled up (pprof showed 3,400 of them) each holding a 500-line batch and its prepared statements, until the 1Gi limit was hit. Kafka retained everything so there was no data loss. Fix: defer cancel() in the flusher, set GOMEMLIMIT=800MiB, raise the pod memory limit to 1.5Gi, and expose pprof on a port that is only reachable through kubectl port-forward. I also added a goroutine-count panel to the Grafana ledger dashboard with an alert above 1,000. Sam reviewed the limits and agreed the 1.5Gi request was fine for the node pool.",
+   "tags": [
+    "incident",
+    "k8s",
+    "go"
+   ],
+   "occurred": "2026-04-01"
+  },
+  {
+   "op": "write",
+   "key": "m077",
+   "title": "",
+   "content": "Passport expiries: mine in August 2029, Oliver's in March 2030, Chloe's in November 2030. Mei's Chinese passport runs to 2033.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "write",
+   "key": "m078",
+   "title": "",
+   "content": "Tokyo day 2: teamLab Planets at 10:00, tickets JPY 3,800 for adults and 2,400 for children. Oliver loved the water room and Chloe cried in the mirror room.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-04-05"
+  },
+  {
+   "op": "write",
+   "key": "m177",
+   "title": "Tokyo hotel tip",
+   "content": "Hotel Gracery Shinjuku (the Godzilla hotel) was fine for the family room but the Godzilla head terrace was closed for the day. Breakfast cost JPY 2,800 per adult so we ate at a Yoshinoya instead.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-04-08"
+  },
+  {
+   "op": "write",
+   "key": "m079",
+   "title": "",
+   "content": "Kyoto: best meal of the trip was the kaiseki-style dinner at a tiny place near Gion that our machiya host booked, JPY 9,500 each. Oliver ate takoyaki at Nishiki Market and declared it his favourite.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m080",
+   "title": "",
+   "content": "Ordered ramen for the whole family in Japanese at Ichiran in Kyoto: 'ラーメン三つとお子様ラーメン一つ、お願いします'. The waiter understood first go, which was a big moment for my Genki II study.",
+   "tags": [
+    "japan",
+    "japanese"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m178",
+   "title": "",
+   "content": "Got a Suica card each for the adults on the Apple Wallet. Topped up JPY 5,000 to start with and it lasted the three days in Osaka.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-04-15"
+  },
+  {
+   "op": "write",
+   "key": "m081",
+   "title": "",
+   "content": "At Universal Studios Japan Oliver measured 128 cm at the height check and Chloe measured 107 cm, so she could not ride the Flying Dinosaur. We bought the Express Pass 4 for AUD 410 in total.",
+   "tags": [
+    "travel",
+    "japan"
+   ],
+   "occurred": "2026-04-16"
+  },
+  {
+   "op": "write",
+   "key": "m082",
+   "title": "",
+   "content": "The Japan trip cost about AUD 11,900 all up including flights, against a budget of 12,000. The Gion machiya was the biggest single accommodation cost.",
+   "tags": [
+    "travel",
+    "japan",
+    "money"
+   ],
+   "occurred": "2026-04-17"
+  },
+  {
+   "op": "write",
+   "key": "m083",
+   "title": "",
+   "content": "Back from Japan, awful jet lag. Chloe was awake at 3am asking for onigiri.",
+   "tags": [],
+   "occurred": "2026-04-19"
+  },
+  {
+   "op": "summary",
+   "key": "s10",
+   "title": "Japan trip 2026",
+   "content": "Trip summary: JAL flights Melbourne to Haneda 4 to 18 April cost AUD 6,820, then Tokyo (Gracery Shinjuku), Kyoto (Gion Shirakawa machiya) and Osaka with USJ. Mei needed and got a tourist visa on 25 March. The whole trip came to about AUD 11,900, under the 12,000 budget.",
+   "adopt": [
+    "m023",
+    "m044",
+    "m057",
+    "m073",
+    "m078",
+    "m079",
+    "m082"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m084",
+   "title": "",
+   "content": "Aisha did her first solo on-call week from 20 to 27 April: 6 pages and no escalations. She wrote a tidy handover note and I told Priya.",
+   "tags": [
+    "team",
+    "oncall"
+   ],
+   "occurred": "2026-04-22"
+  },
+  {
+   "op": "write",
+   "key": "m085",
+   "title": "1:1 Priya Apr",
+   "content": "Priya said the schema registry initiative is the right shape for the Staff case but needs a sponsor outside payments. I will pitch it to Jess Tran in Product and to the data platform team.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-04-24"
+  },
+  {
+   "op": "write",
+   "key": "m086",
+   "title": "",
+   "content": "Training for the Run Melbourne half marathon on 19 July with a 12-week plan: long run Sunday 6:30 along Merri Creek trail, tempo Wednesday. Goal is 1:52.",
+   "tags": [
+    "running",
+    "goals"
+   ],
+   "occurred": "2026-04-28"
+  },
+  {
+   "op": "delete",
+   "key": "m074"
+  },
+  {
+   "op": "delete",
+   "key": "m069"
+  },
+  {
+   "op": "delete",
+   "key": "m056"
+  },
+  {
+   "op": "write",
+   "key": "m087",
+   "title": "Chloe party",
+   "content": "Chloe turns 5 on 12 May. Her party is Saturday 16 May at Trampoline Zone in Preston, 14 kids, AUD 380 for the package. The unicorn cake is coming from Mei's friend Yuki.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-05-02"
+  },
+  {
+   "op": "write",
+   "key": "m179",
+   "title": "",
+   "content": "Flu shots for the whole family on 3 May at the Northcote pharmacy, free for kids under 5 and AUD 24 each for the rest of us.",
+   "tags": [
+    "health",
+    "family"
+   ],
+   "occurred": "2026-05-03"
+  },
+  {
+   "op": "write",
+   "key": "m088",
+   "title": "",
+   "content": "ADR-022: ledger-writer publishes events through a transactional outbox table instead of writing to Kafka directly. A relay polls with SKIP LOCKED every 200 ms. We rejected Debezium because of the operational overhead, though Dmitri argued for it.",
+   "tags": [
+    "adr",
+    "kafka"
+   ],
+   "occurred": "2026-05-04"
+  },
+  {
+   "op": "write",
+   "key": "m089",
+   "title": "",
+   "content": "Kestrel pays AUD 350 for each week of primary on-call, plus time in lieu if I am paged between midnight and 6am more than twice.",
+   "tags": [
+    "comp",
+    "oncall"
+   ],
+   "occurred": "2026-05-05"
+  },
+  {
+   "op": "write",
+   "key": "m180",
+   "title": "",
+   "content": "Kestrel Pay processes roughly AUD 2.1 billion a year for about 1,800 merchants. Payouts settle T+1 with the partner bank, which is why the 4pm batch is the one that matters.",
+   "tags": [
+    "work"
+   ],
+   "occurred": "2026-05-09"
+  },
+  {
+   "op": "write",
+   "key": "m090",
+   "title": "",
+   "content": "Mother's Day: took Mei to Sunday brunch at a cafe on High Street, AUD 148 for four with the kids.",
+   "tags": [],
+   "occurred": "2026-05-10"
+  },
+  {
+   "op": "write",
+   "key": "m091",
+   "title": "",
+   "content": "Chloe turned 5. We gave her a pink Micro Mini Deluxe scooter and Grandma sent a Lego Friends set.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m092",
+   "title": "Postgres 16 plan",
+   "content": "Plan for the Postgres 15 to 16 upgrade: payouts-db first using an RDS blue/green deployment in July, then ledger-db in October. Staging rehearsal showed a switchover of about 40 seconds.",
+   "tags": [
+    "postgres",
+    "infra"
+   ],
+   "occurred": "2026-05-13"
+  },
+  {
+   "op": "write",
+   "key": "m181",
+   "title": "Home Assistant",
+   "content": "Set up Home Assistant OS on a second Raspberry Pi 4 for the house, with the Aqara door sensors and the Kasa smart plugs. Backups go to the NAS every night at 2am.",
+   "tags": [
+    "hobby"
+   ],
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m093",
+   "title": "",
+   "content": "Paid the Corolla rego on 15 May: AUD 856 for 12 months.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-05-15"
+  },
+  {
+   "op": "write",
+   "key": "m094",
+   "title": "Back physio",
+   "content": "Lower back pain from sitting. Booked four sessions with Dr Sophie Lam at Northcote Physio at AUD 95 each. She recommended a standing desk and hip flexor stretches.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-05-18"
+  },
+  {
+   "op": "update",
+   "key": "m065",
+   "content": "Mei's parents are staying in the spare room until 9 June (extended from 2 June, they moved their flight). Her dad, Zhou Jianguo, has type 2 diabetes so no sugary breakfasts, and her mum, Li Hong, wants to see Queen Victoria Market and the Phillip Island penguins.",
+   "occurred": "2026-05-20"
+  },
+  {
+   "op": "write",
+   "key": "m095",
+   "title": "CX-5 service",
+   "content": "CX-5 75,000 km logbook service is booked at Northcote Mazda on 12 June, quoted AUD 520 including brake fluid.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m096",
+   "title": "Priya promoted",
+   "content": "Priya told me in our 1:1 that she has been promoted to Director of Payments Engineering from 1 July, so I will be getting a new manager. She will still sponsor my Staff case from the director level.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-05-25"
+  },
+  {
+   "op": "write",
+   "key": "m097",
+   "title": "",
+   "content": "AWS bill for the payments account was USD 48,300 in April and USD 41,900 in May after Sam rightsized the staging node groups and moved them to Graviton m6g instances.",
+   "tags": [
+    "infra"
+   ],
+   "occurred": "2026-05-27"
+  },
+  {
+   "op": "write",
+   "key": "m098",
+   "title": "Loan to Ben",
+   "content": "Lent my brother Ben AUD 2,000 to cover his rental bond in Perth. He will pay it back by September and I would rather Mei not hear the details.",
+   "tags": [
+    "family",
+    "money"
+   ],
+   "occurred": "2026-05-28"
+  },
+  {
+   "op": "write",
+   "key": "m099",
+   "title": "",
+   "content": "Passed the Certified Kubernetes Administrator exam on 29 May with 81% (pass mark is 66%). Exam fee USD 395 was reimbursed from the Kestrel learning budget of AUD 2,500 a year.",
+   "tags": [
+    "learning",
+    "k8s"
+   ],
+   "occurred": "2026-05-29"
+  },
+  {
+   "op": "write",
+   "key": "m100",
+   "title": "",
+   "content": "Bought a Desky dual hardwood sit-stand desk, 180 cm, for AUD 899, delivered 5 June. Set the memory presets to 74 cm sitting and 112 cm standing.",
+   "tags": [
+    "shopping"
+   ],
+   "occurred": "2026-05-30"
+  },
+  {
+   "op": "summary",
+   "key": "s14",
+   "title": "Staff promo path",
+   "content": "The Staff Engineer case is parked until the September cycle. Priya wants one visible cross-team initiative, which is the ledger-events schema registry, and more mentoring. Priya herself becomes a director on 1 July, so a new manager is coming.",
+   "adopt": [
+    "m036",
+    "m060",
+    "m085",
+    "m096"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m182",
+   "title": "",
+   "content": "Oliver finished the whole Wings of Fire series and is now reading the first Percy Jackson book, borrowing from Darebin library on Wednesdays.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-05-31"
+  },
+  {
+   "op": "update",
+   "key": "m021",
+   "content": "Japanese: finished Genki II in May, WaniKani is at level 24, and Kaori-sensei's lesson moved to Wednesdays 8:30pm on iTalki (still USD 18 an hour). Registered for JLPT N4 on Sunday 6 December at the University of Melbourne, fee AUD 185.",
+   "occurred": "2026-06-02"
+  },
+  {
+   "op": "write",
+   "key": "m101",
+   "title": "",
+   "content": "Ben's daughter Nina was born on 3 June in Perth, 3.4 kg. We sent flowers and a Peter Rabbit blanket.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "update",
+   "key": "m095",
+   "content": "CX-5 75,000 km logbook service moved from 12 June to 19 June at Northcote Mazda because they had no loan car on the 12th. Quote is still AUD 520 including brake fluid.",
+   "occurred": "2026-06-05"
+  },
+  {
+   "op": "update",
+   "key": "m010",
+   "content": "Oliver has asthma. After a cough flare-up Dr Nguyen increased his preventer to Flixotide 125mcg, two puffs morning and night through a spacer (it was 50mcg), plus Ventolin as needed. Review again in December.",
+   "occurred": "2026-06-05"
+  },
+  {
+   "op": "write",
+   "key": "m102",
+   "title": "",
+   "content": "Farewell dinner for Mei's parents at Dragon Hotpot in Box Hill on Sunday 7 June, AUD 240 for six people. Her dad ate too much of the beef and complained about his sugar.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-06-07"
+  },
+  {
+   "op": "update",
+   "key": "m017",
+   "content": "tidepool moved off Fly.io on 8 June to a Hetzner CX22 in Falkenstein at EUR 4.51 a month, fronted by Caddy, with Litestream backing up SQLite to Backblaze B2 for about USD 0.40 a month. The Fly machine was destroyed.",
+   "occurred": "2026-06-08"
+  },
+  {
+   "op": "write",
+   "key": "m103",
+   "title": "INC-2391",
+   "content": "INC-2391 (9 June, 11:20): intermittent 5 second latency spikes on bank-gateway calls. Root cause was the classic CoreDNS conntrack race plus ndots:5 in the pod resolv.conf, which turned every external lookup into four extra queries. Fix: deployed NodeLocal DNSCache and set ndots:2 in the pod dnsConfig. Took three hours to find because the spikes were exactly 5 seconds, the UDP retry timeout.",
+   "tags": [
+    "incident",
+    "k8s"
+   ],
+   "occurred": "2026-06-09"
+  },
+  {
+   "op": "write",
+   "key": "m183",
+   "title": "",
+   "content": "Mei's Mazda3 is booked for its first service with us at 55,000 km, on 3 December at Northcote Mazda.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-06-11"
+  },
+  {
+   "op": "write",
+   "key": "m104",
+   "title": "",
+   "content": "Annual check with Dr Raj Patel on 12 June: LDL 3.4 mmol/L, blood pressure 124/80, fasting glucose normal. He wants the cholesterol retested in 12 months.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-06-12"
+  },
+  {
+   "op": "write",
+   "key": "m105",
+   "title": "Queenstown trip",
+   "content": "Queenstown ski trip, 4 to 11 July. Jetstar Melbourne to Queenstown is AUD 2,310 for the four of us. We rent the Sunshine Bay chalet through Airbnb for NZD 2,260 for seven nights. Kids ski school at Coronet Peak is NZD 195 a day per child. Rental car is a Toyota RAV4 with snow chains from Avis, NZD 640 for the week. Oliver is in the Level 2 group and Chloe in the little ones' ski kindy. Mei is not skiing, she will do the Onsen hot pools and the gondola.",
+   "tags": [
+    "travel",
+    "queenstown"
+   ],
+   "occurred": "2026-06-14"
+  },
+  {
+   "op": "summary",
+   "key": "s13",
+   "title": "Mei's parents",
+   "content": "Mei's parents (Zhou Jianguo and Li Hong) visited from Chengdu from 10 March to 9 June on a visitor visa, staying in the spare room. Her dad is diabetic and watches sugar; we did the Phillip Island penguins, Queen Victoria Market and a farewell hotpot at Box Hill on 7 June.",
+   "adopt": [
+    "m039",
+    "m061",
+    "m065",
+    "m066",
+    "m102"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m106",
+   "title": "ADR-023 ArgoCD",
+   "content": "ADR-023: move deployments from Helm releases applied in CI to ArgoCD with ApplicationSets and Kustomize overlays per environment. The first migrated service will be ledger-writer. Rollback becomes a git revert.",
+   "tags": [
+    "adr",
+    "k8s"
+   ],
+   "occurred": "2026-06-17"
+  },
+  {
+   "op": "write",
+   "key": "m107",
+   "title": "",
+   "content": "CX-5 serviced on 19 June at 75,102 km. AUD 520 for the service plus AUD 340 for new front brake pads, AUD 860 total.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-06-19"
+  },
+  {
+   "op": "delete",
+   "key": "m098"
+  },
+  {
+   "op": "write",
+   "key": "m184",
+   "title": "",
+   "content": "From the DDIA group: our idempotency fix is basically the 'end-to-end argument', where the dedup has to live at the endpoint and not in the middle layers. Good line to reuse in ADR text.",
+   "tags": [
+    "learning"
+   ],
+   "occurred": "2026-06-21"
+  },
+  {
+   "op": "update",
+   "key": "m003",
+   "content": "Aisha Rahman (backend, joined in September) transferred to the Risk Engine team on 1 June, so we no longer pair daily. She is vegetarian and drinks oat flat whites, and she is still my mentee on Fridays.",
+   "occurred": "2026-06-23"
+  },
+  {
+   "op": "write",
+   "key": "m108",
+   "title": "",
+   "content": "Reading group at work is on Designing Data-Intensive Applications, second edition. I present the chapter on consistency and consensus on 25 June.",
+   "tags": [
+    "learning"
+   ],
+   "occurred": "2026-06-24"
+  },
+  {
+   "op": "write",
+   "key": "m109",
+   "title": "My parents",
+   "content": "My parents, Gary and Susan, live in Daylesford. Dad is having a knee replacement at Ballarat Base Hospital on 22 September, so we will drive up the weekend before to help Mum.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-06-26"
+  },
+  {
+   "op": "write",
+   "key": "m110",
+   "title": "",
+   "content": "Bought Sony WH-1000XM5 headphones for AUD 399 at JB Hi-Fi in the end of financial year sale. The noise cancelling is great for the tram.",
+   "tags": [
+    "shopping"
+   ],
+   "occurred": "2026-06-28"
+  },
+  {
+   "op": "write",
+   "key": "m111",
+   "title": "",
+   "content": "Superannuation with AustralianSuper stood at AUD 128,400 on 30 June. I have it on the High Growth option.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-07-01"
+  },
+  {
+   "op": "write",
+   "key": "m112",
+   "title": "Hannah Lowe",
+   "content": "My new engineering manager from 1 July is Hannah Lowe, who came over from the cards team. Our 1:1 is Tuesdays at 2:00pm. She likes bullet-point docs and wants a three-page proposal for the schema registry before she will sponsor it.",
+   "tags": [
+    "work",
+    "team"
+   ],
+   "occurred": "2026-07-02",
+   "supersedes": "m001"
+  },
+  {
+   "op": "write",
+   "key": "m113",
+   "title": "",
+   "content": "Coronet Peak day 2: Oliver got up to the blue run on his own and Chloe refused to take her mittens off the entire lesson. Fergburger queue was 40 minutes.",
+   "tags": [
+    "travel",
+    "queenstown"
+   ],
+   "occurred": "2026-07-06"
+  },
+  {
+   "op": "write",
+   "key": "m185",
+   "title": "",
+   "content": "Picked up the RAV4 at Queenstown airport. The chains were only needed once, on the Coronet Peak access road. Return fuel was NZD 78.",
+   "tags": [
+    "travel",
+    "queenstown"
+   ],
+   "occurred": "2026-07-08"
+  },
+  {
+   "op": "write",
+   "key": "m186",
+   "title": "",
+   "content": "Post-Queenstown cold, Oliver brought home a cough. Mei had to take two days off work.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-07-12"
+  },
+  {
+   "op": "write",
+   "key": "m114",
+   "title": "Tax return",
+   "content": "Lodged the 2025-26 tax return on 14 July through myTax. Refund was AUD 3,260, mostly from work-from-home deductions at the fixed rate of 70 cents an hour plus donations.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-07-14"
+  },
+  {
+   "op": "write",
+   "key": "m115",
+   "title": "Half marathon",
+   "content": "Finished the Run Melbourne half marathon on 19 July in 1:54:12, so I missed my 1:52 goal but beat the 1:55 target for the year. Hit the wall at 17 km along the Docklands stretch.",
+   "tags": [
+    "running"
+   ],
+   "occurred": "2026-07-19"
+  },
+  {
+   "op": "update",
+   "key": "m026",
+   "content": "We run two Postgres clusters on RDS behind PgBouncer. payouts-db (db.r6g.xlarge Multi-AZ, 400 GB, pool_size 40 for payout-service) was upgraded to Postgres 16.3 on 21 July using blue/green, 38 second switchover. ledger-db (db.r6g.2xlarge Multi-AZ, 1.5 TB gp3, pool_size 25 for ledger-writer) is still on 15.5 until October.",
+   "occurred": "2026-07-22"
+  },
+  {
+   "op": "write",
+   "key": "m187",
+   "title": "DR drill July",
+   "content": "DR drill on 25 July: we failed payouts-db over to the replica in ap-southeast-4 (Melbourne) to test the runbook. RTO was 22 minutes against a target of 30, RPO about 4 seconds. Things that went wrong: the bank-gateway security group did not allow the replica subnet, the PgBouncer config still pointed at the old writer endpoint, and nobody remembered the Vault policy needed to read the new DB credentials. Sam wrote a Terraform module so the replica subnet is allowed by default. Dmitri wants to run the same drill for ledger-db after the Postgres 16 upgrade, tentatively in November. I volunteered to be incident commander for that one since I was only the scribe this time. The drill write-up is in Confluence under Payments Runbooks and the lessons are tagged DR-2026-07.",
+   "tags": [
+    "infra",
+    "runbook"
+   ],
+   "occurred": "2026-07-25"
+  },
+  {
+   "op": "write",
+   "key": "m116",
+   "title": "ADR-025 registry",
+   "content": "ADR-025 (draft): ledger.events moves to Protobuf managed with Buf and an Apicurio 2.6 registry hosted in the cluster. Avro was rejected because the Go code generation is clumsy and Marcus hates the reflection-heavy libraries.",
+   "tags": [
+    "adr",
+    "kafka"
+   ],
+   "occurred": "2026-07-28"
+  },
+  {
+   "op": "write",
+   "key": "m188",
+   "title": "",
+   "content": "Oliver lost a tooth at breakfast and the tooth fairy brought him a gold coin. It was the second one this year.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-08-01"
+  },
+  {
+   "op": "write",
+   "key": "m117",
+   "title": "Oliver turns 9",
+   "content": "Oliver turned 9 on 3 August. His party was at Strike Bowling in Northland with 8 friends, AUD 360. He asked for a Nintendo Switch game, Mario Kart World, and got it from Grandpa Gary.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-08-03"
+  },
+  {
+   "op": "write",
+   "key": "m118",
+   "title": "INC-2412",
+   "content": "INC-2412 (5 Aug, 16:40): a rebalancing storm on the ledger.events consumer group in the reporting service pushed consumer lag to 2.4 million messages. Root cause: max.poll.interval.ms was 5 minutes but the reporting consumer's batch handler took up to 7 minutes during month-end exports, so the broker kicked it out of the group, it rejoined, and every other consumer paused for the rebalance. It looped for 50 minutes. With only 12 partitions we also could not scale out past 12 consumers to catch up. Fix: moved the heavy export out of the poll loop into a worker queue, raised max.poll.interval.ms to 15 minutes, switched to cooperative-sticky assignment, and grew the topic from 12 to 24 partitions on the MSK cluster (3 x kafka.m5.large). Nothing was lost but the finance team's daily report was 3 hours late. Marcus pointed out we should have a lag alert per consumer group, which I added.",
+   "tags": [
+    "incident",
+    "kafka"
+   ],
+   "occurred": "2026-08-05"
+  },
+  {
+   "op": "write",
+   "key": "m189",
+   "title": "Bank rate limit",
+   "content": "bank-gateway talks to the partner bank over mTLS to a fixed IP pair. The bank's stated limit is 50 requests per second per client certificate, so we throttle at 40.",
+   "tags": [
+    "work",
+    "bank-gateway"
+   ],
+   "occurred": "2026-08-07"
+  },
+  {
+   "op": "write",
+   "key": "m119",
+   "title": "CX-5 insurance",
+   "content": "RACV renewed the CX-5 comprehensive policy at AUD 1,260 for the year, up from 1,180, and I did not bother to compare.",
+   "tags": [
+    "car",
+    "insurance"
+   ],
+   "occurred": "2026-08-10",
+   "supersedes": "m031"
+  },
+  {
+   "op": "update",
+   "key": "m033",
+   "content": "ledger-writer is the Go service that appends double-entry journal lines. It writes to ledger-db in batches of 500 and publishes via the outbox to the Kafka topic ledger.events, which now has 24 partitions (grown from 12 after INC-2412) on the 3-broker MSK cluster.",
+   "occurred": "2026-08-11"
+  },
+  {
+   "op": "write",
+   "key": "m190",
+   "title": "",
+   "content": "The reporting service consumes ledger.events with group id reporting-v2 and does month-end exports to S3 as Parquet. It is owned by the finance data team, not us.",
+   "tags": [
+    "kafka",
+    "team"
+   ],
+   "occurred": "2026-08-13"
+  },
+  {
+   "op": "write",
+   "key": "m120",
+   "title": "Oliver's camp",
+   "content": "Oliver's Year 4 camp is at the Phillip Island Adventure Resort from 2 to 4 September and costs AUD 385. The permission form is due by 21 August.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-08-14"
+  },
+  {
+   "op": "write",
+   "key": "m191",
+   "title": "",
+   "content": "Wrote my first Go generics-heavy helper for pgx row scanning and then Marcus asked in review whether it was worth the type parameters. Deleted half of it.",
+   "tags": [
+    "go"
+   ],
+   "occurred": "2026-08-18"
+  },
+  {
+   "op": "write",
+   "key": "m121",
+   "title": "",
+   "content": "Oliver's dental check-up on 19 August went well, no new cavities. Dr Kovacs suggested Chloe come for her first visit once she turns 5 and a half.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-08-19"
+  },
+  {
+   "op": "write",
+   "key": "m122",
+   "title": "",
+   "content": "Chloe's first dental check-up is booked with Dr Kovacs for 2 September at 3:30pm.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-08-21"
+  },
+  {
+   "op": "update",
+   "key": "m005",
+   "content": "On-call rotation is now one week in six since Lena and Tomasz joined in August. Handover is still Mondays at 9:30 Melbourne time on the 'payments-core' PagerDuty schedule, and Marcus is my secondary this quarter.",
+   "occurred": "2026-08-24"
+  },
+  {
+   "op": "update",
+   "key": "m020",
+   "content": "Mei, my partner, is a hospital pharmacist at the Austin Hospital. From September she works Tuesday to Friday instead of Monday to Thursday. She does not eat coriander, loves hot pot, and cannot stand blue cheese.",
+   "occurred": "2026-08-25"
+  },
+  {
+   "op": "write",
+   "key": "m123",
+   "title": "1:1 Hannah Aug",
+   "content": "Hannah has read the schema registry draft and wants the cost comparison between Apicurio and the managed AWS Glue Schema Registry before she takes it to Priya. Glue would be about USD 0 for the registry itself but ties us to AWS SDKs.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-08-26"
+  },
+  {
+   "op": "write",
+   "key": "m124",
+   "title": "Mei's new car",
+   "content": "Sold Mei's Corolla on 30 August for AUD 9,800 through Facebook Marketplace. Mei now drives a 2020 Mazda3 G20 Evolve hatch, bought from Northcote Mazda used cars for AUD 24,500 with 52,000 km. Rego is due 11 November and servicing is at Northcote Mazda.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-09-01",
+   "supersedes": "m019"
+  },
+  {
+   "op": "write",
+   "key": "m125",
+   "title": "",
+   "content": "Chloe's first dental check-up with Dr Kovacs: clean teeth, no cavities, and she got a sticker and a koala toothbrush.",
+   "tags": [
+    "kids",
+    "health"
+   ],
+   "occurred": "2026-09-02"
+  },
+  {
+   "op": "write",
+   "key": "m192",
+   "title": "",
+   "content": "Oliver came back from camp on 4 September, loved the flying fox and the giant swing, and lost one sock. Mr Haddad sent a photo of the kids at the Nobbies.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-09-04"
+  },
+  {
+   "op": "write",
+   "key": "m126",
+   "title": "Amber Electric",
+   "content": "Switched electricity from Origin to Amber Electric on 5 September (wholesale pricing, AUD 25 a month membership). I expect about AUD 160 a month instead of 210. Gas stays with Origin.",
+   "tags": [
+    "money",
+    "house"
+   ],
+   "occurred": "2026-09-05",
+   "supersedes": "m054"
+  },
+  {
+   "op": "write",
+   "key": "m193",
+   "title": "",
+   "content": "Father's Day on 6 September: the kids made me a card and Mei bought me a Kindle Paperwhite for AUD 249.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-09-06"
+  },
+  {
+   "op": "write",
+   "key": "m127",
+   "title": "Grocery spend",
+   "content": "Grocery spend has crept up to about AUD 310 a week (roughly 1,240 a month) from the 250 a week we budgeted at the start of the year. Mei does the Aldi run on Saturdays and I do the Queen Vic Market fruit and veg on Sundays.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-09-08",
+   "supersedes": "m048"
+  },
+  {
+   "op": "write",
+   "key": "m128",
+   "title": "",
+   "content": "Upgraded the home internet to Aussie Broadband NBN 250/25 at AUD 99 a month on 10 September. The FTTP upgrade got us proper speeds, about 240 Mbps down.",
+   "tags": [
+    "house"
+   ],
+   "occurred": "2026-09-10",
+   "supersedes": "m059"
+  },
+  {
+   "op": "write",
+   "key": "m129",
+   "title": "Gym change",
+   "content": "Cancelled Anytime Fitness and joined the Northcote Aquatic and Recreation Centre gym at AUD 14.50 a week, which includes the pool. I swim laps on Fridays now.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-09-12",
+   "supersedes": "m053"
+  },
+  {
+   "op": "write",
+   "key": "m130",
+   "title": "Piano teacher",
+   "content": "Mrs Tanaka retired, so Oliver's new piano teacher is Mr Beck on Tuesdays at 4:15pm, AUD 40 for 30 minutes. He has started on a Grade 1 AMEB piece.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-09-14",
+   "supersedes": "m052"
+  },
+  {
+   "op": "write",
+   "key": "m131",
+   "title": "Marcus leaving",
+   "content": "Marcus Chen has resigned to join Atlassian and finishes on 27 November. Dmitri Volkov becomes the payments platform tech lead from 1 December, which means I will inherit some of the bank-gateway on-call knowledge.",
+   "tags": [
+    "work",
+    "team"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m132",
+   "title": "Tasmania trip",
+   "content": "Tasmania trip 27 September to 3 October. Spirit of Tasmania night ferry Geelong to Devonport with the car and a 4-berth cabin, AUD 1,190 return. Three nights in an Airbnb at Bicheno for AUD 780, then three nights in Hobart at an apartment near Salamanca for AUD 1,050. MONA tickets AUD 35 per adult, kids free. We plan the Wineglass Bay lookout walk, the Bicheno penguin tour and the Salamanca Market on Saturday morning. Chloe still gets car sick so we are bringing the ginger tablets and a bucket.",
+   "tags": [
+    "travel",
+    "tasmania"
+   ],
+   "occurred": "2026-09-18"
+  },
+  {
+   "op": "write",
+   "key": "m194",
+   "title": "Registry rollout",
+   "content": "Schema registry rollout plan for Hannah. Phase 1 (October): deploy Apicurio 2.6 in the kp-prod-apse2 cluster with a Postgres storage backend on a small RDS instance, and register the existing ledger.events Protobuf messages with BACKWARD_TRANSITIVE compatibility. Phase 2 (November): add Buf breaking-change checks to the CI pipeline for the ledger-events repo, and make ledger-writer register schemas at startup behind a feature flag. Phase 3 (December): migrate the reporting service and the risk engine to read through the registry, with a dual-read period of two weeks where both the old shared Go package and the registry decode run side by side and mismatches are logged. Risks: Apicurio is another thing to run and patch; Glue would avoid that but locks us to AWS client libraries. Success metrics: zero consumer breakages from schema changes in Q1 2027 and onboarding a new consumer in under a day. Cost is about USD 120 a month for the extra instance and storage. Tomasz volunteered to own the CI part and Lena the consumer migration.",
+   "tags": [
+    "work",
+    "kafka"
+   ],
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "write",
+   "key": "m133",
+   "title": "",
+   "content": "Dad's knee replacement at Ballarat Base Hospital went fine on 22 September. He was home on the 25th and already complaining about the physio exercises.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-09-22"
+  },
+  {
+   "op": "write",
+   "key": "m134",
+   "title": "Datadog bill",
+   "content": "Datadog cost USD 9,600 in August. Hannah wants a 20% reduction by December, so the plan is to drop high-cardinality custom metrics and move the traces entirely to Tempo.",
+   "tags": [
+    "infra",
+    "observability"
+   ],
+   "occurred": "2026-09-25"
+  },
+  {
+   "op": "write",
+   "key": "m135",
+   "title": "",
+   "content": "Bicheno penguin tour was great but freezing. Oliver counted 31 little penguins and Chloe fell asleep on the way back to the Airbnb.",
+   "tags": [
+    "travel",
+    "tasmania"
+   ],
+   "occurred": "2026-09-28"
+  },
+  {
+   "op": "write",
+   "key": "m136",
+   "title": "",
+   "content": "MONA in Hobart: the kids liked the Cloaca poo machine far more than I expected and Mei liked the Egyptian sarcophagus. Adult tickets were AUD 35.",
+   "tags": [
+    "travel",
+    "tasmania"
+   ],
+   "occurred": "2026-10-01"
+  },
+  {
+   "op": "write",
+   "key": "m137",
+   "title": "",
+   "content": "Terraform 1.9 state lives in the S3 bucket kp-tf-state with a DynamoDB lock table called tf-locks-kp. Never run apply from a laptop, only through the Atlantis PR flow.",
+   "tags": [
+    "infra"
+   ],
+   "occurred": "2026-10-02"
+  },
+  {
+   "op": "write",
+   "key": "m195",
+   "title": "",
+   "content": "Back from Tasmania. The ferry crossing home was smooth, Chloe slept the whole way, and Oliver beat me at cards.",
+   "tags": [
+    "travel",
+    "tasmania"
+   ],
+   "occurred": "2026-10-03"
+  },
+  {
+   "op": "write",
+   "key": "m138",
+   "title": "Prep orientation",
+   "content": "Chloe's Prep orientation at Northcote Primary is on 4 December from 9:30 to 10:30. The principal said the Prep teachers for 2027 will be announced in the last week of term.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "write",
+   "key": "m139",
+   "title": "INC-2455",
+   "content": "INC-2455 (7 October, 06:50): the mTLS client certificate for the partner bank gateway expired and about 480 payouts failed over two hours before we noticed. Root cause: it had been renewed by hand last year by Dmitri, was never moved into cert-manager, and the calendar reminder went to the email of someone who had left. Fix: cert-manager with a Vault PKI issuer and a Prometheus x509-exporter alert at 30 days.",
+   "tags": [
+    "incident"
+   ],
+   "occurred": "2026-10-07"
+  },
+  {
+   "op": "update",
+   "key": "m092",
+   "content": "Postgres 15 to 16 upgrade: payouts-db is already done (21 July). ledger-db is scheduled for Saturday 24 October at 23:00 using an RDS blue/green deployment. Not during month-end and Sam will be on the bridge.",
+   "occurred": "2026-10-08"
+  },
+  {
+   "op": "write",
+   "key": "m140",
+   "title": "",
+   "content": "Yarra Valley Water bill for the third quarter was AUD 286, up from 241 in the second quarter because of a leaking toilet cistern. The plumber fixed it for AUD 180.",
+   "tags": [
+    "house",
+    "money"
+   ],
+   "occurred": "2026-10-10"
+  },
+  {
+   "op": "write",
+   "key": "m196",
+   "title": "",
+   "content": "City of Darebin council rates for 2026-27 are AUD 2,118 in four instalments, the last due 15 February 2027. Last year's were AUD 1,974.",
+   "tags": [
+    "house",
+    "money"
+   ],
+   "occurred": "2026-10-11"
+  },
+  {
+   "op": "write",
+   "key": "m141",
+   "title": "Promo deferred",
+   "content": "The promotion committee deferred my Staff Engineer case. Feedback: strong technical depth but they want evidence of impact from the schema registry after rollout. I can be reconsidered in the March 2027 cycle. Hannah was supportive and said it is a 'not yet', not a 'no'.",
+   "tags": [
+    "work",
+    "comp"
+   ],
+   "occurred": "2026-10-14"
+  },
+  {
+   "op": "write",
+   "key": "m142",
+   "title": "Lena and Tomasz",
+   "content": "Lena, who joined in August, prefers pairing in the mornings, loves Vim and is coeliac. Tomasz, who came from ING, prefers async reviews, drinks tea rather than coffee and keeps his camera off.",
+   "tags": [
+    "team"
+   ],
+   "occurred": "2026-10-16"
+  },
+  {
+   "op": "write",
+   "key": "m197",
+   "title": "Gutters",
+   "content": "Gutter clean by a local guy, AUD 220, done on 18 October before the fire season. Same afternoon he told us the downpipe at the back is cracked.",
+   "tags": [
+    "house"
+   ],
+   "occurred": "2026-10-18"
+  },
+  {
+   "op": "write",
+   "key": "m143",
+   "title": "Migrations",
+   "content": "We use goose for SQL migrations, named YYYYMMDDHHMM_description.sql. Never edit a migration that has been applied in staging, always add a new one.",
+   "tags": [
+    "postgres",
+    "runbook"
+   ],
+   "occurred": "2026-10-20"
+  },
+  {
+   "op": "write",
+   "key": "m144",
+   "title": "Renovation plan",
+   "content": "Kitchen and bathroom renovation plan for 2027. Target budget AUD 68,000: kitchen 42,000, bathroom 20,000, contingency 6,000. Quotes so far: Northside Kitchens AUD 44,800 and Bellevue Joinery AUD 39,500, and Bellevue only does cabinetry so we would need a separate plumber and tiler. Funding would come from the offset account (about AUD 52,000 now) plus a redraw of 20,000. Mei wants a gas cooktop swapped for induction because of the kids, and I want the dishwasher moved next to the sink. Plan is to start in late January while the kids are in school and Mei's parents are away, with the council permit lodged in November. We should decide between the two quotes by 15 December, and talk to Macquarie about whether a 20,000 redraw changes the rate.",
+   "tags": [
+    "house",
+    "money"
+   ],
+   "occurred": "2026-10-22"
+  },
+  {
+   "op": "write",
+   "key": "m198",
+   "title": "ledger-db 16",
+   "content": "ledger-db Postgres 16 upgrade went through overnight on 24 October with Sam on the bridge. Switchover took 61 seconds and p99 on ledger-writer inserts improved a little, probably from the ULID work.",
+   "tags": [
+    "postgres",
+    "infra"
+   ],
+   "occurred": "2026-10-24"
+  },
+  {
+   "op": "update",
+   "key": "m026",
+   "content": "We run two Postgres clusters on RDS behind PgBouncer. payouts-db (db.r6g.xlarge Multi-AZ, 400 GB, pool_size 40 for payout-service) has been on Postgres 16.3 since 21 July. ledger-db (db.r6g.2xlarge Multi-AZ, 1.5 TB gp3, pool_size 25 for ledger-writer) was upgraded to 16.3 on 24 October with a 61 second switchover.",
+   "occurred": "2026-10-26"
+  },
+  {
+   "op": "write",
+   "key": "m145",
+   "title": "JLPT N4 mock",
+   "content": "Took a full N4 mock exam: 121 out of 180 (pass mark is 90), but the listening section was only 31 out of 60 and that is my weak spot. I will do 20 minutes of listening practice every morning.",
+   "tags": [
+    "japanese"
+   ],
+   "occurred": "2026-10-28"
+  },
+  {
+   "op": "write",
+   "key": "m199",
+   "title": "",
+   "content": "N4 のための単語メモ：「予約」は reservation、「相談」は consultation、「引っ越し」は moving house。毎朝リスニングの前に十分間だけ復習する。",
+   "tags": [
+    "japanese"
+   ],
+   "occurred": "2026-10-30"
+  },
+  {
+   "op": "write",
+   "key": "m200",
+   "title": "",
+   "content": "Oliver moved up to Stage 6 at Northcote Aquatic in Term 4, and the lessons are now 45 minutes on Thursdays at 4:30.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-11-02",
+   "supersedes": "m034"
+  },
+  {
+   "op": "write",
+   "key": "m146",
+   "title": "",
+   "content": "Melbourne Cup day: the office sweep gave me a horse that finished 17th. Everyone left at 2pm anyway.",
+   "tags": [],
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "write",
+   "key": "m147",
+   "title": "Prep uniform",
+   "content": "Ordered Chloe's Prep uniform and the school bag for 2027, AUD 312, ready for pickup on 17 December.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m201",
+   "title": "",
+   "content": "Chloe starts swimming lessons at Northcote Aquatic in Term 4, Saturdays at 10:00 in the Stage 1 'Tadpoles' group, AUD 22 each.",
+   "tags": [
+    "kids"
+   ],
+   "occurred": "2026-11-05"
+  },
+  {
+   "op": "write",
+   "key": "m202",
+   "title": "",
+   "content": "Mei's dad's HbA1c was 7.4% at his doctor in Chengdu before he left, which is why he has to watch the breakfast sugar.",
+   "tags": [
+    "family",
+    "health"
+   ],
+   "occurred": "2026-11-06"
+  },
+  {
+   "op": "write",
+   "key": "m148",
+   "title": "tidepool v1.0",
+   "content": "Tagged tidepool v1.0.0 on 8 November. It now has multi-user auth with passkeys (go-webauthn), a mobile PWA and a docker-compose example. I posted it on Hacker News and got 41 points and 9 GitHub stars.",
+   "tags": [
+    "sideproject"
+   ],
+   "occurred": "2026-11-08"
+  },
+  {
+   "op": "write",
+   "key": "m149",
+   "title": "",
+   "content": "Paid the Mazda3 rego on 9 November: AUD 880 for 12 months.",
+   "tags": [
+    "car"
+   ],
+   "occurred": "2026-11-09"
+  },
+  {
+   "op": "write",
+   "key": "m150",
+   "title": "ADR-026 Redis",
+   "content": "ADR-026: decommission the ElastiCache cluster. payout-service per-merchant rate limiting moves to the Envoy local rate limit filter at the ingress, so nothing in the payments stack uses Redis any more. Shutdown planned for 30 November.",
+   "tags": [
+    "adr",
+    "redis"
+   ],
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "update",
+   "key": "m032",
+   "content": "payout-service no longer uses Redis. Per-merchant rate limiting (300 requests per 60 seconds) moved to the Envoy local rate limit filter at the ingress under ADR-026, and the shared ElastiCache cluster is being shut down on 30 November.",
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "write",
+   "key": "m203",
+   "title": "DR drill Nov",
+   "content": "DR drill for ledger-db is booked for Thursday 26 November at 10:00. I am the incident commander, Sam is on infra, and Aisha will be the scribe as a learning exercise.",
+   "tags": [
+    "infra",
+    "runbook"
+   ],
+   "occurred": "2026-11-11"
+  },
+  {
+   "op": "write",
+   "key": "m151",
+   "title": "1:1 Hannah Nov",
+   "content": "Hannah asked me to run the incident review for INC-2455 and to write the schema registry rollout plan so there is something concrete to show the committee in March. She also said I should not take on more on-call tooling.",
+   "tags": [
+    "work",
+    "1on1"
+   ],
+   "occurred": "2026-11-12"
+  },
+  {
+   "op": "write",
+   "key": "m204",
+   "title": "",
+   "content": "Hannah hinted that the 2026 bonus multiplier will probably be 1.1 because the company is slightly below its revenue target. The 10% target is about AUD 19,700 on my blended salary this year, so roughly AUD 21,700 at 1.1.",
+   "tags": [
+    "comp"
+   ],
+   "occurred": "2026-11-13"
+  },
+  {
+   "op": "write",
+   "key": "m205",
+   "title": "Footy with Sam",
+   "content": "Went to the footy at the MCG with Sam on Saturday. Collingwood lost and he sulked through two pies.",
+   "tags": [],
+   "occurred": "2026-11-14"
+  },
+  {
+   "op": "write",
+   "key": "m152",
+   "title": "Christmas 2026",
+   "content": "Christmas 2026 will be in Daylesford with my parents from 24 to 27 December. I booked the family session at the Hepburn Springs bathhouse for 27 December at 10:00, AUD 240.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "write",
+   "key": "m153",
+   "title": "春节回国",
+   "content": "Mei 想明年春节（二月六号）带两个孩子回成都，她妈妈已经在看机票了，四个人大概七千多澳元。我能不能请两周年假还要问一下 Hannah。",
+   "tags": [
+    "family",
+    "travel"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "write",
+   "key": "m154",
+   "title": "",
+   "content": "Annoyed by the 6am bin truck again. Bins go out on Thursday night, recycling is every second week.",
+   "tags": [],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s01",
+   "title": "Incident log",
+   "content": "Six notable incidents this year, each with a different root cause: INC-2231 Postgres pool exhaustion from an HTTP call inside a transaction, INC-2287 Redis eviction causing 14 duplicate charges, INC-2340 goroutine leak OOMKilling ledger-writer, INC-2391 CoreDNS ndots latency, INC-2412 Kafka rebalance storm, INC-2455 expired mTLS cert. Recurring lesson: alert on the resource before it breaks.",
+   "adopt": [
+    "m006",
+    "m050",
+    "m076",
+    "m103",
+    "m118",
+    "m139"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s05",
+   "title": "ADR decisions",
+   "content": "Architecture direction: pgx and sqlc for Postgres access, OpenTelemetry with Tempo for traces, ULIDs for ledger entries, an outbox for Kafka publishing, ArgoCD for deployment, Apicurio and Buf for schemas. Idempotency went Redis then back to Postgres (ADR-024), and Redis is retired entirely by ADR-026.",
+   "adopt": [
+    "m013",
+    "m014",
+    "m042",
+    "m062",
+    "m088",
+    "m106",
+    "m116",
+    "m150"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s06",
+   "title": "Team profiles",
+   "content": "Colleagues and how to work with them: Hannah (manager since July, bullet docs), Marcus (leaving 27 Nov, short PR descriptions), Dmitri (becomes tech lead, call-first), Sam (SRE, black coffee), Jess (PM, one-pagers), Aisha (now on Risk Engine), Lena (coeliac, mornings) and Tomasz (async, tea).",
+   "adopt": [
+    "m002",
+    "m003",
+    "m004",
+    "m158",
+    "m159",
+    "m142",
+    "m112",
+    "m131"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s07",
+   "title": "Infra stack",
+   "content": "Payments runs on EKS 1.30 in ap-southeast-2 with RDS Postgres (payouts-db and ledger-db, both on 16.3), MSK Kafka with a 24-partition ledger.events topic, Terraform through Atlantis, and Datadog plus Tempo for observability. AWS cost is about USD 42k a month and the Datadog bill is being cut.",
+   "adopt": [
+    "m026",
+    "m027",
+    "m033",
+    "m097",
+    "m134",
+    "m137"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s08",
+   "title": "Cars and cover",
+   "content": "Two cars: my 2019 CX-5 diesel (rego 912, serviced 19 June at 75k km, insured with RACV at 1,260) and Mei's 2020 Mazda3 (bought Sep 2026 after selling the Corolla for 9,800, rego 880). Tyres on the CX-5 are Bridgestone Alenza.",
+   "adopt": [
+    "m018",
+    "m049",
+    "m107",
+    "m119",
+    "m124",
+    "m149",
+    "m171"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s09",
+   "title": "Side projects",
+   "content": "tidepool, a Go and SQLite RSS reader, hit v1.0.0 on 8 November and runs on Hetzner. bushwatch is a Go Telegram bot on a Raspberry Pi that watches the Emergency Victoria feed near Daylesford. Both are Saturday-morning projects.",
+   "adopt": [
+    "m017",
+    "m070",
+    "m071",
+    "m148",
+    "m181"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s11",
+   "title": "Japanese study",
+   "content": "Genki II done, WaniKani level 24, weekly iTalki lessons with Kaori-sensei, JLPT N4 on 6 December. The mock scored 121 out of 180, with listening the weak area, so morning listening practice is the plan.",
+   "adopt": [
+    "m021",
+    "m022",
+    "m080",
+    "m145",
+    "m199"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s12",
+   "title": "Family holidays",
+   "content": "Two family trips after Japan: Queenstown skiing 4 to 11 July (Coronet Peak kids lessons, RAV4 hire) and Tasmania 27 September to 3 October (Spirit of Tasmania, Bicheno, Hobart and MONA). Both stayed close to their budgets.",
+   "adopt": [
+    "m105",
+    "m113",
+    "m185",
+    "m132",
+    "m135",
+    "m136"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s16",
+   "title": "Work and career",
+   "content": "Work is payments engineering at Kestrel Pay: a year of six incidents and a clear set of ADRs, a new manager, a deferred Staff case with the schema registry as the evidence to build for March 2027, and a team that is turning over (Marcus leaving, Dmitri taking the tech lead role).",
+   "adopt": [
+    "s01",
+    "s05",
+    "s06",
+    "s14"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s17",
+   "title": "Family life",
+   "content": "Family life centres on Oliver (9, Year 4) and Chloe (5, Prep in 2027), Mei's parents' long visit, and three big trips: Japan, Queenstown and Tasmania. Kids' health and schooling details are in the kids overview but it predates several changes.",
+   "adopt": [
+    "s03",
+    "s13",
+    "s12",
+    "s10"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s18",
+   "title": "Household money",
+   "content": "Money picture: Macquarie loan at 780,000 originally, a healthy offset account, a salary of 185k plus bonus and options, and two cars with insurance. Spending discipline is on groceries and utilities.",
+   "adopt": [
+    "s02",
+    "s04",
+    "s08"
+   ]
+  }
+ ],
+ "queries": [
+  {
+   "id": "q001",
+   "qs": [
+    "How much are Chloe's kindergarten fees per month?",
+    "Merri Creek Kindergarten cost after subsidy"
+   ],
+   "type": "direct",
+   "gold": [
+    "m169"
+   ],
+   "stale": [],
+   "note": "Direct: kinder fees about AUD 540/month."
+  },
+  {
+   "id": "q002",
+   "qs": [
+    "What was the root cause of INC-2231?",
+    "INC-2231 postmortem pgx transaction bank API"
+   ],
+   "type": "direct",
+   "gold": [
+    "m006"
+   ],
+   "stale": [],
+   "note": "Direct: HTTP call inside a transaction exhausted the PgBouncer pool."
+  },
+  {
+   "id": "q003",
+   "qs": [
+    "What is the strike price of my stock options?",
+    "how many options do I have and what strike"
+   ],
+   "type": "direct",
+   "gold": [
+    "m016"
+   ],
+   "stale": [],
+   "note": "Direct: 20,000 options at AUD 1.35."
+  },
+  {
+   "id": "q004",
+   "qs": [
+    "What was my time in the Run Melbourne half marathon?",
+    "Run Melbourne finish time"
+   ],
+   "type": "direct",
+   "gold": [
+    "m115"
+   ],
+   "stale": [],
+   "note": "Direct: 1:54:12."
+  },
+  {
+   "id": "q005",
+   "qs": [
+    "What is the PgBouncer pool_size for payout-service?",
+    "payouts-db pool size"
+   ],
+   "type": "direct",
+   "gold": [
+    "m026"
+   ],
+   "stale": [],
+   "note": "Direct: pool_size 40 on payouts-db (m026 was updated twice, still 40)."
+  },
+  {
+   "id": "q006",
+   "qs": [
+    "Which Airbnb did we book in Queenstown and how much was it?",
+    "Queenstown chalet cost"
+   ],
+   "type": "direct",
+   "gold": [
+    "m105"
+   ],
+   "stale": [],
+   "note": "Direct: Sunshine Bay chalet NZD 2,260 for 7 nights."
+  },
+  {
+   "id": "q007",
+   "qs": [
+    "How much did the Japan flights cost?",
+    "Japan Airlines flights Haneda total price"
+   ],
+   "type": "direct",
+   "gold": [
+    "m023"
+   ],
+   "stale": [],
+   "note": "Direct: AUD 6,820 for four."
+  },
+  {
+   "id": "q008",
+   "qs": [
+    "Which index did Marcus suggest for payouts-db?",
+    "partial index status created_at pending"
+   ],
+   "type": "direct",
+   "gold": [
+    "m043"
+   ],
+   "stale": [],
+   "note": "Direct: partial index on (status, created_at) WHERE status='pending', 14 ms to 2 ms."
+  },
+  {
+   "id": "q009",
+   "qs": [
+    "What does ADR-021 say about ledger entry IDs?",
+    "ULID decision ledger_entries"
+   ],
+   "type": "direct",
+   "gold": [
+    "m062"
+   ],
+   "stale": [],
+   "note": "Direct: ULIDs replace UUIDv4 for new rows."
+  },
+  {
+   "id": "q010",
+   "qs": [
+    "how much extra do I get paid for carrying the pager",
+    "extra pay for being the primary responder for a week"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m089"
+   ],
+   "stale": [],
+   "note": "Paraphrase: on-call pay AUD 350/week plus time in lieu. Query avoids 'on-call'."
+  },
+  {
+   "id": "q011",
+   "qs": [
+    "what do we put on Chloe's skin when it flares up",
+    "cream prescribed for the little one's rash"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "Paraphrase: eczema, hydrocortisone 1% and QV."
+  },
+  {
+   "id": "q012",
+   "qs": [
+    "how tall were the kids when they were measured for rides in Osaka",
+    "child height check theme park"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m081"
+   ],
+   "stale": [],
+   "note": "Paraphrase: 128 cm and 107 cm at USJ."
+  },
+  {
+   "id": "q013",
+   "qs": [
+    "which colleague cannot eat gluten",
+    "who at work has a wheat intolerance"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m142"
+   ],
+   "stale": [],
+   "note": "Paraphrase: Lena is coeliac."
+  },
+  {
+   "id": "q014",
+   "qs": [
+    "which of the kids refuses to eat funghi",
+    "who won't touch mushrooms at dinner"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m037"
+   ],
+   "stale": [],
+   "note": "Paraphrase: Oliver won't eat mushrooms."
+  },
+  {
+   "id": "q015",
+   "qs": [
+    "how to push a hung settlement run back through the pipeline",
+    "unstick a payout job without double submitting"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m068"
+   ],
+   "stale": [],
+   "note": "Paraphrase: payoutctl requeue runbook."
+  },
+  {
+   "id": "q016",
+   "qs": [
+    "how much money did the tax office give back this year",
+    "2025-26 refund amount"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m114"
+   ],
+   "stale": [],
+   "note": "Paraphrase: AUD 3,260 refund."
+  },
+  {
+   "id": "q017",
+   "qs": [
+    "why were merchants billed twice in February",
+    "what caused the duplicate charges to customers"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m050"
+   ],
+   "stale": [],
+   "note": "Paraphrase: INC-2287 Redis eviction of idempotency keys."
+  },
+  {
+   "id": "q018",
+   "qs": [
+    "what did I pay for the adjustable workstation table",
+    "cost of the desk that goes up and down"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m100"
+   ],
+   "stale": [],
+   "note": "Paraphrase: Desky sit-stand desk AUD 899."
+  },
+  {
+   "id": "q019",
+   "qs": [
+    "convention for naming database schema change scripts",
+    "how are SQL upgrade files named in our repos"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m143"
+   ],
+   "stale": [],
+   "note": "Paraphrase: goose migrations YYYYMMDDHHMM_description.sql."
+  },
+  {
+   "id": "q020",
+   "qs": [
+    "where did we take her folks for the goodbye meal",
+    "farewell dinner for the in-laws"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m102"
+   ],
+   "stale": [],
+   "note": "Paraphrase: Dragon Hotpot in Box Hill on 7 June."
+  },
+  {
+   "id": "q021",
+   "qs": [
+    "Kubernetes admin certification result",
+    "did I pass the cluster administrator exam and what mark"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m099"
+   ],
+   "stale": [],
+   "note": "Paraphrase: CKA passed with 81%."
+  },
+  {
+   "id": "q022",
+   "qs": [
+    "that time the Kafka consumers kept dropping out and the finance report ran late",
+    "what went wrong with the message queue lag and who owned the consumer"
+   ],
+   "type": "vague",
+   "gold": [
+    "m118"
+   ],
+   "stale": [],
+   "note": "Vague: INC-2412 rebalancing storm."
+  },
+  {
+   "id": "q023",
+   "qs": [
+    "the exercise where we practised failing over to the Melbourne replica",
+    "disaster recovery test results"
+   ],
+   "type": "vague",
+   "gold": [
+    "m187"
+   ],
+   "stale": [],
+   "note": "Vague: DR drill 25 July, RTO 22 minutes."
+  },
+  {
+   "id": "q024",
+   "qs": [
+    "what was behind that morning when all the bank payouts failed",
+    "payouts failing for two hours early morning"
+   ],
+   "type": "vague",
+   "gold": [
+    "m139"
+   ],
+   "stale": [],
+   "note": "Vague: INC-2455 expired mTLS cert (not INC-2231 or INC-2391)."
+  },
+  {
+   "id": "q025",
+   "qs": [
+    "that ramen place Mei's friend suggested near Lygon Street",
+    "restaurant recommendation from Yuki"
+   ],
+   "type": "vague",
+   "gold": [
+    "m055"
+   ],
+   "stale": [],
+   "note": "Vague: Menya on Lygon Street."
+  },
+  {
+   "id": "q026",
+   "qs": [
+    "what was the thing with Oliver's tooth and the filling",
+    "dental work for the older kid"
+   ],
+   "type": "vague",
+   "gold": [
+    "m038"
+   ],
+   "stale": [],
+   "note": "Vague: filling done 18 Feb, next check-up 19 Aug."
+  },
+  {
+   "id": "q027",
+   "qs": [
+    "that snow holiday we booked for the kids",
+    "which mountain did the kids learn to ski at"
+   ],
+   "type": "vague",
+   "gold": [
+    "m105"
+   ],
+   "stale": [],
+   "note": "Vague: Queenstown, Coronet Peak."
+  },
+  {
+   "id": "q028",
+   "qs": [
+    "what did my old manager say about getting promoted",
+    "what's holding back my promotion"
+   ],
+   "type": "vague",
+   "gold": [
+    "m060",
+    "m085"
+   ],
+   "stale": [],
+   "note": "Vague: Priya's Staff promotion blockers (schema registry initiative)."
+  },
+  {
+   "id": "q029",
+   "qs": [
+    "INC-2340"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m076"
+   ],
+   "stale": [],
+   "note": "Keyword: incident id."
+  },
+  {
+   "id": "q030",
+   "qs": [
+    "ndots NodeLocal DNSCache",
+    "CoreDNS conntrack 5 second latency"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m103"
+   ],
+   "stale": [],
+   "note": "Keyword: INC-2391 fix."
+  },
+  {
+   "id": "q031",
+   "qs": [
+    "Flixotide"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m010"
+   ],
+   "stale": [],
+   "note": "Keyword: Oliver's preventer (updated dose)."
+  },
+  {
+   "id": "q032",
+   "qs": [
+    "Desky"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m100"
+   ],
+   "stale": [],
+   "note": "Keyword: standing desk brand."
+  },
+  {
+   "id": "q033",
+   "qs": [
+    "tf-locks-kp"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m137"
+   ],
+   "stale": [],
+   "note": "Keyword: Terraform lock table."
+  },
+  {
+   "id": "q034",
+   "qs": [
+    "Amber Electric"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m126"
+   ],
+   "stale": [],
+   "note": "Keyword: electricity retailer."
+  },
+  {
+   "id": "q035",
+   "qs": [
+    "GOMEMLIMIT"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m076"
+   ],
+   "stale": [],
+   "note": "Keyword: Go memory limit setting from INC-2340."
+  },
+  {
+   "id": "q036",
+   "qs": [
+    "Apicurio registry",
+    "Buf breaking change CI"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m116",
+    "m194"
+   ],
+   "stale": [],
+   "note": "Keyword: schema registry ADR and rollout plan."
+  },
+  {
+   "id": "q037",
+   "qs": [
+    "房贷 每个月 还多少",
+    "Macquarie 房贷 月供"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m007"
+   ],
+   "stale": [],
+   "note": "Crosslang zh->en: monthly repayment now AUD 4,455 (updated from 4,620)."
+  },
+  {
+   "id": "q038",
+   "qs": [
+    "Chloe 湿疹 用什么药膏"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "Crosslang zh->en: hydrocortisone 1% and QV Intensive."
+  },
+  {
+   "id": "q039",
+   "qs": [
+    "二月那次重复扣款的事故 根因是什么",
+    "Redis 内存满了导致重复付款"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m050"
+   ],
+   "stale": [],
+   "note": "Crosslang zh->en: INC-2287."
+  },
+  {
+   "id": "q040",
+   "qs": [
+    "when do Mei's parents fly in from Chengdu and what visa are they on",
+    "Mei's parents visitor visa 600 airport pickup"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m039"
+   ],
+   "stale": [],
+   "note": "Crosslang en->zh: memory written in Chinese."
+  },
+  {
+   "id": "q041",
+   "qs": [
+    "does Mei want to take the kids to China for Chinese New Year and what would flights cost",
+    "Spring Festival trip to Chengdu 2027"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m153"
+   ],
+   "stale": [],
+   "note": "Crosslang en->zh: memory in Chinese, about 7k AUD for four."
+  },
+  {
+   "id": "q042",
+   "qs": [
+    "what does the te-shimau grammar express in Japanese",
+    "grammar note about regret or completion"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m022"
+   ],
+   "stale": [],
+   "note": "Crosslang en->ja: Japanese-language study note."
+  },
+  {
+   "id": "q043",
+   "qs": [
+    "what happened with payouts in early December",
+    "the December on-call incident"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m006"
+   ],
+   "stale": [],
+   "note": "Temporal: INC-2231 on 3 Dec 2025."
+  },
+  {
+   "id": "q044",
+   "qs": [
+    "what did I decide about home insurance in March",
+    "March 2026 insurance renewal"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m064"
+   ],
+   "stale": [
+    "m030"
+   ],
+   "note": "Temporal: Allianz renewal at AUD 2,390; 2025 value 2,140 is in m030."
+  },
+  {
+   "id": "q045",
+   "qs": [
+    "what was the physio appointment in May about",
+    "back pain treatment May"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m094"
+   ],
+   "stale": [],
+   "note": "Temporal: May physio with Dr Sophie Lam."
+  },
+  {
+   "id": "q046",
+   "qs": [
+    "what incident did we have in June",
+    "June latency problem with the bank gateway"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m103"
+   ],
+   "stale": [],
+   "note": "Temporal: INC-2391 DNS."
+  },
+  {
+   "id": "q047",
+   "qs": [
+    "what went wrong in October with the certificates",
+    "October payouts outage"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m139"
+   ],
+   "stale": [],
+   "note": "Temporal: INC-2455 expired cert 7 Oct."
+  },
+  {
+   "id": "q048",
+   "qs": [
+    "how did the half marathon go in July",
+    "July race result"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m115"
+   ],
+   "stale": [],
+   "note": "Temporal: 1:54:12 on 19 July."
+  },
+  {
+   "id": "q049",
+   "qs": [
+    "what is my current base salary",
+    "how much do I earn now"
+   ],
+   "type": "latest",
+   "gold": [
+    "m015"
+   ],
+   "stale": [],
+   "note": "Latest: updated to AUD 198,000 from 1 March (update-style)."
+  },
+  {
+   "id": "q050",
+   "qs": [
+    "who is my engineering manager now",
+    "current manager and 1:1 slot"
+   ],
+   "type": "latest",
+   "gold": [
+    "m112"
+   ],
+   "stale": [
+    "m001"
+   ],
+   "note": "Latest: Hannah Lowe, Tuesdays 2pm. Old Priya memory m001 left in the library."
+  },
+  {
+   "id": "q051",
+   "qs": [
+    "what car does Mei drive these days",
+    "Mei's current car and rego date"
+   ],
+   "type": "latest",
+   "gold": [
+    "m124"
+   ],
+   "stale": [
+    "m019"
+   ],
+   "note": "Latest: 2020 Mazda3 replaced the Corolla."
+  },
+  {
+   "id": "q052",
+   "qs": [
+    "which company supplies our electricity now",
+    "current power retailer"
+   ],
+   "type": "latest",
+   "gold": [
+    "m126"
+   ],
+   "stale": [
+    "m054"
+   ],
+   "note": "Latest: Amber Electric since 5 Sept."
+  },
+  {
+   "id": "q053",
+   "qs": [
+    "how much do we spend on groceries each week at the moment",
+    "current weekly food budget"
+   ],
+   "type": "latest",
+   "gold": [
+    "m127"
+   ],
+   "stale": [
+    "m048"
+   ],
+   "note": "Latest: about AUD 310 a week, not the 250 in the January budget."
+  },
+  {
+   "id": "q054",
+   "qs": [
+    "which gym am I a member of",
+    "gym weekly fee"
+   ],
+   "type": "latest",
+   "gold": [
+    "m129"
+   ],
+   "stale": [
+    "m053"
+   ],
+   "note": "Latest: Northcote Aquatic gym AUD 14.50/week."
+  },
+  {
+   "id": "q055",
+   "qs": [
+    "who teaches Oliver piano now",
+    "Oliver piano lesson day and price"
+   ],
+   "type": "latest",
+   "gold": [
+    "m130"
+   ],
+   "stale": [
+    "m052"
+   ],
+   "note": "Latest: Mr Beck on Tuesdays; Mrs Tanaka retired."
+  },
+  {
+   "id": "q056",
+   "qs": [
+    "where is the tidepool instance hosted at the moment",
+    "tidepool hosting cost"
+   ],
+   "type": "latest",
+   "gold": [
+    "m017"
+   ],
+   "stale": [],
+   "note": "Latest: Hetzner CX22 (update-style)."
+  },
+  {
+   "id": "q057",
+   "qs": [
+    "does payout-service still use Redis",
+    "is Redis still running in our stack"
+   ],
+   "type": "latest",
+   "gold": [
+    "m032"
+   ],
+   "stale": [],
+   "note": "Latest: Redis retired by ADR-026 (update-style)."
+  },
+  {
+   "id": "q058",
+   "qs": [
+    "what stage is Oliver at in swimming now",
+    "Oliver swim lesson length"
+   ],
+   "type": "latest",
+   "gold": [
+    "m200"
+   ],
+   "stale": [
+    "m034"
+   ],
+   "note": "Latest: Stage 6, 45 minute lessons."
+  },
+  {
+   "id": "q059",
+   "qs": [
+    "what was my salary before the raise",
+    "base pay at the start of the year"
+   ],
+   "type": "history",
+   "gold": [
+    "m015"
+   ],
+   "stale": [],
+   "note": "History: the old value was AUD 185,000 base (now 198,000)."
+  },
+  {
+   "id": "q060",
+   "qs": [
+    "where did tidepool run before Hetzner",
+    "tidepool original hosting"
+   ],
+   "type": "history",
+   "gold": [
+    "m017"
+   ],
+   "stale": [],
+   "note": "History: Fly.io shared-cpu-1x 256MB, about USD 3.20 a month."
+  },
+  {
+   "id": "q061",
+   "qs": [
+    "how many partitions did ledger.events originally have",
+    "partition count before the Kafka incident"
+   ],
+   "type": "history",
+   "gold": [
+    "m033"
+   ],
+   "stale": [],
+   "note": "History: 12 partitions before INC-2412 (now 24)."
+  },
+  {
+   "id": "q062",
+   "qs": [
+    "where did we originally keep idempotency keys and why",
+    "ADR-017 decision"
+   ],
+   "type": "history",
+   "gold": [
+    "m013"
+   ],
+   "stale": [],
+   "note": "History: in Redis (ElastiCache) with 24h TTL because Postgres write amplification at 2,500 req/s; later reversed by ADR-024."
+  },
+  {
+   "id": "q063",
+   "qs": [
+    "what architecture decisions have we made this year",
+    "list of ADRs"
+   ],
+   "type": "overview",
+   "gold": [
+    "m013",
+    "m014",
+    "m042",
+    "m062",
+    "m088"
+   ],
+   "stale": [],
+   "note": "Overview: ADR-024 (was 017), 014, 019, 021, 022."
+  },
+  {
+   "id": "q064",
+   "qs": [
+    "which incidents have I handled on call",
+    "post-incident reviews I wrote"
+   ],
+   "type": "overview",
+   "gold": [
+    "m006",
+    "m050",
+    "m076",
+    "m118",
+    "m139"
+   ],
+   "stale": [],
+   "note": "Overview: five of the six incident memories."
+  },
+  {
+   "id": "q065",
+   "qs": [
+    "what do I know about my teammates' habits and preferences",
+    "work colleagues likes and dislikes"
+   ],
+   "type": "overview",
+   "gold": [
+    "m002",
+    "m003",
+    "m004",
+    "m158",
+    "m159"
+   ],
+   "stale": [],
+   "note": "Overview: Marcus, Aisha, Sam, Jess, Dmitri."
+  },
+  {
+   "id": "q066",
+   "qs": [
+    "what did we do on the Japan trip",
+    "Japan April highlights"
+   ],
+   "type": "overview",
+   "gold": [
+    "m044",
+    "m078",
+    "m079",
+    "m081",
+    "m082"
+   ],
+   "stale": [],
+   "note": "Overview: itinerary, teamLab, Kyoto, USJ, cost."
+  },
+  {
+   "id": "q067",
+   "qs": [
+    "where have we travelled as a family this year",
+    "holidays and flights booked"
+   ],
+   "type": "overview",
+   "gold": [
+    "m023",
+    "m105",
+    "m132"
+   ],
+   "stale": [],
+   "note": "Overview: Japan, Queenstown, Tasmania."
+  },
+  {
+   "id": "q068",
+   "qs": [
+    "who owns the consumer that caused the rebalance storm and what does it do",
+    "which team runs the reporting job behind the Kafka lag incident"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m118",
+    "m190"
+   ],
+   "stale": [],
+   "note": "Multihop: INC-2412 plus the reporting service ownership (finance data team)."
+  },
+  {
+   "id": "q069",
+   "qs": [
+    "is the person who suggested the partial index still at the company",
+    "when does the author of the payouts-db index idea leave"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m043",
+    "m131"
+   ],
+   "stale": [],
+   "note": "Multihop: Marcus suggested the index and resigns on 27 Nov."
+  },
+  {
+   "id": "q070",
+   "qs": [
+    "which school and teacher does the child who plays Sunday soccer have",
+    "Oliver's soccer team and his class teacher"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m176",
+    "m008"
+   ],
+   "stale": [],
+   "note": "Multihop: Northcote Wanderers under-9 plus Mr Haddad at Northcote Primary."
+  },
+  {
+   "id": "q071",
+   "qs": [
+    "who is running the ledger-db failover drill and how did the previous drill go",
+    "incident commander for the next DR exercise and last RTO"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m203",
+    "m187"
+   ],
+   "stale": [],
+   "note": "Multihop: me as IC on 26 Nov; July drill RTO 22 minutes vs 30 target."
+  },
+  {
+   "id": "q072",
+   "qs": [
+    "what did Mei's rego cost this time",
+    "Mazda3 registration renewal"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m149"
+   ],
+   "stale": [
+    "m093"
+   ],
+   "note": "Neardup: Mazda3 AUD 880, not the Corolla's 856."
+  },
+  {
+   "id": "q073",
+   "qs": [
+    "what does Aisha drink",
+    "Aisha's coffee order"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m003"
+   ],
+   "stale": [
+    "m004"
+   ],
+   "note": "Neardup: oat flat white, not Sam's black coffee."
+  },
+  {
+   "id": "q074",
+   "qs": [
+    "what day is Chloe's soccer",
+    "Chloe Saturday kickers cost"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m035"
+   ],
+   "stale": [
+    "m176"
+   ],
+   "note": "Neardup: Little Kickers Saturday 9:15, not Oliver's Sunday game."
+  },
+  {
+   "id": "q075",
+   "qs": [
+    "when are Chloe's swimming lessons",
+    "Chloe Tadpoles class price"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m201"
+   ],
+   "stale": [
+    "m200"
+   ],
+   "note": "Neardup: Saturday 10:00 Stage 1, not Oliver's Thursday."
+  },
+  {
+   "id": "q076",
+   "qs": [
+    "which incident was about connections stuck idle in a transaction",
+    "pool exhaustion payouts-db outage"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m006"
+   ],
+   "stale": [
+    "m050"
+   ],
+   "note": "Neardup: INC-2231, not the Redis incident INC-2287."
+  },
+  {
+   "id": "q077",
+   "qs": [
+    "how much was Oliver's birthday party",
+    "Oliver's party venue and number of guests"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m117"
+   ],
+   "stale": [
+    "m087"
+   ],
+   "note": "Neardup: Strike Bowling AUD 360 for 8 friends, not Chloe's trampoline party."
+  },
+  {
+   "id": "q078",
+   "qs": [
+    "what did the 75,000 km service cost on the CX-5",
+    "CX-5 brake pads price"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m107"
+   ],
+   "stale": [
+    "m018"
+   ],
+   "note": "Neardup: AUD 520 service plus 340 pads, not the earlier 60,000 km one at 489."
+  },
+  {
+   "id": "q079",
+   "qs": [
+    "how much were the penguin tickets at Phillip Island",
+    "Phillip Island penguin parade price"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m066"
+   ],
+   "stale": [
+    "m135"
+   ],
+   "note": "Neardup: AUD 28 per adult, not the Bicheno penguin tour."
+  },
+  {
+   "id": "q080",
+   "qs": [
+    "how long should I rest a ribeye steak",
+    "best way to cook steak"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: completely unrelated topic."
+  },
+  {
+   "id": "q081",
+   "qs": [
+    "what are the chords for Wonderwall",
+    "guitar chords for a campfire song"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: unrelated topic."
+  },
+  {
+   "id": "q082",
+   "qs": [
+    "Brazil tourist visa requirements for Australians"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: unrelated (no Brazil trip stored)."
+  },
+  {
+   "id": "q083",
+   "qs": [
+    "python asyncio gather exception handling"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: not stored in the library."
+  },
+  {
+   "id": "q084",
+   "qs": [
+    "what is Marcus's base salary",
+    "how much does Marcus Chen earn"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: the memory was deleted at the user's request (m056)."
+  },
+  {
+   "id": "q085",
+   "qs": [
+    "does Oliver have a peanut allergy",
+    "Oliver food allergies and EpiPen"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: a mistaken memory was deleted (m069); only Chloe's 'no known food allergies' remains."
+  },
+  {
+   "id": "q086",
+   "qs": [
+    "what is the CX-5 number plate",
+    "CX-5 registration plate number"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: car is in the library but plate was never stored."
+  },
+  {
+   "id": "q087",
+   "qs": [
+    "how much does Chloe weigh",
+    "Chloe's weight at her last check-up"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: kids' health is in the library but no weight stored."
+  },
+  {
+   "id": "q088",
+   "qs": [
+    "what instance size is the staging Postgres database",
+    "staging DB size"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: production clusters are stored, staging DB is not."
+  },
+  {
+   "id": "q089",
+   "qs": [
+    "how much did I lend my brother",
+    "money owed by Ben"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "Absent: the loan memory was deleted (m098)."
+  }
+ ]
+}

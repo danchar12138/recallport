@@ -536,3 +536,149 @@ fn summaries_without_a_title_are_reported_for_the_ai_to_name() {
     .unwrap();
     assert!(t.maintenance().untitled.is_empty());
 }
+
+#[test]
+fn phrasings_are_searched_together_and_a_node_that_fits_several_ranks_higher() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    let both = leaf(&mut t, "备份每天凌晨三点跑 restic 快照", "2024-01-01");
+    leaf(&mut t, "备份目录放在移动硬盘上", "2024-01-02");
+    leaf(&mut t, "快照保留最近七份", "2024-01-03");
+    for i in 0..6 {
+        leaf(
+            &mut t,
+            &format!("无关的第{i}条：周末去爬山，带了两瓶水"),
+            "2024-02-01",
+        );
+    }
+    let hits = t
+        .search(&SearchOpts {
+            query: "备份".into(),
+            also: vec!["快照".into(), "restic".into(), "  ".into(), "备份".into()],
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(hits[0].id, both.id, "{hits:?}");
+    // an empty question finds nothing, whatever else is given
+    assert!(
+        t.search(&SearchOpts {
+            query: " ".into(),
+            ..Default::default()
+        })
+        .unwrap()
+        .is_empty()
+    );
+}
+
+#[test]
+fn a_question_about_now_puts_the_newer_of_two_versions_first() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    // the older one fits the words of the question better, so by relevance it would come first
+    let old = leaf(
+        &mut t,
+        "笔记应用 依赖 tauri 版本 2.1 rusqlite 0.31 serde 1.0",
+        "2025-03-01",
+    );
+    let new = leaf(
+        &mut t,
+        "笔记应用 依赖 tauri 版本 2.4 rusqlite 0.33 serde 1.0",
+        "2025-09-01",
+    );
+    leaf(&mut t, "周末去爬山带了两瓶水", "2025-09-02");
+    let ask = |q: &str| -> Vec<String> { find(&t, q).into_iter().map(|h| h.id).collect() };
+    let plain = ask("笔记应用 依赖 tauri 版本 2.1 rusqlite 0.31");
+    assert_eq!(plain[0], old.id, "without a cue the closer text wins");
+    let now = ask("现在 笔记应用 依赖 tauri 版本 2.1 rusqlite 0.31");
+    assert_eq!(now[0], new.id, "{now:?}");
+    assert!(
+        now.contains(&old.id),
+        "the older one is still there, just behind"
+    );
+    let english = ask("current 笔记应用 依赖 tauri 版本 2.1 rusqlite 0.31");
+    assert_eq!(english[0], new.id);
+    // "know" is not "now"
+    let know = ask("know 笔记应用 依赖 tauri 版本 2.1 rusqlite 0.31");
+    assert_eq!(know[0], old.id);
+}
+
+#[test]
+fn a_summary_brings_more_children_while_they_match_about_as_well() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    let close: Vec<Node> = (0..6)
+        .map(|i| {
+            leaf(
+                &mut t,
+                &format!("日本行 订票 第{i}项 机票 酒店"),
+                "2024-05-01",
+            )
+        })
+        .collect();
+    let far = leaf(&mut t, "完全无关的菜谱：番茄炒蛋", "2024-05-02");
+    let mut adopt: Vec<String> = close.iter().map(|n| n.id.clone()).collect();
+    adopt.push(far.id.clone());
+    let sum = t
+        .write(
+            Draft {
+                content: "日本行订票的结论".into(),
+                title: "日本行订票".into(),
+                adopt,
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    let shown = |expand: usize| {
+        t.search(&SearchOpts {
+            query: "日本行 订票 机票 酒店".into(),
+            expand,
+            ..Default::default()
+        })
+        .unwrap()
+        .into_iter()
+        .find(|h| h.id == sum.id)
+        .unwrap()
+        .expanded
+        .len()
+    };
+    assert_eq!(shown(8), 6, "the six that match, not the recipe");
+    assert_eq!(shown(4), 4, "never more than asked for");
+    assert_eq!(shown(0), 0);
+}
+
+#[test]
+fn numbers_versions_addresses_and_dates_are_searchable_as_written() {
+    let words = terms(
+        "Hetzner 月费 €4.59，tauri 2.4.0，NAS 192.168.31.20 约 14.5TB，2026-11-23 12:30 收款 27,000 元",
+    );
+    for want in [
+        "4.59",
+        "2.4.0",
+        "192.168.31.20",
+        "14.5tb",
+        "14.5",
+        "2026-11-23",
+        "12:30",
+        "27,000",
+    ] {
+        assert!(words.iter().any(|w| w == want), "{want} in {words:?}");
+    }
+    // a full stop at the end of a sentence is not part of the number
+    let end = terms("共 12 台。服务 v2 在用。");
+    assert!(!end.iter().any(|w| w.contains('.')), "{end:?}");
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    let old = leaf(
+        &mut t,
+        "NAS 固定 IP 是 192.168.31.20，路由器 192.168.31.1",
+        "2025-01-01",
+    );
+    leaf(
+        &mut t,
+        "NAS 固定 IP 是 192.168.31.21，路由器 192.168.31.1",
+        "2025-01-02",
+    );
+    leaf(&mut t, "周末去爬山带了两瓶水", "2025-01-03");
+    assert_eq!(find(&t, "192.168.31.20")[0].id, old.id);
+}

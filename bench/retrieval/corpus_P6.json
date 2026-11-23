@@ -1,0 +1,4092 @@
+{
+ "persona": "Lukas, 27, German ML PhD student at ETH Zurich (3rd year, parameter-efficient fine-tuning on long-tailed data); writes memories in English with a few German words.",
+ "today": "2026-11-20",
+ "events": [
+  {
+   "op": "write",
+   "key": "m001",
+   "title": "Seed policy",
+   "content": "Keller's rule: every number that goes into a paper table needs at least 3 seeds, reported as mean ± sample std. Single-seed numbers are only allowed in exploratory notes.",
+   "tags": [
+    "advisor",
+    "exp"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m002",
+   "title": "Baseline full fine-tune",
+   "content": "Baseline: full fine-tune of ViT-B/16 (timm augreg_in21k weights) on CIFAR-100-LT, imbalance factor 100, lr 1e-4, batch 128, 30 epochs, seed 0, split v2. Overall top-1 71.3%, many-shot 83.1, few-shot 52.0.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m003",
+   "title": "",
+   "content": "Prof. Keller holds the group meeting every Tuesday at 14:00 in CAB G 59. She hates slide decks for progress updates and wants one page with a results table instead.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2025-11-27"
+  },
+  {
+   "op": "write",
+   "key": "m004",
+   "title": "WG rent Altstetten",
+   "content": "I live in a WG room in Altstetten (14 m²). Rent is CHF 1,150 per month including Nebenkosten. Notice period is 2 months to the end of a month.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2025-11-28"
+  },
+  {
+   "op": "write",
+   "key": "m005",
+   "title": "Health insurance",
+   "content": "Krankenkasse is CSS with a Franchise of CHF 2,500; the 2026 premium is CHF 387 per month. Changing the Franchise for the next year has to be done by 30 November.",
+   "tags": [
+    "insurance"
+   ],
+   "occurred": "2025-11-29"
+  },
+  {
+   "op": "write",
+   "key": "m006",
+   "title": "",
+   "content": "WG deposit was CHF 1,150, paid in cash to the main tenant Anna Meier and returned after the Wohnungsabgabe.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m007",
+   "title": "",
+   "content": "LoRA r=8, alpha=16 on the qkv projection of all 12 blocks, lr 5e-4, 30 epochs, seed 0, split v2: overall 69.8%, few-shot 49.5%. Only 0.29M trainable parameters.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m008",
+   "title": "",
+   "content": "LoRA r=16 (alpha=32), everything else identical to the r=8 run: overall 70.6%, few-shot 51.1% on split v2. Doubling the rank buys +0.8 overall for 0.59M parameters.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m009",
+   "title": "LoRA r=8 seed noise",
+   "content": "LoRA r=8 seeds 1 and 2 on split v2 gave 70.1% and 69.5%, so the mean over seeds 0-2 is 69.8 ± 0.3. Seed noise is about 0.3 points, so differences below 0.5 mean nothing.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m010",
+   "title": "Euler partitions",
+   "content": "On Euler the `gpu` partition has a maximum walltime of 24h. `gpu-long` allows 120h but only 2 GPUs per user and needs Keller to email the HPC admins for approval. Job priority comes from the group fairshare.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m011",
+   "title": "Group GPU quota",
+   "content": "Our group has a quota of 8 concurrent A100-40GB GPUs on Euler. /cluster/scratch gives 2.5 TB but files are auto-deleted after 14 days; /cluster/work/keller has 500 GB.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m012",
+   "title": "Weekly call with parents",
+   "content": "I call my parents every Sunday at 19:30. Mom prefers video, Dad prefers a normal phone call and gets grumpy about the camera.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m013",
+   "title": "ICML 2026 deadlines",
+   "content": "ICML 2026 deadlines are abstract on Jan 23 and full paper on Jan 28 (AoE). Our submission is TailLoRA, rank-adaptive LoRA for long-tailed fine-tuning; I am first author, Tomás second, Keller last.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m014",
+   "title": "Run names include git hash",
+   "content": "Tomás insists that every run is named `<exp id>-<short git hash>` and the commit is pushed before the job starts, after a 71.0% result that nobody could reproduce.",
+   "tags": [
+    "collab",
+    "code"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m015",
+   "title": "",
+   "content": "Hausrat and Privathaftpflicht at Mobiliar cost CHF 138 per year, renewal on 1 January.",
+   "tags": [
+    "insurance",
+    "money"
+   ],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m016",
+   "title": "",
+   "content": "Started getting Rückenschmerzen in the lower back after long coding days. Hausarzt Dr. Frei at Praxis Altstetten thinks it is muscular, ordered no imaging yet and referred me to physiotherapy.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m017",
+   "title": "Zurich Marathon 2026",
+   "content": "Signed up for the Zurich Marathon on 19 April 2026, entry fee CHF 130. Goal is sub 3:20 (4:44/km). My PB is 3:31:12 from Frankfurt 2024.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2025-12-14"
+  },
+  {
+   "op": "write",
+   "key": "m018",
+   "title": "CIFAR-100-LT split bug",
+   "content": "Found a bug in CIFAR-100-LT split v2: the choice of tail classes depended on the seed, so seeds were not evaluated on the same long-tailed distribution. Split v3 fixes the class order (following Cui et al.), imbalance 100, 10,847 train images. None of the v2 numbers are comparable to v3.",
+   "tags": [
+    "exp",
+    "data"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m019",
+   "title": "Many/medium/few definition",
+   "content": "CIFAR-100-LT is evaluated on the original balanced 10,000 test images. Many-shot means more than 100 training images per class, medium 20 to 100, few-shot fewer than 20.",
+   "tags": [
+    "data",
+    "exp"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m020",
+   "title": "",
+   "content": "Re-ran the baseline on split v3: full fine-tune (lr 1e-4, bs 128, seed 0) gets 70.4% overall and 50.3% few-shot, so the 71.3% on v2 was inflated.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-12-16"
+  },
+  {
+   "op": "write",
+   "key": "m021",
+   "title": "",
+   "content": "LoRA on split v3, seed 0: r=8 gives 68.9% overall / 47.6% few-shot, r=16 gives 69.7% / 49.0%. The gap to full fine-tuning is 1.5 and 0.7 points.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2025-12-17"
+  },
+  {
+   "op": "write",
+   "key": "m022",
+   "title": "Christmas travel",
+   "content": "Christmas plan: SBB train Zurich-Basel-Freiburg on 23 Dec, back on 28 Dec. I stay with my parents in Freiburg; my brother Felix and his wife Nora arrive from Hamburg on the 24th.",
+   "tags": [
+    "family",
+    "travel"
+   ],
+   "occurred": "2025-12-18"
+  },
+  {
+   "op": "write",
+   "key": "m023",
+   "title": "ETH salary",
+   "content": "ETH PhD salary is CHF 4,880 gross per month, about CHF 4,210 net after AHV and Pensionskasse. It arrives on the 25th.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2025-12-19"
+  },
+  {
+   "op": "write",
+   "key": "m024",
+   "title": "",
+   "content": "Group Weihnachtsessen on 19 December at Zeughauskeller, Keller pays. Booked the table for 9 and asked for vegan options for Priya.",
+   "tags": [
+    "social",
+    "advisor"
+   ],
+   "occurred": "2025-12-19"
+  },
+  {
+   "op": "write",
+   "key": "m025",
+   "title": "LoRA+ paper",
+   "content": "Read LoRA+ (Hayou et al.): using a larger learning rate for matrix B than for A (ratio around 16) speeds up convergence and helps on harder tasks. Worth testing in our setting.",
+   "tags": [
+    "paper-read"
+   ],
+   "occurred": "2025-12-20"
+  },
+  {
+   "op": "write",
+   "key": "m026",
+   "title": "",
+   "content": "Mom (Annegret) will have meniscus surgery on her right knee on 12 January at the Uniklinik Freiburg. She told me not to worry and to visit the weekend after.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-21"
+  },
+  {
+   "op": "write",
+   "key": "m027",
+   "title": "Felix and Nora baby",
+   "content": "My brother Felix and his wife Nora are expecting their first baby, due around 14 June 2026.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-21"
+  },
+  {
+   "op": "write",
+   "key": "m028",
+   "title": "",
+   "content": "First snow in Zurich this winter, tram 2 had a 20 minute delay and I arrived wet at the office.",
+   "tags": [],
+   "occurred": "2025-12-22"
+  },
+  {
+   "op": "write",
+   "key": "m029",
+   "title": "",
+   "content": "Dad (Dieter, retired physics teacher at a Gymnasium) is building a Raspberry Pi weather station on the balcony and asked me to review his Python code over the holidays.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2025-12-27"
+  },
+  {
+   "op": "write",
+   "key": "m030",
+   "title": "16-week marathon plan",
+   "content": "Zurich Marathon plan, 16 weeks starting 29 Dec: four runs per week, Tuesday easy 10 km, Thursday intervals or tempo, Saturday easy 8 km, Sunday long run. Long runs grow from 16 km to a peak of 32 km on 29 March, weekly volume peaks at 68 km in week 13. Monday is a strength session for the back (dead bug, bird dog, side plank) as the physio prescribed. Cutback week every fourth week. Taper over the last three weeks to 40 km in race week. Fuel: practise one gel every 40 minutes on all runs over 20 km.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2025-12-29"
+  },
+  {
+   "op": "write",
+   "key": "m031",
+   "title": "",
+   "content": "LoRA+ test with r=8, lr for A 5e-4 and B-ratio 16 (so 8e-3 for B), split v3, seed 0: 69.9% overall (+1.0 over plain LoRA r=8), few-shot 49.2%. Ratio 32 diverged with NaN loss at epoch 3.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-02"
+  },
+  {
+   "op": "write",
+   "key": "m032",
+   "title": "Physio",
+   "content": "Physio Frau Nussbaumer (Physio Altstetten) twice a week, Monday and Thursday at 18:30, CHF 35 per visit after the Franchise. Finding: weak glutes and a tight hip flexor from sitting. Homework is 10 minutes of exercises every day.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-01-04"
+  },
+  {
+   "op": "write",
+   "key": "m033",
+   "title": "TailLoRA idea",
+   "content": "TailLoRA gives more rank to the blocks whose gradient norm on tail-class samples is largest: total budget 96 ranks over 12 blocks, reallocated every 2 epochs. The idea came from a chat with Tomás, not from AdaLoRA's SVD pruning.",
+   "tags": [
+    "paper",
+    "exp"
+   ],
+   "occurred": "2026-01-06"
+  },
+  {
+   "op": "write",
+   "key": "m034",
+   "title": "",
+   "content": "One ViT-B/16 run on CIFAR-100-LT (30 epochs) takes about 41 minutes on a single A100-40GB, so 5 seeds of one config cost roughly 3.5 GPU-hours.",
+   "tags": [
+    "exp",
+    "cluster"
+   ],
+   "occurred": "2026-01-07"
+  },
+  {
+   "op": "write",
+   "key": "m035",
+   "title": "",
+   "content": "TailLoRA v1 (budget 96, realloc every 2 epochs, split v3, seed 0): 70.8% overall and 51.9% few-shot, above full fine-tuning (70.4%) with only 0.29M trainable parameters.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "write",
+   "key": "m036",
+   "title": "",
+   "content": "AdaLoRA (Zhang et al., ICLR 2023) parametrises the update as P Λ Q and prunes singular values by a smoothed sensitivity score; typical setting is initial rank 12 going down to a target of 8, with an orthogonality regulariser of weight 0.1.",
+   "tags": [
+    "paper-read"
+   ],
+   "occurred": "2026-01-09"
+  },
+  {
+   "op": "update",
+   "key": "m026",
+   "content": "Mom's (Annegret) meniscus surgery on her right knee was moved from 12 January to 20 January at the Uniklinik Freiburg. She told me not to worry and to visit the weekend after.",
+   "title": "",
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m037",
+   "title": "TailLoRA lr sweep",
+   "content": "TailLoRA learning rate sweep (budget 96, split v3, 3 seeds): 1e-4 gives 68.9, 3e-4 gives 70.0, 5e-4 gives 70.3, 1e-3 gives 69.2. Use 5e-4.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m038",
+   "title": "Interactive GPU session",
+   "content": "Interactive GPU session on Euler: `srun --gpus=1 --mem=32G --time=2:00:00 --pty bash`. For Jupyter I forward the port with `ssh -L 8888:<node>:8888`.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m039",
+   "title": "",
+   "content": "All LoRA-type runs use cosine schedule, 2 warmup epochs, weight decay 0.05, label smoothing 0.1 and no mixup, because mixup hurt the few-shot classes in my first tests.",
+   "tags": [
+    "exp",
+    "code"
+   ],
+   "occurred": "2026-01-11"
+  },
+  {
+   "op": "write",
+   "key": "m040",
+   "title": "TailLoRA v1 seeds",
+   "content": "TailLoRA v1 seeds 1 and 2 on split v3 gave 69.9 and 70.1, so the three-seed mean is 70.27 ± 0.4; seed 0 was lucky. The paper claim changes from 'beats full fine-tuning' to 'on par with full fine-tuning'.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "write",
+   "key": "m041",
+   "title": "Jonas Weber",
+   "content": "Jonas Weber is an MSc student doing a semester project with me from February to June. Topic: reproduce LoRA+ and DoRA on CIFAR-100-LT. He is fast with PyTorch but forgets to fix seeds.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-01-13"
+  },
+  {
+   "op": "write",
+   "key": "m042",
+   "title": "Cluster environment",
+   "content": "Environment on Euler: modules `stack/2024-06 gcc/12.2.0 cuda/12.1.1`, conda env `tail` with Python 3.10, torch 2.3.1+cu121 and timm 0.9.16. The job script template lives in the repo at scripts/sbatch_gpu.sh.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-01-14"
+  },
+  {
+   "op": "write",
+   "key": "m043",
+   "title": "",
+   "content": "Allocation metric ablation for TailLoRA (split v3, 3 seeds): gradient norm on tail samples 70.3, Fisher information 70.0, plain weight norm 69.6. Gradient norm is cheapest and best.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-15"
+  },
+  {
+   "op": "write",
+   "key": "m044",
+   "title": "Tomás preferences",
+   "content": "Tomás (postdoc) prefers Overleaf comments over email and replies fastest on Slack between 9 and 11. In tables he wants the best result in bold and the runner-up underlined, with no colour.",
+   "tags": [
+    "collab"
+   ],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m045",
+   "title": "Keller figure rules",
+   "content": "Keller reads papers printed on paper, so figures must use the Okabe-Ito colourblind palette and have axis labels of at least 9 pt. She dislikes dual y-axes.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m046",
+   "title": "Illegal memory access on Euler",
+   "content": "Job 48231907 died after 6 h with 'CUDA error: an illegal memory access was encountered'. I first suspected my custom rank-mask kernel and spent two days adding bounds checks, but the real cause was a faulty A100 on node eu-g4-021: the same code ran fine after requeueing with `--exclude=eu-g4-021`. Reported to HPC support as ticket SC-55820. Lesson: when a crash is non-deterministic across nodes, check the hostname in the slurm log before touching code.",
+   "tags": [
+    "cluster",
+    "debug"
+   ],
+   "occurred": "2026-01-17"
+  },
+  {
+   "op": "write",
+   "key": "m047",
+   "title": "",
+   "content": "ICML 2026 submission is double-blind: use the icml2026 style file with the anonymous option, no author names, and put code on anonymous.4open.science instead of our GitLab link.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-01-18"
+  },
+  {
+   "op": "write",
+   "key": "m048",
+   "title": "ICML main table",
+   "content": "Final main table for the ICML submission, 5 seeds each, split v3: full FT 70.2 ± 0.3, LoRA r=8 68.8 ± 0.3, LoRA r=16 69.6 ± 0.3, LoRA+ 69.8 ± 0.4, TailLoRA 70.2 ± 0.4. Few-shot accuracy: TailLoRA 51.4 versus LoRA+ 49.3.",
+   "tags": [
+    "exp",
+    "paper"
+   ],
+   "occurred": "2026-01-21"
+  },
+  {
+   "op": "write",
+   "key": "m049",
+   "title": "",
+   "content": "DoRA (magnitude/direction decomposition) quick test with r=8, split v3, seed 0: 69.4% overall, only +0.5 over LoRA r=8, and few-shot stays at 47.9%. It adds about 0.01M parameters.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-01-22"
+  },
+  {
+   "op": "write",
+   "key": "m050",
+   "title": "",
+   "content": "Submitted the ICML abstract at 21:40. OpenReview almost blocked us because Marek's profile had no confirmed institutional email; fixed in ten minutes.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-01-23"
+  },
+  {
+   "op": "write",
+   "key": "m051",
+   "title": "",
+   "content": "Mom is back home since 23 January and walks with crutches; the surgery on the 20th went well. Dad is cooking now and complains about the dishes.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-01-24"
+  },
+  {
+   "op": "write",
+   "key": "m052",
+   "title": "",
+   "content": "Priya proofread the ICML draft and found 14 typos. I owe her a coffee at the Polyterrasse.",
+   "tags": [
+    "social"
+   ],
+   "occurred": "2026-01-25"
+  },
+  {
+   "op": "write",
+   "key": "m053",
+   "title": "",
+   "content": "Marathon plan week 5: 52 km in total, long run of 22 km in 1:55 (5:13/km), no back pain during the run but stiff afterwards.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-01-26"
+  },
+  {
+   "op": "write",
+   "key": "m054",
+   "title": "ICML submission",
+   "content": "Submitted the full TailLoRA paper to ICML 2026 on 28 January, paper ID 7731, 8 pages plus a 14-page appendix. Decision expected in early May. Keller found a typo in Table 2 the night before.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-01-28"
+  },
+  {
+   "op": "write",
+   "key": "m055",
+   "title": "",
+   "content": "Slept 12 hours after the deadline and feel wrecked. Never again three nights with less than five hours.",
+   "tags": [],
+   "occurred": "2026-01-30"
+  },
+  {
+   "op": "write",
+   "key": "m056",
+   "title": "",
+   "content": "Jonas starts today. I gave him a cluster account and the directory /cluster/work/keller/jonas. We sync every Wednesday at 10:00 in my office.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "write",
+   "key": "m057",
+   "title": "The 71.0% that nobody could reproduce",
+   "content": "Retrospective on the unreproducible 71.0% run from early December: the number came from a LoRA r=16 run with a hand-tuned lr on split v2 where the tail classes depended on the seed, and I had also edited the config on the cluster without committing it. When Tomás asked to rerun it, the config file in git had a different lr (3e-4 instead of 5e-4) and the checkpoint had been purged from scratch. We could not even tell which split was used. Consequences: all runs now pull the config from git by commit hash, the run name contains the hash, the split file is checksummed (sha256 stored in the W&B config), and nothing counts without a checkpoint on /cluster/work. It cost me about a week and a lot of embarrassment in the Tuesday meeting.",
+   "tags": [
+    "exp",
+    "debug"
+   ],
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "summary",
+   "key": "s01",
+   "title": "Euler cluster setup",
+   "content": "Euler setup: partition gpu (24h max) for normal jobs, gpu-long (120h, 2 GPUs per user, needs approval) for long ones. The group has 8 concurrent A100-40GB, scratch is auto-purged after 14 days and work has 500 GB. Environment is a conda env on torch 2.3.1/cu121.",
+   "adopt": [
+    "m010",
+    "m011",
+    "m042"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "update",
+   "key": "m011",
+   "content": "Group quota on Euler went up to 16 concurrent GPUs (8 × A100-40GB and 8 × A100-80GB) after Keller bought into more nodes. Scratch is still 2.5 TB with a 14-day purge; /cluster/work/keller still has 500 GB.",
+   "title": "Group GPU quota",
+   "occurred": "2026-02-04"
+  },
+  {
+   "op": "write",
+   "key": "m058",
+   "title": "Jonas LoRA+ 41% bug",
+   "content": "Jonas's first LoRA+ reproduction gave 41.2% instead of roughly 69.5%. Root cause: he created the timm model with pretrained=False, so it trained from scratch. After the fix (ratio 16, r=8) he got 69.5%, mine was 69.9, which is within noise.",
+   "tags": [
+    "students",
+    "debug"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m059",
+   "title": "Apartment search",
+   "content": "The WG room is too small, so I started looking for a studio under CHF 1,500 in Oerlikon, Altstetten or Zurich Nord, with alerts on Flatfox and Homegate.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-02-08"
+  },
+  {
+   "op": "write",
+   "key": "m060",
+   "title": "",
+   "content": "DoRA (Liu et al., ICML 2024) splits each weight into a magnitude vector and a direction, and applies LoRA only to the direction. Reports gains of 1-4 points on commonsense reasoning with LLaMA at rank 32.",
+   "tags": [
+    "paper-read"
+   ],
+   "occurred": "2026-02-10"
+  },
+  {
+   "op": "write",
+   "key": "m061",
+   "title": "Main repo conventions",
+   "content": "Main repo `tail-peft` on ETH GitLab: branches are named feat/<initials>-<topic>, merges are squash-only, run configs are Hydra yaml files in conf/exp named exp<NNN>_<short>.yaml, formatting is black with line length 88 plus isort, and CI runs pytest on CPU only.",
+   "tags": [
+    "code"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m062",
+   "title": "Paper repo conventions",
+   "content": "Paper repo `tailora-paper` mirrors Overleaf through git: one section per file under sections/, macros only in macros.tex, figures are produced by `make figures` from the results/*.csv of the main repo, and PDFs of figures are never committed.",
+   "tags": [
+    "code",
+    "paper"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m063",
+   "title": "Blood test",
+   "content": "Blood test at Dr. Frei: vitamin D low at 18 ng/ml, so 4000 IE daily until April; ferritin is fine at 38 ng/ml for running.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m064",
+   "title": "",
+   "content": "Ski weekend in Flumserberg with Priya and Marek on 14-15 Feb. Day pass CHF 62, rental CHF 48. My back held up but I skipped the black run.",
+   "tags": [
+    "social"
+   ],
+   "occurred": "2026-02-14"
+  },
+  {
+   "op": "write",
+   "key": "m065",
+   "title": "",
+   "content": "On Euler, check storage with `lquota` and the group GPU fairshare with `my_share_info`.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-02-15"
+  },
+  {
+   "op": "write",
+   "key": "m066",
+   "title": "ImageNet-LT data",
+   "content": "Prepared ImageNet-LT (Liu et al.): 115,846 training images over 1,000 classes, stored as WebDataset shards of about 1 GB at /cluster/work/keller/data/imagenet_lt_wds.",
+   "tags": [
+    "data"
+   ],
+   "occurred": "2026-02-16"
+  },
+  {
+   "op": "write",
+   "key": "m067",
+   "title": "",
+   "content": "PiSSA (Meng et al. 2024) initialises the adapter with the top-r singular components of W and freezes the residual; claims faster convergence than LoRA at the same rank.",
+   "tags": [
+    "paper-read"
+   ],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m068",
+   "title": "Training defaults",
+   "content": "Default training setup in tail-peft: bf16 autocast, TF32 matmuls enabled, seed_everything with workers=True, but cudnn deterministic off for speed. Run-to-run noise from this is about ±0.1.",
+   "tags": [
+    "code",
+    "exp"
+   ],
+   "occurred": "2026-02-19"
+  },
+  {
+   "op": "write",
+   "key": "m069",
+   "title": "MRI result",
+   "content": "MRI at Hirslanden Klinik Zurich: mild disc protrusion at L5/S1, no nerve compression. Orthopaedist Dr. Baumgartner says keep doing physio and strengthen the core; no surgery and no repeat MRI needed.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-02-20"
+  },
+  {
+   "op": "write",
+   "key": "m070",
+   "title": "",
+   "content": "Marathon plan week 8: long run of 26 km at 5:12/km, average heart rate 148. Left calf got tight in the last 4 km.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m071",
+   "title": "",
+   "content": "Went to the Basel Fasnacht Morgestraich on Monday 23 February at 04:00 with my friend Jan Schröder, who lives in Basel. Freezing but spectacular.",
+   "tags": [
+    "social",
+    "travel"
+   ],
+   "occurred": "2026-02-23"
+  },
+  {
+   "op": "write",
+   "key": "m072",
+   "title": "Second project CMoE",
+   "content": "Second project, code name CMoE: a mixture of LoRA experts where the router looks at the sample's class-frequency bucket (head, middle, tail) rather than the token. Tomás likes it. Target is NeurIPS 2026 with abstract deadline 11 May and full paper deadline 15 May.",
+   "tags": [
+    "paper",
+    "exp"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m073",
+   "title": "",
+   "content": "LoRAMoE (Dou et al.) uses token-level routing with a localized balancing constraint to keep world knowledge in LLMs. This is the closest prior work to CMoE, so we must differentiate on routing by class frequency.",
+   "tags": [
+    "paper-read"
+   ],
+   "occurred": "2026-02-27"
+  },
+  {
+   "op": "write",
+   "key": "m074",
+   "title": "",
+   "content": "Run exp0412, TailLoRA seed 3, reported 73.2% overall on CIFAR-100-LT.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-02-28"
+  },
+  {
+   "op": "delete",
+   "key": "m074",
+   "occurred": "2026-03-01"
+  },
+  {
+   "op": "write",
+   "key": "m075",
+   "title": "",
+   "content": "The Serafe TV/radio fee is CHF 335 per year; the invoice arrives in March.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "write",
+   "key": "m076",
+   "title": "ICML review 1",
+   "content": "ICML review 1 (score 4, weak accept): wants a clearer description of how the budget is reallocated every 2 epochs and an ablation of the reallocation interval (1, 2 and 5 epochs).",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "write",
+   "key": "m077",
+   "title": "ICML review 2",
+   "content": "ICML review 2 (score 3, weak reject): says the gain over LoRA+ is within seed noise, asks for ImageNet-LT and more seeds, and worries about the cost of the gradient-norm reallocation (we measured +11% wall-clock).",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "write",
+   "key": "m078",
+   "title": "ICML review 3",
+   "content": "ICML review 3 (score 5, accept, confidence 4): likes the idea, asks for an AdaLoRA comparison and a per-block visualisation of the final rank allocation.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "write",
+   "key": "m079",
+   "title": "",
+   "content": "AdaLoRA baseline (initial rank 12, target 8, orth_reg 0.1, split v3, seed 0): 69.1% overall and 48.3% few-shot, so TailLoRA is still 1.1 points higher. AdaLoRA was sensitive to orth_reg: 0.5 destabilised training.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-03-04"
+  },
+  {
+   "op": "write",
+   "key": "m080",
+   "title": "Realloc interval ablation",
+   "content": "Reallocation interval ablation (budget 96, split v3, 3 seeds): every epoch 70.0, every 2 epochs 70.3, every 5 epochs 69.7. Two epochs stays the default.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m081",
+   "title": "",
+   "content": "The ICML rebuttal is due on 10 March with 5000 characters per reviewer. Keller wants a first draft by 8 March and says no new claim without at least 3 seeds.",
+   "tags": [
+    "paper",
+    "advisor"
+   ],
+   "occurred": "2026-03-06"
+  },
+  {
+   "op": "write",
+   "key": "m082",
+   "title": "gpu-long approval",
+   "content": "Keller got me approval for gpu-long until 31 August: at most 2 GPUs, walltime up to 120h. I have to restate the project name in the sbatch `--comment`.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-03-06"
+  },
+  {
+   "op": "write",
+   "key": "m083",
+   "title": "TailLoRA on ImageNet-LT",
+   "content": "TailLoRA on ImageNet-LT, ViT-B/16, budget 96, lr 3e-4, 20 epochs, batch 256 on 4 × A100-40GB: 64.9% overall and 41.2% few-shot. Same setup with LoRA r=8 gives 63.2% / 38.7%, full fine-tuning 65.8%. The run took 31 h, so it had to go through gpu-long.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-03-07"
+  },
+  {
+   "op": "write",
+   "key": "m084",
+   "title": "",
+   "content": "Keller's feedback on the rebuttal draft: cut the long paragraph about overhead, lead with the ImageNet-LT result, and never write 'we believe', write what we measured.",
+   "tags": [
+    "advisor",
+    "paper"
+   ],
+   "occurred": "2026-03-08"
+  },
+  {
+   "op": "write",
+   "key": "m085",
+   "title": "",
+   "content": "Rebuttal submitted on 10 March at 22:50. Main points: ImageNet-LT result (+1.7 over LoRA r=8), 5 seeds on split v3, AdaLoRA baseline added, overhead of 11% wall-clock.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-03-10"
+  },
+  {
+   "op": "write",
+   "key": "m086",
+   "title": "",
+   "content": "Week 11 long run: 29 km in 2:30 (5:10/km) with the last 5 km at marathon pace (4:48). Felt strong.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m087",
+   "title": "Dad's birthday",
+   "content": "Dad turns 66 on 28 March. Plan: send Sprüngli Luxemburgerli and a book about Alpine weather to Freiburg so it arrives before the 28th.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "update",
+   "key": "m001",
+   "content": "Keller's rule, tightened after the ICML reviews: every number that goes into a paper table needs at least 5 seeds, reported as mean ± sample std. Single-seed numbers are only allowed in exploratory notes.",
+   "title": "Seed policy",
+   "occurred": "2026-03-15"
+  },
+  {
+   "op": "write",
+   "key": "m088",
+   "title": "",
+   "content": "Tried the new vegan curry at the Polyterrasse Mensa. Decent, but a bit too little rice for CHF 9.",
+   "tags": [],
+   "occurred": "2026-03-16"
+  },
+  {
+   "op": "update",
+   "key": "m041",
+   "content": "Jonas Weber is an MSc student doing a semester project with me from February to June. The topic changed in March: the LoRA+ reproduction is finished, so he now runs a DoRA versus LoRA+ ablation on CIFAR-100-LT. He is fast with PyTorch but forgets to fix seeds.",
+   "title": "Jonas Weber",
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "write",
+   "key": "m089",
+   "title": "Group meeting moved",
+   "content": "From April the group meeting moves to Thursday 10:00 in CAB G 59 because Keller now teaches on Tuesdays. Still no slides: one page with the results table.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-03-20",
+   "supersedes": "m003"
+  },
+  {
+   "op": "write",
+   "key": "m090",
+   "title": "",
+   "content": "Back flared up on 21 March after a three-hour sofa session; I skipped two runs and one long run. Physio says no panic, keep the exercises and cap long runs at 28 km until it settles.",
+   "tags": [
+    "health",
+    "marathon"
+   ],
+   "occurred": "2026-03-22"
+  },
+  {
+   "op": "write",
+   "key": "m091",
+   "title": "",
+   "content": "Euler had a maintenance window on 24 March from 06:00 to 14:00; my queued jobs just started late.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-03-23"
+  },
+  {
+   "op": "update",
+   "key": "m017",
+   "content": "Signed up for the Zurich Marathon on 19 April 2026, entry fee CHF 130. The goal is lowered from sub 3:20 to 3:25 (4:51/km) after losing a week to back pain. My PB is 3:31:12 from Frankfurt 2024.",
+   "title": "Zurich Marathon 2026",
+   "occurred": "2026-03-25"
+  },
+  {
+   "op": "write",
+   "key": "m092",
+   "title": "",
+   "content": "Coffee machine on the CAB 4th floor is broken again, took a bad filter coffee at the Polyterrasse instead.",
+   "tags": [],
+   "occurred": "2026-03-27"
+  },
+  {
+   "op": "write",
+   "key": "m093",
+   "title": "Steuererklärung",
+   "content": "Requested a Fristverlängerung for the Zurich tax return 2025 until 30 September. I already put CHF 3,000 into Säule 3a at VIAC and expect a small refund.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-03-28"
+  },
+  {
+   "op": "write",
+   "key": "m094",
+   "title": "",
+   "content": "Peak long run: 32 km on 29 March in 2:41 (5:02/km), back was fine. First time I did 32 km without walking.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-03-29"
+  },
+  {
+   "op": "write",
+   "key": "m095",
+   "title": "",
+   "content": "Taper started: this week 52 km, next week 42 km, race week 30 km. Aim for at least 8 hours of sleep.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "write",
+   "key": "m096",
+   "title": "",
+   "content": "Easter: Karfreitag 3 April and Ostermontag 6 April, ETH is closed, so the cluster login node is quiet.",
+   "tags": [],
+   "occurred": "2026-04-04"
+  },
+  {
+   "op": "write",
+   "key": "m097",
+   "title": "Zurich Marathon logistics",
+   "content": "Zurich Marathon logistics: bib number 4127, start block B at 08:30 near Mythenquai, bib pickup at the Expo on Friday 17 April.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-04-06"
+  },
+  {
+   "op": "write",
+   "key": "m098",
+   "title": "",
+   "content": "Bought Nike Vaporfly 3 for the marathon at Ochsner Sport for CHF 260; plan is to wear them in over 40 km before the race.",
+   "tags": [
+    "marathon",
+    "shopping"
+   ],
+   "occurred": "2026-04-08"
+  },
+  {
+   "op": "write",
+   "key": "m099",
+   "title": "",
+   "content": "Race plan for Zurich: 4:50/km for the first 30 km, then decide. Gels (SiS Beta Fuel) at km 8, 16, 24 and 32, water at every station.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m100",
+   "title": "",
+   "content": "Pasta party on Saturday 18 April at Marek's flat with Priya, aim for 600 g carbs the day before the race.",
+   "tags": [
+    "marathon",
+    "social"
+   ],
+   "occurred": "2026-04-13"
+  },
+  {
+   "op": "write",
+   "key": "m101",
+   "title": "Priya food",
+   "content": "For lab dinners: Priya is vegan and avoids anything with egg or honey.",
+   "tags": [
+    "people"
+   ],
+   "occurred": "2026-04-15"
+  },
+  {
+   "op": "write",
+   "key": "m102",
+   "title": "Marek food",
+   "content": "For lab dinners: Marek is allergic to hazelnuts (carries an EpiPen) and loves Pierogi, but eats meat without problems.",
+   "tags": [
+    "people"
+   ],
+   "occurred": "2026-04-15"
+  },
+  {
+   "op": "write",
+   "key": "m103",
+   "title": "Zurich Marathon result",
+   "content": "Zurich Marathon: finished in 3:24:41 chip time, so the 3:25 goal was met by 19 seconds. Halves were 1:40:12 and 1:44:29, with calf cramps from km 34. New PB; the old one was 3:31:12.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-04-19"
+  },
+  {
+   "op": "write",
+   "key": "m104",
+   "title": "",
+   "content": "Taking a week off running after the marathon. Legs are sore but the back is quiet. Physio on Thursday as normal.",
+   "tags": [
+    "marathon",
+    "health"
+   ],
+   "occurred": "2026-04-21"
+  },
+  {
+   "op": "write",
+   "key": "m105",
+   "title": "Lost checkpoints to scratch purge",
+   "content": "Lost three ImageNet-LT checkpoints because /cluster/scratch purged files after 14 days. Moved all checkpoints to /cluster/work/keller/lukas/ckpt and added a nightly rsync from scratch.",
+   "tags": [
+    "cluster",
+    "debug"
+   ],
+   "occurred": "2026-04-24"
+  },
+  {
+   "op": "write",
+   "key": "m106",
+   "title": "",
+   "content": "Got a sunburn on my nose after the long runs by the lake. Need to buy sunscreen.",
+   "tags": [],
+   "occurred": "2026-04-27"
+  },
+  {
+   "op": "write",
+   "key": "m107",
+   "title": "",
+   "content": "CMoE first result: 4 experts with r=4 each, router on class-frequency bucket, split v3, seed 0: 70.9% overall and 52.5% few-shot. It uses about 0.58M parameters, twice TailLoRA.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-04-28"
+  },
+  {
+   "op": "write",
+   "key": "m108",
+   "title": "ICML decision",
+   "content": "ICML 2026 accepted TailLoRA (paper ID 7731) as a poster. Camera-ready is due on 5 June with 9 pages allowed. Reviewer 2 raised the score from 3 to 4 after the rebuttal. The conference is in Seoul, 7-11 July.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-05-01",
+   "supersedes": "m054"
+  },
+  {
+   "op": "write",
+   "key": "m109",
+   "title": "",
+   "content": "28th birthday dinner at Hiltl with Priya, Marek and Jonas. Mom sent a Schwarzwälder Kirschtorte by post that arrived crushed but delicious.",
+   "tags": [
+    "social",
+    "family"
+   ],
+   "occurred": "2026-05-03"
+  },
+  {
+   "op": "write",
+   "key": "m110",
+   "title": "",
+   "content": "My GPU usage in April: 3,120 A100-hours. The group is at 140% of its fairshare, so queue times will get longer.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-05-04"
+  },
+  {
+   "op": "write",
+   "key": "m111",
+   "title": "",
+   "content": "CMoE with 8 experts of r=2 each (same total ranks as 4 × r=4) on split v3, seed 0: 70.5% overall, 51.8% few-shot. The 4 × 4 variant (70.9 / 52.5) is better.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-05-06"
+  },
+  {
+   "op": "write",
+   "key": "m112",
+   "title": "",
+   "content": "Renewed the SBB Halbtax on 8 May for CHF 190; the old one expires end of May.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-05-08"
+  },
+  {
+   "op": "update",
+   "key": "m072",
+   "content": "Second project, code name CMoE: a mixture of LoRA experts where the router looks at the sample's class-frequency bucket (head, middle, tail) rather than the token. Tomás likes it. Target is NeurIPS 2026: abstract deadline 11 May, full paper deadline extended from 15 May to 17 May.",
+   "title": "Second project CMoE",
+   "occurred": "2026-05-09"
+  },
+  {
+   "op": "write",
+   "key": "m113",
+   "title": "Standing desk converter",
+   "content": "Bought a Flexispot M18 sit-stand desk converter from Digitec for CHF 389. I switch between sitting and standing every 45 minutes, which helps the back.",
+   "tags": [
+    "health",
+    "shopping"
+   ],
+   "occurred": "2026-05-10"
+  },
+  {
+   "op": "write",
+   "key": "m114",
+   "title": "ICML Seoul registration",
+   "content": "ICML 2026 registration (Seoul): in-person student early-bird USD 575 until 10 June, regular USD 750, workshop add-on USD 100. The fee is paid from Keller's grant, not from my own money.",
+   "tags": [
+    "travel",
+    "conference"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m115",
+   "title": "",
+   "content": "Started bouldering at Kletterhalle Gaswerk in Schlieren, monthly pass CHF 78. Currently climbing 6b and trying not to strain the back.",
+   "tags": [
+    "hobby",
+    "health"
+   ],
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m116",
+   "title": "CMoE NeurIPS submission",
+   "content": "Submitted CMoE to NeurIPS 2026 on 17 May at 14:20 (extended deadline), submission number 14502. Nine pages, only ViT-B experiments, ViT-L is still missing.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-05-17"
+  },
+  {
+   "op": "write",
+   "key": "m117",
+   "title": "",
+   "content": "Jonas's DoRA versus LoRA+ ablation, r=8, 5 seeds on split v3: DoRA 69.6 ± 0.3, LoRA+ 69.7 ± 0.4. No difference, which he will state honestly in his report.",
+   "tags": [
+    "students",
+    "exp"
+   ],
+   "occurred": "2026-05-18"
+  },
+  {
+   "op": "write",
+   "key": "m118",
+   "title": "Flight to Seoul",
+   "content": "Booked flights to Seoul with Lufthansa via Frankfurt: depart Zurich on 5 July, return on 13 July, CHF 1,184 return.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-05-20"
+  },
+  {
+   "op": "write",
+   "key": "m119",
+   "title": "Studienstiftung travel grant",
+   "content": "Studienstiftung approved a travel grant of up to CHF 1,500 for ICML Seoul. Receipts are due four weeks after the trip to Frau Dietrich at the Geschäftsstelle.",
+   "tags": [
+    "money",
+    "travel"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m120",
+   "title": "Hotel Seoul",
+   "content": "Booked a hotel in Samseong close to COEX for 7 nights, 6-13 July, KRW 910,000 in total (about CHF 580). Free cancellation until 3 July.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-05-26"
+  },
+  {
+   "op": "write",
+   "key": "m121",
+   "title": "",
+   "content": "Priya passed her PhD qualifying exam today; I bought the drinks at the Rhein.",
+   "tags": [
+    "social"
+   ],
+   "occurred": "2026-05-27"
+  },
+  {
+   "op": "write",
+   "key": "m122",
+   "title": "",
+   "content": "Mom walks without crutches since 15 May and her physiotherapist allows cycling again. She wants to do the Rhine cycle path with Dad in September.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-05-30"
+  },
+  {
+   "op": "write",
+   "key": "m123",
+   "title": "",
+   "content": "Priya told me in confidence that she is seriously thinking about leaving the PhD after the qualifying exam.",
+   "tags": [
+    "people"
+   ],
+   "occurred": "2026-05-31"
+  },
+  {
+   "op": "update",
+   "key": "m027",
+   "content": "My brother Felix and his wife Nora had their first baby, a daughter named Mila, born on 2 June 2026 at 3,420 g, twelve days early. Mother and baby are healthy.",
+   "title": "Felix and Nora baby",
+   "occurred": "2026-06-02"
+  },
+  {
+   "op": "write",
+   "key": "m124",
+   "title": "",
+   "content": "Camera-ready for ICML submitted on 4 June: ImageNet-LT table moved into the main text and an AdaLoRA row added. Acknowledgements must name the SNSF grant 200021_212345.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-06-04"
+  },
+  {
+   "op": "delete",
+   "key": "m123",
+   "occurred": "2026-06-05"
+  },
+  {
+   "op": "write",
+   "key": "m125",
+   "title": "PiSSA reproduction failed",
+   "content": "Could not reproduce the PiSSA gain on CIFAR-100-LT: PiSSA init gave 68.7% against 68.9% for plain LoRA r=8 (split v3, 3 seeds). I tried fp32 and bf16 SVD init and two learning rates, spent about 2 GPU-days in total and gave up.",
+   "tags": [
+    "exp",
+    "repro"
+   ],
+   "occurred": "2026-06-08"
+  },
+  {
+   "op": "write",
+   "key": "m126",
+   "title": "Final rank per block",
+   "content": "Per-block rank allocation of TailLoRA (average over 5 seeds, budget 96): blocks 9-12 end up with about 43 ranks, blocks 1-4 with only 14. This is the visualisation reviewer 3 asked for; it went into the appendix.",
+   "tags": [
+    "exp",
+    "paper"
+   ],
+   "occurred": "2026-06-09"
+  },
+  {
+   "op": "write",
+   "key": "m127",
+   "title": "Group retreat Flims",
+   "content": "Group retreat in Flims on 10-12 June. My 20 minute talk on rank allocation is Thursday afternoon. Keller pays the hotel, I only need hiking shoes.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-06-10"
+  },
+  {
+   "op": "write",
+   "key": "m128",
+   "title": "",
+   "content": "Visited Felix, Nora and baby Mila in Hamburg on 13-14 June. The SWISS flight Zurich-Hamburg cost CHF 142. Mila weighs 4.1 kg and has Dad's ears.",
+   "tags": [
+    "family",
+    "travel"
+   ],
+   "occurred": "2026-06-13"
+  },
+  {
+   "op": "write",
+   "key": "m129",
+   "title": "Long-tail prompt tuning repro",
+   "content": "Tried to reproduce a long-tail prompt-tuning baseline from an ICLR 2023 paper that reports 89.1% on CIFAR-100-LT (imbalance 100). With the released code I get 86.4 ± 0.3 over 3 seeds. The released config uses ViT-B/16 in21k weights while the paper text says in21k-ft-in1k; I suspect that mismatch but the authors have not answered my email.",
+   "tags": [
+    "exp",
+    "repro"
+   ],
+   "occurred": "2026-06-15"
+  },
+  {
+   "op": "write",
+   "key": "m130",
+   "title": "",
+   "content": "Tomás is away from 22 June to 12 July (wedding and honeymoon in Mexico) and will not answer Slack. For anything urgent in that window ask Keller.",
+   "tags": [
+    "collab"
+   ],
+   "occurred": "2026-06-16"
+  },
+  {
+   "op": "write",
+   "key": "m131",
+   "title": "",
+   "content": "Bought the season pass for the Seebad Utoquai for CHF 70; swimming before work is the plan, if I get up.",
+   "tags": [],
+   "occurred": "2026-06-18"
+  },
+  {
+   "op": "write",
+   "key": "m132",
+   "title": "",
+   "content": "ICML poster boards in Seoul are at most 1.2 m wide and 1.8 m high in portrait orientation.",
+   "tags": [
+    "conference"
+   ],
+   "occurred": "2026-06-20"
+  },
+  {
+   "op": "write",
+   "key": "m133",
+   "title": "",
+   "content": "Zahnarzt Dr. Kessler on 22 June: check-up fine, cleaning cost CHF 140 which my insurance does not cover. Next check-up in June 2027.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-06-22"
+  },
+  {
+   "op": "write",
+   "key": "m134",
+   "title": "Seoul itinerary",
+   "content": "Seoul plan for ICML: arrive on 6 July, the first evening is only for the hotel and jetlag. Tuesday 7 July registration and tutorials, Wednesday to Friday main conference. My poster is on Thursday 9 July at 11:30. Saturday 11 July is the only free day: Bukhansan hike in the morning with two people from the group, dinner in Gwangjang market. Sunday 12 July palace and the Han river, Monday 13 July flight home at 11:55. I want to talk to people about low-rank adapters for on-device models, and to Keller's former student who now works at Samsung Research about postdoc options. Pay with the Wise card, withdraw KRW 150,000 cash on arrival, buy a T-money card at the airport.",
+   "tags": [
+    "travel",
+    "conference"
+   ],
+   "occurred": "2026-06-23"
+  },
+  {
+   "op": "write",
+   "key": "m135",
+   "title": "",
+   "content": "Jonas presented his semester project on 24 June and Keller graded it 5.5 out of 6. His report is at /cluster/work/keller/jonas/report.pdf.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-06-24"
+  },
+  {
+   "op": "update",
+   "key": "m042",
+   "content": "Environment on Euler since the June 2026 stack update: modules `stack/2025-06 gcc/13.2.0 cuda/12.4.1`, environment managed by uv (.venv under /cluster/work/keller/lukas/venvs/tail), torch 2.5.1+cu124 and timm 1.0.9. The old conda env `tail` no longer works. Job script template is still scripts/sbatch_gpu.sh.",
+   "title": "Cluster environment",
+   "occurred": "2026-06-25"
+  },
+  {
+   "op": "write",
+   "key": "m136",
+   "title": "",
+   "content": "Keller is on vacation from 20 July to 3 August and only reads email for emergencies. The NeurIPS reviews are expected around 24 July, so I will have to start the rebuttal without her.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-06-27"
+  },
+  {
+   "op": "write",
+   "key": "m137",
+   "title": "Seoul poster printing",
+   "content": "Poster for Seoul: A0 portrait, printed on fabric at the Hönggerberg copy shop for CHF 62, pickup Friday 3 July. Also bought a Korean eSIM (Airalo 10 GB, USD 18).",
+   "tags": [
+    "travel",
+    "paper"
+   ],
+   "occurred": "2026-06-29"
+  },
+  {
+   "op": "write",
+   "key": "m138",
+   "title": "",
+   "content": "Gave up on 'Die Vermessung der Welt' halfway through; reading Becker's marathon training book on the tram instead.",
+   "tags": [
+    "hobby"
+   ],
+   "occurred": "2026-06-30"
+  },
+  {
+   "op": "write",
+   "key": "m139",
+   "title": "",
+   "content": "For Korea I use my Wise card (0.6% conversion fee) instead of the Revolut one, because Revolut caps free exchange at CHF 1,000 per month.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-07-01"
+  },
+  {
+   "op": "write",
+   "key": "m140",
+   "title": "",
+   "content": "German citizens can enter South Korea without a visa for 90 days; I only need to fill in the online arrival card (Q-Code) before landing.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-07-02"
+  },
+  {
+   "op": "update",
+   "key": "m118",
+   "content": "Flights to Seoul with Lufthansa via Frankfurt: Lufthansa cancelled the 5 July connection, so I was rebooked to depart on 4 July in the evening via Munich. Return stays 13 July, CHF 1,184 return.",
+   "title": "Flight to Seoul",
+   "occurred": "2026-07-03"
+  },
+  {
+   "op": "update",
+   "key": "m120",
+   "content": "Hotel in Samseong close to COEX extended to 8 nights, 5-13 July, KRW 1,040,000 in total (about CHF 660), because the flight was rebooked to leave on 4 July and arrives on the 5th.",
+   "title": "Hotel Seoul",
+   "occurred": "2026-07-03"
+  },
+  {
+   "op": "write",
+   "key": "m141",
+   "title": "ICML poster slot",
+   "content": "ICML poster session for TailLoRA: Thursday 9 July, 11:30-14:00, poster number 512 in Hall B.",
+   "tags": [
+    "paper",
+    "conference"
+   ],
+   "occurred": "2026-07-09"
+  },
+  {
+   "op": "write",
+   "key": "m142",
+   "title": "",
+   "content": "At the poster a researcher from NAVER Cloud, Ji-woo Park, asked about using rank allocation for on-device models. I promised to email her the repo link after the trip.",
+   "tags": [
+    "conference"
+   ],
+   "occurred": "2026-07-10"
+  },
+  {
+   "op": "write",
+   "key": "m143",
+   "title": "",
+   "content": "Seoul in July is brutally humid. Dinner was tteokbokki and fried chicken near COEX, cheap and good.",
+   "tags": [],
+   "occurred": "2026-07-11"
+  },
+  {
+   "op": "write",
+   "key": "m144",
+   "title": "",
+   "content": "On Sunday 12 July in Seoul I visited Gyeongbokgung palace with a colleague from the poster session; hot, but the changing of the guard was worth it.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-07-12"
+  },
+  {
+   "op": "write",
+   "key": "m145",
+   "title": "",
+   "content": "Back from Seoul since the 13th, jetlag is awful; woke up at 3 am for two days.",
+   "tags": [],
+   "occurred": "2026-07-14"
+  },
+  {
+   "op": "write",
+   "key": "m146",
+   "title": "Seoul trip receipts",
+   "content": "For the Studienstiftung refund: flight CHF 1,184 plus hotel CHF 580 plus eSIM and transport, capped at CHF 1,500. The registration fee of USD 575 is not part of it. Receipts must go to Frau Dietrich by 10 August.",
+   "tags": [
+    "money",
+    "travel"
+   ],
+   "occurred": "2026-07-15"
+  },
+  {
+   "op": "write",
+   "key": "m147",
+   "title": "",
+   "content": "Started seeing a therapist, Dr. Meyer, every second Wednesday at 17:00 because the deadline stress and jetlag are piling up.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-07-16"
+  },
+  {
+   "op": "write",
+   "key": "m148",
+   "title": "",
+   "content": "Dad's weather station: the BME280 sensor read about 2 °C too warm near the wall, he moved it to a shaded pole and the values now match the Freiburg DWD station.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-07-20"
+  },
+  {
+   "op": "write",
+   "key": "m149",
+   "title": "NeurIPS review 1",
+   "content": "NeurIPS review 1 (score 4, borderline accept): wants results on a larger backbone such as ViT-L and asks how CMoE scales with the number of experts.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-07-24"
+  },
+  {
+   "op": "write",
+   "key": "m150",
+   "title": "NeurIPS review 2",
+   "content": "NeurIPS review 2 (score 5, accept): likes routing by class frequency, but asks whether the router collapses to one expert and what the load-balance loss is.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-07-24"
+  },
+  {
+   "op": "write",
+   "key": "m151",
+   "title": "NeurIPS review 3",
+   "content": "NeurIPS review 3 (score 3, borderline reject): says novelty over LoRAMoE is incremental and misses a comparison with MoLE. Confidence 5, so this one will be hard.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-07-24"
+  },
+  {
+   "op": "write",
+   "key": "m152",
+   "title": "Vienna workshop",
+   "content": "Poster accepted at the Alpine ML Meeting (efficient fine-tuning workshop) in Vienna, 15-17 September. Registration is EUR 190 early bird until 31 July and EUR 260 afterwards.",
+   "tags": [
+    "travel",
+    "conference"
+   ],
+   "occurred": "2026-07-25"
+  },
+  {
+   "op": "write",
+   "key": "m153",
+   "title": "",
+   "content": "Dad's Spätzle recipe, dictated over the phone: 300 g flour, 3 eggs, 150 ml water, a pinch of salt, beat until bubbles form. Mom says use sparkling water.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-07-26"
+  },
+  {
+   "op": "write",
+   "key": "m154",
+   "title": "Valencia Marathon",
+   "content": "Signed up for the Valencia Marathon on 6 December 2026, entry EUR 105. Goal is sub 3:15 (4:37/km). The 16-week plan starts on 10 August.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-07-28"
+  },
+  {
+   "op": "summary",
+   "key": "s02",
+   "title": "Money and admin",
+   "content": "Money picture: WG room in Altstetten at CHF 1,150 per month, ETH salary CHF 4,880 gross (about 4,210 net), CSS Krankenkasse with a CHF 2,500 Franchise at CHF 387 per month. Tax return extended to 30 September with CHF 3,000 into Säule 3a. The Seoul trip is covered by a Studienstiftung grant of up to CHF 1,500 and Keller's grant for the registration; I use Wise abroad.",
+   "adopt": [
+    "m004",
+    "m005",
+    "m023",
+    "m093",
+    "m119",
+    "m146",
+    "m139"
+   ],
+   "occurred": "2026-07-30"
+  },
+  {
+   "op": "write",
+   "key": "m155",
+   "title": "",
+   "content": "Registered for the Alpine ML Meeting in Vienna and paid the early-bird EUR 190 by credit card; invoice is in my ETH mail.",
+   "tags": [
+    "travel",
+    "conference"
+   ],
+   "occurred": "2026-07-30"
+  },
+  {
+   "op": "write",
+   "key": "m156",
+   "title": "",
+   "content": "ViT-L/16 baselines on CIFAR-100-LT split v3, seed 0: LoRA r=8 gets 75.9% overall, full fine-tune 77.0%. Full fine-tune of ViT-L needs 4 × A100-80GB with gradient checkpointing.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-08-02"
+  },
+  {
+   "op": "write",
+   "key": "m157",
+   "title": "CMoE on ViT-L",
+   "content": "CMoE on ViT-L/16 (24 blocks), 4 experts with r=4, split v3, seed 0: 77.4% overall against 75.9% for LoRA r=8. Training took 17 h on 4 × A100-80GB, so it fits into the 24h gpu partition.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-08-03"
+  },
+  {
+   "op": "write",
+   "key": "m158",
+   "title": "Router collapse in CMoE",
+   "content": "Router collapse in CMoE: with softmax temperature 1.0 and no load-balancing loss, 3 of the 4 experts received less than 2% of the samples by epoch 10, and accuracy looked fine only because the surviving expert acted like plain LoRA. The usage entropy was 0.62 nats (maximum is 1.386). Fix: auxiliary load-balance loss with weight 0.01 and temperature 0.5, which brings the entropy back to 1.31 nats. A weight of 0.1 gives 1.38 nats but costs accuracy (70.1 instead of 70.9). I found it by logging per-expert token counts every epoch, not by looking at the loss curve.",
+   "tags": [
+    "exp",
+    "debug"
+   ],
+   "occurred": "2026-08-04"
+  },
+  {
+   "op": "write",
+   "key": "m159",
+   "title": "",
+   "content": "MoLE-style baseline (4 experts with r=4, token-level router, split v3, seed 0): 70.2% overall and 50.9% few-shot, compared to CMoE with the frequency router at 70.9% / 52.5%.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-08-04"
+  },
+  {
+   "op": "write",
+   "key": "m160",
+   "title": "Load-balance weight sweep",
+   "content": "Load-balance loss weight sweep for CMoE (4 × r=4, split v3, seed 0): 0.001 gives entropy 0.84 and 70.5%, 0.01 gives entropy 1.31 and 70.9%, 0.1 gives entropy 1.38 and 70.1%. Keep 0.01.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-08-05"
+  },
+  {
+   "op": "write",
+   "key": "m161",
+   "title": "",
+   "content": "NeurIPS rebuttal submitted on 6 August: added the ViT-L result (+1.5 over LoRA), the load-balance fix with expert usage entropy, and the MoLE-style baseline. We did not answer the novelty concern beyond one paragraph.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-08-06"
+  },
+  {
+   "op": "write",
+   "key": "m162",
+   "title": "",
+   "content": "WebDataset with num_workers=16 on Euler crashed with 'OSError: [Errno 24] Too many open files'. Fix: `ulimit -n 4096` at the top of the sbatch script and fewer shards per worker.",
+   "tags": [
+    "cluster",
+    "debug"
+   ],
+   "occurred": "2026-08-08"
+  },
+  {
+   "op": "write",
+   "key": "m163",
+   "title": "Valencia 16-week plan",
+   "content": "Valencia Marathon plan, 16 weeks from 10 August to 6 December. Four runs per week plus Monday strength for the back: Tuesday easy 10-12 km, Thursday quality (6 × 1 km at 4:20 early, marathon-pace blocks later), Saturday easy 8 km, Sunday long run. Long runs go 18 km, 22, 26, 30, with the longest of 34 km on 8 November; marathon-pace segments of 8, 12 and 16 km inside the long runs from October. Weekly volume peaks at 74 km in week 12. Taper starts 16 November. Target race pace 4:37/km, which needs a half marathon of about 1:33 as a test in September. Carbs: 60 g per hour in long runs, practise with the same gels as Zurich.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-08-10"
+  },
+  {
+   "op": "update",
+   "key": "m032",
+   "content": "Physio Frau Nussbaumer (Physio Altstetten) now only once a week, Thursday at 18:30, CHF 35 per visit after the Franchise, because the back is much better. Finding: weak glutes and a tight hip flexor from sitting. Daily exercises are still 10 minutes.",
+   "title": "Physio",
+   "occurred": "2026-08-12"
+  },
+  {
+   "op": "write",
+   "key": "m164",
+   "title": "New studio in Oerlikon",
+   "content": "Signed the contract for a 1-room studio in Oerlikon (Birchstrasse), CHF 1,480 per month including Nebenkosten, starting 1 November. The Kaution is three months' rent (CHF 4,440) through Swisscaution.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-08-14",
+   "supersedes": "m004"
+  },
+  {
+   "op": "write",
+   "key": "m165",
+   "title": "",
+   "content": "Euler had a power outage on 14 August and I lost two running jobs, no checkpoints because I had set save_every to 5 epochs. Changed it to every epoch for long runs.",
+   "tags": [
+    "cluster",
+    "debug"
+   ],
+   "occurred": "2026-08-14"
+  },
+  {
+   "op": "write",
+   "key": "m166",
+   "title": "",
+   "content": "Gave notice to the WG landlord by registered letter on 15 August, so I leave the Altstetten room on 31 October.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-08-15"
+  },
+  {
+   "op": "write",
+   "key": "m167",
+   "title": "",
+   "content": "Valencia plan week 1: 48 km in total, long run 18 km at 5:25/km, Thursday 6 × 1 km at 4:22 average. Back fine.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-08-16"
+  },
+  {
+   "op": "write",
+   "key": "m168",
+   "title": "",
+   "content": "Frau Nussbaumer is on holiday from 1 to 15 September; Herr Bühler covers her sessions on Thursday at the same time.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-08-17"
+  },
+  {
+   "op": "write",
+   "key": "m169",
+   "title": "",
+   "content": "Bought a used Bianchi Via Nirone road bike on Ricardo for CHF 520, for cross-training since running volume is high.",
+   "tags": [
+    "shopping"
+   ],
+   "occurred": "2026-08-19"
+  },
+  {
+   "op": "write",
+   "key": "m170",
+   "title": "",
+   "content": "Priya's birthday is on 22 August. Got her a Monstera from Pflanzen Dörig for CHF 35 since she has no space for anything else.",
+   "tags": [
+    "social"
+   ],
+   "occurred": "2026-08-20"
+  },
+  {
+   "op": "delete",
+   "key": "m147",
+   "occurred": "2026-08-20"
+  },
+  {
+   "op": "update",
+   "key": "m152",
+   "content": "Poster accepted at the Alpine ML Meeting (efficient fine-tuning workshop) in Vienna, 15-17 September, and upgraded to a 10 minute spotlight talk on 16 September at 16:00 plus the poster. Registration was EUR 190 early bird.",
+   "title": "Vienna workshop",
+   "occurred": "2026-08-20"
+  },
+  {
+   "op": "write",
+   "key": "m171",
+   "title": "Weights & Biases setup",
+   "content": "W&B project is `tail-peft` under the entity `eth-keller`. On Euler compute nodes there is no internet, so jobs run with WANDB_MODE=offline and I run `wandb sync` from the login node afterwards.",
+   "tags": [
+    "cluster",
+    "code"
+   ],
+   "occurred": "2026-08-23"
+  },
+  {
+   "op": "write",
+   "key": "m172",
+   "title": "Mom's birthday",
+   "content": "Mom turns 64 on 9 September. Plan: call at 18:00 and send flowers via Fleurop, about CHF 45.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-08-24"
+  },
+  {
+   "op": "update",
+   "key": "m082",
+   "content": "Keller got my gpu-long approval extended until 31 December: at most 2 GPUs, walltime up to 120h. I still have to restate the project name in the sbatch `--comment`.",
+   "title": "gpu-long approval",
+   "occurred": "2026-08-25"
+  },
+  {
+   "op": "write",
+   "key": "m173",
+   "title": "Lea Fischer",
+   "content": "Lea Fischer starts her MSc thesis with me on 2 November, topic: improved routers for CMoE. She prefers Jupyter notebooks, writes in German, and needs a cluster account before day one.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-08-28"
+  },
+  {
+   "op": "write",
+   "key": "m174",
+   "title": "",
+   "content": "Jonas got an internship at Google Zurich starting in October and asked me for a reference letter, which I wrote.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-08-30"
+  },
+  {
+   "op": "write",
+   "key": "m175",
+   "title": "Salary raise",
+   "content": "From September my ETH salary is CHF 5,010 gross per month (one Lohnstufe up), about CHF 4,320 net, still paid on the 25th.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-09-01",
+   "supersedes": "m023"
+  },
+  {
+   "op": "summary",
+   "key": "s03",
+   "title": "Valencia marathon plan",
+   "content": "Valencia on 6 December: goal sub 3:15 (4:37/km), 16-week plan from 10 August with four runs a week and a strength session, long runs up to 34 km on 8 November, taper from 16 November, peak week 74 km. Entry EUR 105. Week 1 was 48 km.",
+   "adopt": [
+    "m154",
+    "m163",
+    "m167"
+   ],
+   "occurred": "2026-09-01"
+  },
+  {
+   "op": "write",
+   "key": "m176",
+   "title": "TA duty",
+   "content": "TA for Introduction to Machine Learning this autumn: 8 hours per week, exercise session on Tuesday 15:15 in HG E 5, and I grade 120 exams in January.",
+   "tags": [
+    "work"
+   ],
+   "occurred": "2026-09-02"
+  },
+  {
+   "op": "write",
+   "key": "m177",
+   "title": "Orthopaedist check",
+   "content": "Follow-up with Dr. Baumgartner on 3 September: no new MRI needed, running and cycling are fine, he recommends adding swimming and keeping the core exercises.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-09-03"
+  },
+  {
+   "op": "write",
+   "key": "m178",
+   "title": "",
+   "content": "Left my umbrella on tram 11 again, third one this year.",
+   "tags": [],
+   "occurred": "2026-09-04"
+  },
+  {
+   "op": "write",
+   "key": "m179",
+   "title": "",
+   "content": "Valencia week 4: long run 26 km at 5:08/km with 8 km at marathon pace 4:42 inside. Heart rate 156 at the end, good.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-09-06"
+  },
+  {
+   "op": "write",
+   "key": "m180",
+   "title": "ICLR 2027 deadlines",
+   "content": "ICLR 2027 deadlines: abstract on 23 September, full paper on 30 September. Plan is to resubmit CMoE there if NeurIPS goes badly.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-09-08"
+  },
+  {
+   "op": "write",
+   "key": "m181",
+   "title": "",
+   "content": "Keller's travel rules: economy flights, second class on trains, per diem of at most CHF 60 abroad for conferences, hotels under CHF 180 per night. Receipts within two weeks.",
+   "tags": [
+    "advisor",
+    "money"
+   ],
+   "occurred": "2026-09-09"
+  },
+  {
+   "op": "write",
+   "key": "m182",
+   "title": "Nightjet to Vienna",
+   "content": "Booked the Nightjet from Zurich HB to Vienna on the evening of 14 September, couchette CHF 128, and the return by Railjet on 17 September for CHF 74.",
+   "tags": [
+    "travel"
+   ],
+   "occurred": "2026-09-10"
+  },
+  {
+   "op": "write",
+   "key": "m183",
+   "title": "",
+   "content": "For 5 seeds I use a SLURM job array: `#SBATCH --array=0-4%2` limits the concurrency to 2 tasks, and the seed is SLURM_ARRAY_TASK_ID.",
+   "tags": [
+    "cluster",
+    "code"
+   ],
+   "occurred": "2026-09-12"
+  },
+  {
+   "op": "write",
+   "key": "m184",
+   "title": "",
+   "content": "The Vienna poster is A1 landscape on normal paper printed at ETH Print for CHF 38, a lot smaller than the A0 fabric poster from Seoul.",
+   "tags": [
+    "conference"
+   ],
+   "occurred": "2026-09-14"
+  },
+  {
+   "op": "write",
+   "key": "m185",
+   "title": "Vienna poster",
+   "content": "Alpine ML Meeting in Vienna: my poster is on Wednesday 16 September at 16:00. Mostly people asked about the compute overhead of reallocation.",
+   "tags": [
+    "conference"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m186",
+   "title": "",
+   "content": "At the Vienna workshop Elif Kaya from Bosch showed interest in tail-class adapters for defect detection on factory images and wants to try our code. I owe her an email with the repo link.",
+   "tags": [
+    "conference"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m187",
+   "title": "NeurIPS decision",
+   "content": "NeurIPS 2026 rejected CMoE on 18 September. Meta-review: novelty over LoRAMoE/MoLE is incremental, reviewer 3 stayed at 3. We resubmit to ICLR 2027 with ViT-L results, the load-balance analysis and the MoLE comparison.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-09-18"
+  },
+  {
+   "op": "write",
+   "key": "m188",
+   "title": "Greifenseelauf half marathon",
+   "content": "Greifenseelauf half marathon on 20 September: 1:35:48, a new half PB. That predicts about 3:20 for a full marathon, so sub 3:15 in Valencia looks too optimistic.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "update",
+   "key": "m154",
+   "content": "Signed up for the Valencia Marathon on 6 December 2026, entry EUR 105. The goal is relaxed from sub 3:15 to sub 3:20 (4:44/km) after the 1:35:48 half. The 16-week plan started on 10 August.",
+   "title": "Valencia Marathon",
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "write",
+   "key": "m189",
+   "title": "",
+   "content": "Flu shot at Dr. Frei's practice on 23 September, CHF 33.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-09-23"
+  },
+  {
+   "op": "write",
+   "key": "m190",
+   "title": "",
+   "content": "For the ICLR 2027 version: new title 'Frequency-Routed LoRA Experts for Long-Tailed Fine-Tuning', ViT-L table added, router entropy analysis in the main text, MoLE baseline included.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-09-25"
+  },
+  {
+   "op": "write",
+   "key": "m191",
+   "title": "",
+   "content": "Filed the Zurich tax return on 28 September, a bit before the extended deadline. The expected refund is about CHF 640.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-09-28"
+  },
+  {
+   "op": "write",
+   "key": "m192",
+   "title": "ICLR 2027 submission",
+   "content": "Submitted the CMoE paper to ICLR 2027 on 30 September, submission number 4418. Keller read the last version at 23:00 and removed two overclaiming sentences.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-09-30"
+  },
+  {
+   "op": "write",
+   "key": "m193",
+   "title": "gpu partition now 48h",
+   "content": "Since 1 October the `gpu` partition on Euler allows 48h walltime instead of 24h. `gpu-long` is unchanged: 120h and 2 GPUs per user.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-10-01",
+   "supersedes": "m010"
+  },
+  {
+   "op": "write",
+   "key": "m194",
+   "title": "",
+   "content": "Valencia week 8: 62 km in total, long run 28 km with 12 km at marathon pace (4:40/km), average heart rate 158.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-10-03"
+  },
+  {
+   "op": "write",
+   "key": "m195",
+   "title": "Hotel Valencia",
+   "content": "Booked Hotel Sorolla Centro in Valencia for 4 nights, 3-7 December, EUR 312 in total. Free cancellation until 28 November.",
+   "tags": [
+    "travel",
+    "marathon"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "write",
+   "key": "m196",
+   "title": "Flight to Valencia",
+   "content": "Flight to Valencia with Vueling: Zurich to Valencia on 3 December at 11:20, return on 7 December at 18:05, CHF 238 in total.",
+   "tags": [
+    "travel",
+    "marathon"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "write",
+   "key": "m197",
+   "title": "Priya food now",
+   "content": "Priya went from vegan to vegetarian in October: eggs and cheese are fine again, but still no meat or fish. Honey she still skips.",
+   "tags": [
+    "people"
+   ],
+   "occurred": "2026-10-06",
+   "supersedes": "m101"
+  },
+  {
+   "op": "write",
+   "key": "m198",
+   "title": "",
+   "content": "From 15 October Euler requires an SSH key with passphrase plus two-factor authentication. Set up the authenticator app on my phone and a backup key on the YubiKey.",
+   "tags": [
+    "cluster"
+   ],
+   "occurred": "2026-10-10"
+  },
+  {
+   "op": "write",
+   "key": "m199",
+   "title": "",
+   "content": "Bought Sony WH-1000XM5 headphones for CHF 289 at Digitec for the open-plan office.",
+   "tags": [
+    "shopping"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "write",
+   "key": "m200",
+   "title": "",
+   "content": "Lea's Euler account is approved with her directory at /cluster/work/keller/lea. I sent her the CMoE paper and the LoRAMoE paper to read before the first meeting.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "update",
+   "key": "m061",
+   "content": "Main repo `tail-peft` on ETH GitLab: branches are named feat/<initials>-<topic>, merges are squash-only, run configs are Hydra yaml files in conf/exp named exp<NNN>_<short>.yaml, formatting is now ruff format with line length 100 (black and isort were dropped in October), and CI runs pytest on CPU only.",
+   "title": "Main repo conventions",
+   "occurred": "2026-10-14"
+  },
+  {
+   "op": "write",
+   "key": "m201",
+   "title": "Moving van",
+   "content": "Booked a moving company (Zügelfirma) for 31 October, 4 hours, CHF 240. Marek and Priya help carry, I owe them beer and Pizza.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-10-17"
+  },
+  {
+   "op": "write",
+   "key": "m202",
+   "title": "",
+   "content": "Internet for the Oerlikon studio: Sunrise fibre, CHF 59 per month, starts 1 November.",
+   "tags": [
+    "rent",
+    "money"
+   ],
+   "occurred": "2026-10-18"
+  },
+  {
+   "op": "write",
+   "key": "m203",
+   "title": "Moving day checklist",
+   "content": "Checklist for the move to Oerlikon on 31 October. 08:00 pick up the van keys and boxes at the Zügelfirma, 09:00 load in Altstetten, 11:00 Wohnungsabgabe with Anna (cleaning must be done the night before, including the oven and the windows), 14:00 key handover in Oerlikon with Livit, then unload with Marek and Priya. Bring: drill, spirit level, extension cable, the IKEA Pax parts that are already disassembled, and the standing desk converter in its original box. Cancel Serafe change of address, update the address at ETH HR, Mobiliar and CSS, order the mail forwarding at the Post for CHF 29 for 6 months. Do not forget the Kaution confirmation from Swisscaution before getting keys.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-10-19"
+  },
+  {
+   "op": "write",
+   "key": "m204",
+   "title": "WG handover",
+   "content": "WG handover (Wohnungsabgabe) is on 31 October at 11:00. Anna returns the CHF 1,150 deposit within two weeks if the cleaning is accepted.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-10-20"
+  },
+  {
+   "op": "write",
+   "key": "m205",
+   "title": "",
+   "content": "Strava says my Vaporfly 3 have 310 km, I will keep them only for race day and long tempo runs.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-10-22"
+  },
+  {
+   "op": "write",
+   "key": "m206",
+   "title": "",
+   "content": "Valencia week 11: 70 km total, long run 30 km at 5:00/km with 16 km at 4:38. Left calf fine this time.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-10-25"
+  },
+  {
+   "op": "write",
+   "key": "m207",
+   "title": "",
+   "content": "Ordered pizza on Friday and forgot about it while debugging, it was cold at 22:30.",
+   "tags": [],
+   "occurred": "2026-10-27"
+  },
+  {
+   "op": "write",
+   "key": "m208",
+   "title": "PhD thesis outline",
+   "content": "Draft outline of my thesis, working title 'Parameter-Efficient Adaptation under Long-Tailed Data'. Chapter 1 introduction and background on LoRA variants. Chapter 2 TailLoRA, the ICML 2026 paper: gradient-norm rank reallocation with budget 96, CIFAR-100-LT and ImageNet-LT. Chapter 3 CMoE, frequency-routed experts, with the router collapse analysis and the load-balance loss. Chapter 4 planned for 2027: learned soft buckets combined with per-expert rank reallocation, which is the ICML 2027 paper with Lea. Chapter 5 negative results and reproduction failures (PiSSA, the long-tail prompt tuning baseline), which Keller finds valuable. Keller wants the first complete draft of chapters 1 to 3 by September 2027, the defense in summer 2028. Tomás will be external advisor on chapter 3.",
+   "tags": [
+    "phd"
+   ],
+   "occurred": "2026-10-28"
+  },
+  {
+   "op": "write",
+   "key": "m209",
+   "title": "Moved to Oerlikon",
+   "content": "Moved into the Oerlikon studio on 31 October. Key handover was at 14:00 with the Livit property manager; the Swisscaution deposit was confirmed. We carried boxes up three floors without a lift.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-10-31"
+  },
+  {
+   "op": "write",
+   "key": "m210",
+   "title": "",
+   "content": "Door code of the Oerlikon building is 5827#, my mailbox is number 214.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-11-01"
+  },
+  {
+   "op": "write",
+   "key": "m211",
+   "title": "Lea's thesis plan",
+   "content": "Lea started her thesis on 2 November. Plan: replace the hard class-frequency buckets in CMoE with learned soft buckets. First deliverable by 20 November: reproduce CMoE with 4 seeds on split v3.",
+   "tags": [
+    "students"
+   ],
+   "occurred": "2026-11-02"
+  },
+  {
+   "op": "write",
+   "key": "m212",
+   "title": "",
+   "content": "Back flared up after carrying boxes during the move; I skipped two runs and the Monday strength session.",
+   "tags": [
+    "health"
+   ],
+   "occurred": "2026-11-02"
+  },
+  {
+   "op": "write",
+   "key": "m213",
+   "title": "",
+   "content": "Registered the new address at the Kreisbüro Oerlikon on 3 November, within the 14 days required, no fee.",
+   "tags": [
+    "rent"
+   ],
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "update",
+   "key": "m032",
+   "content": "Physio Frau Nussbaumer (Physio Altstetten) is back to twice a week for two weeks after the move: Monday and Thursday at 18:30, CHF 35 per visit after the Franchise. Finding: weak glutes and a tight hip flexor from sitting. Daily exercises are still 10 minutes.",
+   "title": "Physio",
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "write",
+   "key": "m214",
+   "title": "ICLR review 1",
+   "content": "ICLR review 1 (score 6, marginally above threshold): likes the frequency router, asks for a large-scale dataset such as iNaturalist.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m215",
+   "title": "ICLR review 2",
+   "content": "ICLR review 2 (score 6): asks for an ablation on the number of frequency buckets and whether the buckets need to be hard.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m216",
+   "title": "ICLR review 3",
+   "content": "ICLR review 3 (score 3, reject): says the baselines are tuned less than CMoE and wants comparisons at equal parameter budget. Confidence 4.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m217",
+   "title": "ICLR review 4",
+   "content": "ICLR review 4 (score 5): positive but wants the code released and a discussion of the 2x parameter cost of CMoE.",
+   "tags": [
+    "paper",
+    "review"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "delete",
+   "key": "m210",
+   "occurred": "2026-11-05"
+  },
+  {
+   "op": "write",
+   "key": "m218",
+   "title": "ICLR rebuttal plan",
+   "content": "ICLR rebuttal plan. The author response is due on 24 November and discussion runs until 3 December. Tasks: (1) iNaturalist 2018 run of CMoE and LoRA on gpu-long, 4 × A100-80GB for about 3 days, started by 9 November; (2) equal-parameter comparison, meaning LoRA r=16 and TailLoRA with budget 192 against CMoE 4 × r=4; (3) bucket-count ablation 3/5/8, which Lea runs with 3 seeds; (4) anonymized code release on anonymous.4open.science; (5) I write the response and Keller gets the draft on 21 November at noon. Reviewer 3 gets the longest answer because the score 3 can still move. Everything reported in tables needs 5 seeds, except iNaturalist where one seed will be flagged as preliminary.",
+   "tags": [
+    "paper",
+    "advisor"
+   ],
+   "occurred": "2026-11-06"
+  },
+  {
+   "op": "write",
+   "key": "m219",
+   "title": "iNaturalist 2018 data",
+   "content": "Prepared iNaturalist 2018: 437,513 training images over 8,142 classes as WebDataset shards at /cluster/work/keller/data/inat18_wds, about 120 GB. Preprocessing took 6 hours.",
+   "tags": [
+    "data"
+   ],
+   "occurred": "2026-11-07"
+  },
+  {
+   "op": "write",
+   "key": "m220",
+   "title": "",
+   "content": "The 34 km long run on 8 November: 2:50:12 (5:00/km) with the last 10 km at 4:40. Legs OK, back stiff afterwards.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-11-08"
+  },
+  {
+   "op": "write",
+   "key": "m221",
+   "title": "CMoE at ICLR status",
+   "content": "CMoE at ICLR 2027 (submission 4418): four reviews received with scores 6, 6, 3 and 5, mean 5.0. Reviewer 3 is the only negative one.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-11-08",
+   "supersedes": "m192"
+  },
+  {
+   "op": "write",
+   "key": "m222",
+   "title": "",
+   "content": "Started CMoE on iNaturalist 2018 with ViT-B/16 on 4 × A100-80GB via gpu-long with 72h walltime, job id 51770231.",
+   "tags": [
+    "exp",
+    "cluster"
+   ],
+   "occurred": "2026-11-09"
+  },
+  {
+   "op": "write",
+   "key": "m223",
+   "title": "Group meeting slot",
+   "content": "Since November the group meeting is on Wednesday at 11:00 in CAB H 53, because Keller moved her teaching to Thursday morning. Still one page with the results table.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-11-09",
+   "supersedes": "m089"
+  },
+  {
+   "op": "write",
+   "key": "m224",
+   "title": "Internet provider switch",
+   "content": "Sunrise could not install the fibre before December, so I switched to Salt Fiber at CHF 45 per month, activated on 12 November.",
+   "tags": [
+    "rent",
+    "money"
+   ],
+   "occurred": "2026-11-09",
+   "supersedes": "m202"
+  },
+  {
+   "op": "write",
+   "key": "m225",
+   "title": "Krankenkasse 2027",
+   "content": "For 2027 I switched CSS from the CHF 2,500 Franchise to CHF 1,500, so the premium goes up to CHF 441 per month. Confirmed on 10 November, before the 30 November deadline, because of the physio and MRI costs.",
+   "tags": [
+    "insurance"
+   ],
+   "occurred": "2026-11-10",
+   "supersedes": "m005"
+  },
+  {
+   "op": "update",
+   "key": "m195",
+   "content": "Hotel Sorolla Centro in Valencia extended to 5 nights, 3-8 December, EUR 390 in total because I moved the flight home by a day. Free cancellation until 28 November.",
+   "title": "Hotel Valencia",
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "update",
+   "key": "m196",
+   "content": "Flight to Valencia with Vueling: Zurich to Valencia on 3 December at 11:20, return rebooked to 8 December at 11:40, CHF 298 in total after the change fee of CHF 60.",
+   "title": "Flight to Valencia",
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "write",
+   "key": "m226",
+   "title": "Tomás leaves",
+   "content": "Tomás accepted an assistant professor position at the University of Edinburgh starting in February 2027. He stays on as co-author and asked me to lead the ICML 2027 submission.",
+   "tags": [
+    "collab"
+   ],
+   "occurred": "2026-11-12"
+  },
+  {
+   "op": "write",
+   "key": "m227",
+   "title": "Tax assessment",
+   "content": "The Zurich tax assessment (Veranlagung) for 2025 arrived on 12 November: refund of CHF 512, less than the CHF 640 I expected because the Fahrkosten deduction was capped.",
+   "tags": [
+    "money"
+   ],
+   "occurred": "2026-11-12",
+   "supersedes": "m191"
+  },
+  {
+   "op": "write",
+   "key": "m228",
+   "title": "",
+   "content": "Tram line 14 was cut for two hours by a Stellwerkstörung, I ran the 6 km to the office instead.",
+   "tags": [],
+   "occurred": "2026-11-13"
+  },
+  {
+   "op": "write",
+   "key": "m229",
+   "title": "",
+   "content": "iNaturalist 2018 result (one seed, preliminary): CMoE 68.2% against 66.9% for LoRA r=8. The job took 66 h of the 72 h allowed.",
+   "tags": [
+    "exp"
+   ],
+   "occurred": "2026-11-13"
+  },
+  {
+   "op": "write",
+   "key": "m230",
+   "title": "ICML 2027 deadlines",
+   "content": "ICML 2027 deadlines: abstract on 22 January 2027, full paper on 29 January 2027. Planned content is learned soft bucket routing (Lea's thesis) combined with TailLoRA-style rank reallocation per expert.",
+   "tags": [
+    "paper"
+   ],
+   "occurred": "2026-11-14"
+  },
+  {
+   "op": "write",
+   "key": "m231",
+   "title": "",
+   "content": "Valencia week 14: 72 km total, 3 × 10 km at marathon pace with 2 km jog in between, all between 4:36 and 4:39.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-11-15"
+  },
+  {
+   "op": "write",
+   "key": "m232",
+   "title": "",
+   "content": "Valencia taper started on 16 November: 56 km this week, 44 next week, 28 km in race week.",
+   "tags": [
+    "marathon"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "write",
+   "key": "m233",
+   "title": "Bucket count ablation",
+   "content": "Lea's bucket-count ablation for CMoE (4 × r=4, split v3, 3 seeds): 3 buckets 70.8 ± 0.3, 5 buckets 70.6 ± 0.4, 8 buckets 70.2 ± 0.3. Three buckets is best.",
+   "tags": [
+    "exp",
+    "students"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "write",
+   "key": "m234",
+   "title": "Parents visit Zurich",
+   "content": "Parents arrive in Zurich on 19 December for 5 nights. Mom wants Raclette, Dad wants to go up the Uetliberg. My studio is too small for three, so I booked them Hotel Ibis Zurich Messe for CHF 540.",
+   "tags": [
+    "family"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "write",
+   "key": "m235",
+   "title": "PhD committee meeting",
+   "content": "PhD committee meeting on 10 December at 15:00 with Keller and the external co-examiner Prof. Odermatt. I must send a 15-page progress report by 3 December. Defense target is summer 2028.",
+   "tags": [
+    "phd"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s04",
+   "title": "CIFAR-100-LT results",
+   "content": "On split v3 (the v2 numbers are invalid because of the seed-dependent tail classes), TailLoRA matches full fine-tuning at about 70.2% over 5 seeds, beats LoRA r=8 (68.8) and r=16 (69.6), and sits slightly above LoRA+ (69.8) and AdaLoRA (69.1), with the largest gain on few-shot classes (51.4 versus 49.3 for LoRA+). Gradient norm is the best allocation metric, reallocating every 2 epochs and lr 5e-4 are the defaults.",
+   "adopt": [
+    "m020",
+    "m021",
+    "m031",
+    "m040",
+    "m048",
+    "m079",
+    "m080",
+    "m043",
+    "m037"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s05",
+   "title": "Datasets",
+   "content": "Three long-tailed datasets are prepared: CIFAR-100-LT split v3 (10,847 train images, balanced 10k test), ImageNet-LT (115,846 images, 1,000 classes) and iNaturalist 2018 (437,513 images, 8,142 classes) as WebDataset shards under /cluster/work/keller/data.",
+   "adopt": [
+    "m018",
+    "m019",
+    "m066",
+    "m219"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s06",
+   "title": "ICML 2026 TailLoRA paper",
+   "content": "TailLoRA was submitted to ICML 2026 (ID 7731), got scores 4, 3, 5, and the rebuttal added ImageNet-LT, 5 seeds, an AdaLoRA baseline and the 11% overhead figure. It was accepted as a poster on 1 May and presented in Seoul on 9 July.",
+   "adopt": [
+    "m013",
+    "m076",
+    "m077",
+    "m078",
+    "m083",
+    "m085",
+    "m108",
+    "m124",
+    "m141"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s07",
+   "title": "CMoE project",
+   "content": "CMoE routes LoRA experts by class-frequency bucket. Best config is 4 experts with r=4 and a load-balance loss of weight 0.01 at temperature 0.5 (70.9% on CIFAR-100-LT, 77.4% with ViT-L). It was rejected at NeurIPS 2026 (reviews 4, 5, 3) and resubmitted to ICLR 2027 as submission 4418.",
+   "adopt": [
+    "m107",
+    "m111",
+    "m158",
+    "m160",
+    "m157",
+    "m159",
+    "m149",
+    "m150",
+    "m151",
+    "m187",
+    "m192"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s08",
+   "title": "PEFT reading notes",
+   "content": "Related work I track: LoRA+ (larger lr on B), AdaLoRA (SVD pruning, rank 12 to 8), DoRA (magnitude/direction split), PiSSA (SVD init) and LoRAMoE (token routing, the closest to CMoE). None of the first four is a big win in our setup.",
+   "adopt": [
+    "m025",
+    "m036",
+    "m060",
+    "m067",
+    "m073"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "summary",
+   "key": "s09",
+   "title": "Debugging and repro lessons",
+   "content": "Recurring lessons: check the hostname before blaming code (faulty A100 on eu-g4-021), keep checkpoints off scratch, log per-expert usage to spot router collapse, save every epoch on long jobs, and set pretrained=True. Reproductions of PiSSA and a prompt-tuning baseline both failed to match the papers.",
+   "adopt": [
+    "m046",
+    "m105",
+    "m158",
+    "m165",
+    "m058",
+    "m125",
+    "m129",
+    "m162"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "update",
+   "key": "m211",
+   "content": "Lea started her thesis on 2 November. Plan: replace the hard class-frequency buckets in CMoE with learned soft buckets. First deliverable moved from 20 to 27 November: reproduce CMoE with 4 seeds on split v3.",
+   "title": "Lea's thesis plan",
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "write",
+   "key": "m236",
+   "title": "",
+   "content": "Keller travels to Paris on 22-24 November and reads email only in the evening, so her feedback on the ICLR response has to come by 21 November.",
+   "tags": [
+    "advisor"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "write",
+   "key": "m237",
+   "title": "",
+   "content": "Five days of Nebel in a row in Zurich, bought a daylight lamp for the desk.",
+   "tags": [],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s10",
+   "title": "Advisor and collaborators",
+   "content": "Keller wants a one-page results table, Okabe-Ito figures, 5 seeds, and a Wednesday 11:00 group meeting. Tomás prefers Overleaf comments and bold/underline tables and leaves for Edinburgh in February 2027. Priya is vegetarian since October and Marek is allergic to hazelnuts.",
+   "adopt": [
+    "m223",
+    "m045",
+    "m001",
+    "m044",
+    "m226",
+    "m181",
+    "m197",
+    "m102"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s11",
+   "title": "Code and workflow",
+   "content": "Code conventions: tail-peft uses squash merges, Hydra configs named exp<NNN>_<short>.yaml and ruff format with line length 100; the paper repo has one file per section. Runs are named with the git hash, logged to W&B offline, and seeds run as SLURM arrays. Defaults are bf16, TF32, cosine schedule with 2 warmup epochs.",
+   "adopt": [
+    "m061",
+    "m062",
+    "m014",
+    "m068",
+    "m171",
+    "m183",
+    "m039"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s12",
+   "title": "Back and health",
+   "content": "The back problem (L5/S1 mild protrusion, no surgery) is managed with physio, core exercises and a standing desk converter; pain flares after long sitting or carrying (March, November). Vitamin D was low in February.",
+   "adopt": [
+    "m016",
+    "m032",
+    "m069",
+    "m177",
+    "m113",
+    "m090",
+    "m063"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s13",
+   "title": "Zurich Marathon 2026",
+   "content": "Zurich Marathon 2026 went to plan: 16-week training with a 32 km peak, goal lowered to 3:25 after a back flare, finished in 3:24:41 with calf cramps late. That is the current PB. Greifenseelauf half in September was 1:35:48.",
+   "adopt": [
+    "m017",
+    "m030",
+    "m094",
+    "m099",
+    "m098",
+    "m103",
+    "m188"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s14",
+   "title": "Seoul trip",
+   "content": "Seoul ICML trip: registration paid from Keller's grant, flights via Frankfurt (rebooked to leave 4 July, CHF 1,184), hotel in Samseong for 8 nights, Studienstiftung grant up to CHF 1,500, receipts due 10 August.",
+   "adopt": [
+    "m114",
+    "m118",
+    "m120",
+    "m119",
+    "m146",
+    "m137"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "summary",
+   "key": "s15",
+   "title": "Family",
+   "content": "Mom had knee surgery in January and is recovered; Dad builds a weather station; Felix and Nora have baby Mila since 2 June. Birthdays are Dad 28 March and Mom 9 September; I call on Sundays at 19:30.",
+   "adopt": [
+    "m026",
+    "m051",
+    "m122",
+    "m027",
+    "m029",
+    "m148",
+    "m087",
+    "m172",
+    "m012"
+   ],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "update",
+   "key": "m235",
+   "content": "PhD committee meeting moved from 10 December to 14 December at 10:00, with Keller and the external co-examiner Prof. Odermatt. I must send the 15-page progress report by 7 December. Defense target is summer 2028.",
+   "title": "PhD committee meeting",
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "update",
+   "key": "m234",
+   "content": "Parents now arrive in Zurich on 20 December (Mom had a cold) for 5 nights. Mom wants Raclette, Dad wants to go up the Uetliberg. My studio is too small for three, so I booked them Hotel Ibis Zurich Messe for CHF 540.",
+   "title": "Parents visit Zurich",
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "update",
+   "key": "m218",
+   "content": "ICLR rebuttal plan. The author response deadline was extended from 24 to 26 November, discussion runs until 3 December. Tasks: (1) iNaturalist 2018 run of CMoE and LoRA on gpu-long, 4 × A100-80GB for about 3 days, started on 9 November; (2) equal-parameter comparison, meaning LoRA r=16 and TailLoRA with budget 192 against CMoE 4 × r=4; (3) bucket-count ablation 3/5/8, which Lea runs with 3 seeds; (4) anonymized code release on anonymous.4open.science; (5) I write the response and Keller gets the draft on 21 November at noon. Reviewer 3 gets the longest answer because the score 3 can still move. Everything reported in tables needs 5 seeds, except iNaturalist where one seed will be flagged as preliminary.",
+   "title": "ICLR rebuttal plan",
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "write",
+   "key": "m238",
+   "title": "",
+   "content": "My ThinkPad X1 Carbon battery is swollen; ETH IT replaces it on 26 November. Backed up everything to /cluster/work and an external SSD.",
+   "tags": [
+    "work"
+   ],
+   "occurred": "2026-11-19"
+  },
+  {
+   "op": "summary",
+   "key": "s16",
+   "title": "Research overview",
+   "content": "Research is two threads: TailLoRA (accepted at ICML 2026, matches full fine-tuning at 0.29M parameters) and CMoE (rejected at NeurIPS, under review at ICLR 2027). Datasets are CIFAR-100-LT, ImageNet-LT and iNaturalist; the next target is ICML 2027 in January.",
+   "adopt": [
+    "s04",
+    "s06",
+    "s07",
+    "s08",
+    "s09"
+   ],
+   "occurred": "2026-11-19"
+  },
+  {
+   "op": "summary",
+   "key": "s17",
+   "title": "Infrastructure and people",
+   "content": "Work runs on Euler with group quota and Keller's rules, Hydra/W&B workflow, three datasets under /cluster/work/keller/data, and a team of Keller, Tomás (leaving), Priya, Marek and students Jonas and Lea.",
+   "adopt": [
+    "s01",
+    "s05",
+    "s11",
+    "s10"
+   ],
+   "occurred": "2026-11-19"
+  },
+  {
+   "op": "summary",
+   "key": "s18",
+   "title": "Life overview",
+   "content": "Life: money and rent (WG in Altstetten at CHF 1,150, salary CHF 4,880), health and the back, running (Zurich 3:24:41, Valencia on 6 December), family in Freiburg and Hamburg, and the Seoul trip.",
+   "adopt": [
+    "s02",
+    "s12",
+    "s13",
+    "s03",
+    "s15",
+    "s14"
+   ],
+   "occurred": "2026-11-19"
+  }
+ ],
+ "queries": [
+  {
+   "id": "q001",
+   "qs": [
+    "What accuracy did the full fine-tune baseline get on CIFAR-100-LT split v3?",
+    "full fine-tune ViT-B/16 split v3 overall top-1"
+   ],
+   "type": "direct",
+   "gold": [
+    "m020"
+   ],
+   "stale": [],
+   "note": "Direct fact: 70.4% overall, 50.3% few-shot on v3 (not the 71.3 from v2)."
+  },
+  {
+   "id": "q002",
+   "qs": [
+    "How much was the entry fee for the Zurich Marathon?"
+   ],
+   "type": "direct",
+   "gold": [
+    "m017"
+   ],
+   "stale": [],
+   "note": "CHF 130"
+  },
+  {
+   "id": "q003",
+   "qs": [
+    "Why did Jonas get 41% on his LoRA+ reproduction?",
+    "Jonas LoRA+ 41% bug cause"
+   ],
+   "type": "direct",
+   "gold": [
+    "m058"
+   ],
+   "stale": [],
+   "note": "pretrained=False in timm"
+  },
+  {
+   "id": "q004",
+   "qs": [
+    "How did we fix the router collapse in CMoE?",
+    "CMoE expert collapse fix load balance"
+   ],
+   "type": "direct",
+   "gold": [
+    "m158"
+   ],
+   "stale": [],
+   "note": "aux loss weight 0.01, temperature 0.5"
+  },
+  {
+   "id": "q005",
+   "qs": [
+    "Which SNSF grant number has to go into the acknowledgements?"
+   ],
+   "type": "direct",
+   "gold": [
+    "m124"
+   ],
+   "stale": [],
+   "note": "200021_212345"
+  },
+  {
+   "id": "q006",
+   "qs": [
+    "Who is my physiotherapist and where does she work?",
+    "physio name and practice"
+   ],
+   "type": "direct",
+   "gold": [
+    "m032"
+   ],
+   "stale": [],
+   "note": "Frau Nussbaumer, Physio Altstetten"
+  },
+  {
+   "id": "q007",
+   "qs": [
+    "What did ICML reviewer 2 criticise and what score did they give?"
+   ],
+   "type": "direct",
+   "gold": [
+    "m077"
+   ],
+   "stale": [
+    "m078"
+   ],
+   "note": "score 3, within seed noise, ImageNet-LT, +11% overhead"
+  },
+  {
+   "id": "q008",
+   "qs": [
+    "What is the poster number for the TailLoRA poster in Seoul?",
+    "ICML poster session slot time and hall"
+   ],
+   "type": "direct",
+   "gold": [
+    "m141"
+   ],
+   "stale": [],
+   "note": "poster 512, Hall B, Thu 9 July 11:30-14:00"
+  },
+  {
+   "id": "q009",
+   "qs": [
+    "what supplement am I taking since the blood work and how much",
+    "vitamin D level result and daily dose"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m063"
+   ],
+   "stale": [],
+   "note": "memory says vitamin D 18 ng/ml, 4000 IE daily until April; query avoids 'vitamin D' in first form"
+  },
+  {
+   "id": "q010",
+   "qs": [
+    "how long does a single training job of the base ViT take on one card",
+    "GPU time for one CIFAR-100-LT run"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m034"
+   ],
+   "stale": [],
+   "note": "41 minutes on A100-40GB, 3.5 GPU-hours for 5 seeds"
+  },
+  {
+   "id": "q011",
+   "qs": [
+    "dataloader workers crash with file handle limit on the cluster",
+    "how to stop the loader from dying on Euler"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m162"
+   ],
+   "stale": [],
+   "note": "Errno 24 Too many open files, ulimit -n 4096"
+  },
+  {
+   "id": "q012",
+   "qs": [
+    "what format and cost did the poster for the Austrian meeting have",
+    "Vienna poster printing price"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m184"
+   ],
+   "stale": [
+    "m137"
+   ],
+   "note": "A1 landscape paper, CHF 38; Seoul one was A0 fabric"
+  },
+  {
+   "id": "q013",
+   "qs": [
+    "did anyone from a Korean company want to use our method",
+    "who asked about on-device adapters at the poster"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m142"
+   ],
+   "stale": [],
+   "note": "Ji-woo Park from NAVER Cloud"
+  },
+  {
+   "id": "q014",
+   "qs": [
+    "what was behind the training crash that was not my code",
+    "random CUDA failure that turned out to be hardware"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m046"
+   ],
+   "stale": [],
+   "note": "faulty A100 on node eu-g4-021"
+  },
+  {
+   "id": "q015",
+   "qs": [
+    "where should I store model snapshots so they do not disappear",
+    "why did my ImageNet-LT weights vanish"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m105"
+   ],
+   "stale": [],
+   "note": "scratch purged after 14 days; use /cluster/work/keller/lukas/ckpt"
+  },
+  {
+   "id": "q016",
+   "qs": [
+    "what is my niece called and how heavy was she at birth",
+    "my brother's daughter birth details"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m027"
+   ],
+   "stale": [],
+   "note": "Mila, 3,420 g, born 2 June (update of the due date node)"
+  },
+  {
+   "id": "q017",
+   "qs": [
+    "what colour scheme does my supervisor want in plots",
+    "minimum text size in figures for Keller"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m045"
+   ],
+   "stale": [
+    "m044"
+   ],
+   "note": "Okabe-Ito and 9 pt axis labels"
+  },
+  {
+   "id": "q018",
+   "qs": [
+    "which colleague carries an EpiPen",
+    "who can't have nuts at lab dinners"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m102"
+   ],
+   "stale": [
+    "m197"
+   ],
+   "note": "Marek, hazelnut allergy"
+  },
+  {
+   "id": "q019",
+   "qs": [
+    "how do I limit parallel tasks when running several seeds with the scheduler",
+    "run seeds as array with concurrency cap"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m183"
+   ],
+   "stale": [],
+   "note": "--array=0-4%2"
+  },
+  {
+   "id": "q020",
+   "qs": [
+    "how big is the imbalanced small-image dataset after fixing the class order",
+    "number of training images in the fixed long-tailed split"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m018"
+   ],
+   "stale": [],
+   "note": "10,847 images in split v3"
+  },
+  {
+   "id": "q021",
+   "qs": [
+    "that time a cluster job died after a few hours and I spent days on it, what was it",
+    "mysterious GPU crash story"
+   ],
+   "type": "vague",
+   "gold": [
+    "m046"
+   ],
+   "stale": [],
+   "note": "vague recall of the illegal memory access incident"
+  },
+  {
+   "id": "q022",
+   "qs": [
+    "what happened on the day Priya finished her exam thing",
+    "celebration drinks at the river"
+   ],
+   "type": "vague",
+   "gold": [
+    "m121"
+   ],
+   "stale": [],
+   "note": "qualifying exam, drinks at the Rhein"
+  },
+  {
+   "id": "q023",
+   "qs": [
+    "the baseline from some prompt tuning paper where I never got their number, what was it again",
+    "paper result I could not match, ICLR 2023"
+   ],
+   "type": "vague",
+   "gold": [
+    "m129"
+   ],
+   "stale": [
+    "m125"
+   ],
+   "note": "89.1 claimed vs 86.4; confusable with the PiSSA failure"
+  },
+  {
+   "id": "q024",
+   "qs": [
+    "what did Keller tell me about how to write the response to the reviewers",
+    "advice on the rebuttal draft wording"
+   ],
+   "type": "vague",
+   "gold": [
+    "m084"
+   ],
+   "stale": [
+    "m081"
+   ],
+   "note": "cut overhead paragraph, lead with ImageNet-LT, no 'we believe'"
+  },
+  {
+   "id": "q025",
+   "qs": [
+    "something about my dad's hobby project on the balcony",
+    "what is Dad tinkering with"
+   ],
+   "type": "vague",
+   "gold": [
+    "m029",
+    "m148"
+   ],
+   "stale": [],
+   "note": "Raspberry Pi weather station and the BME280 fix"
+  },
+  {
+   "id": "q026",
+   "qs": [
+    "the meeting with the outside examiner, when is it and what do I need to bring",
+    "committee thing in December"
+   ],
+   "type": "vague",
+   "gold": [
+    "m235"
+   ],
+   "stale": [],
+   "note": "moved to 14 Dec 10:00 (update), report due 7 Dec"
+  },
+  {
+   "id": "q027",
+   "qs": [
+    "what was the plan for the move, who helps and what to carry",
+    "Umzug logistics"
+   ],
+   "type": "vague",
+   "gold": [
+    "m203",
+    "m201"
+   ],
+   "stale": [],
+   "note": "two memories: checklist and van booking"
+  },
+  {
+   "id": "q028",
+   "qs": [
+    "eu-g4-021"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m046"
+   ],
+   "stale": [],
+   "note": "node name"
+  },
+  {
+   "id": "q029",
+   "qs": [
+    "Swisscaution",
+    "Kaution Oerlikon"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m164",
+    "m209",
+    "m203"
+   ],
+   "stale": [],
+   "note": "deposit mentioned in three memories"
+  },
+  {
+   "id": "q030",
+   "qs": [
+    "Vaporfly"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m098",
+    "m205"
+   ],
+   "stale": [],
+   "note": "shoes purchase and mileage"
+  },
+  {
+   "id": "q031",
+   "qs": [
+    "Flexispot"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m113"
+   ],
+   "stale": [],
+   "note": "desk converter"
+  },
+  {
+   "id": "q032",
+   "qs": [
+    "lquota my_share_info"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m065"
+   ],
+   "stale": [],
+   "note": "commands"
+  },
+  {
+   "id": "q033",
+   "qs": [
+    "BME280"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m148"
+   ],
+   "stale": [],
+   "note": "sensor name"
+  },
+  {
+   "id": "q034",
+   "qs": [
+    "14502",
+    "NeurIPS submission number"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m116"
+   ],
+   "stale": [],
+   "note": "submission number"
+  },
+  {
+   "id": "q035",
+   "qs": [
+    "导师对论文里的图有什么格式要求",
+    "Keller 画图 配色 字号"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m045"
+   ],
+   "stale": [],
+   "note": "Chinese question, English memory"
+  },
+  {
+   "id": "q036",
+   "qs": [
+    "Wie hoch ist meine Miete in Oerlikon?",
+    "Miete Studio Birchstrasse"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m164"
+   ],
+   "stale": [
+    "m004"
+   ],
+   "note": "German question"
+  },
+  {
+   "id": "q037",
+   "qs": [
+    "苏黎世马拉松最后成绩多少",
+    "Zurich 马拉松 完赛时间 分段"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m103"
+   ],
+   "stale": [],
+   "note": "Chinese question; 3:24:41"
+  },
+  {
+   "id": "q038",
+   "qs": [
+    "Bis wann kann ich die Franchise der Krankenkasse ändern?",
+    "Franchise wechseln Frist"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m005",
+    "m225"
+   ],
+   "stale": [],
+   "note": "30 November, mentioned in the old and new node"
+  },
+  {
+   "id": "q039",
+   "qs": [
+    "Jonas 复现 LoRA+ 为什么只有百分之四十一",
+    "Jonas 41% 原因"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m058"
+   ],
+   "stale": [],
+   "note": "Chinese question"
+  },
+  {
+   "id": "q040",
+   "qs": [
+    "瓦伦西亚的酒店订了哪几天",
+    "Valencia 酒店 入住 退房"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m195"
+   ],
+   "stale": [],
+   "note": "3-8 Dec after update"
+  },
+  {
+   "id": "q041",
+   "qs": [
+    "What did I run on ImageNet-LT in March and how long did it take?",
+    "March ImageNet-LT result"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m083"
+   ],
+   "stale": [
+    "m229"
+   ],
+   "note": "March 7 run, 31 h; the iNaturalist run is in November"
+  },
+  {
+   "id": "q042",
+   "qs": [
+    "In early December on the old split, which LoRA rank was better for few-shot classes?",
+    "December LoRA rank comparison split v2"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m007",
+    "m008"
+   ],
+   "stale": [
+    "m021"
+   ],
+   "note": "v2 numbers from 2-3 Dec, not the v3 ones from 17 Dec"
+  },
+  {
+   "id": "q043",
+   "qs": [
+    "What went wrong with my back in the second half of March?",
+    "late March back problem"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m090"
+   ],
+   "stale": [
+    "m212"
+   ],
+   "note": "21 March flare; the November one is the confuser"
+  },
+  {
+   "id": "q044",
+   "qs": [
+    "What did I do on the weekend of 14 February?",
+    "February weekend trip with colleagues"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m064"
+   ],
+   "stale": [],
+   "note": "Flumserberg ski weekend"
+  },
+  {
+   "id": "q045",
+   "qs": [
+    "In early October which long run did I do with 12 km at marathon pace?",
+    "October Valencia week with 28 km long run"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m194"
+   ],
+   "stale": [
+    "m179",
+    "m206"
+   ],
+   "note": "week 8; week 4 had 26 km with 8 km MP, week 11 had 30 km"
+  },
+  {
+   "id": "q046",
+   "qs": [
+    "Which reproductions failed in June?",
+    "June paper reproduction results that did not match"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m125",
+    "m129"
+   ],
+   "stale": [],
+   "note": "8 June and 15 June"
+  },
+  {
+   "id": "q047",
+   "qs": [
+    "What is the group's GPU quota on Euler right now?",
+    "current concurrent GPU limit for Keller group"
+   ],
+   "type": "latest",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "update: 16 GPUs (8x40GB + 8x80GB)"
+  },
+  {
+   "id": "q048",
+   "qs": [
+    "How much rent do I pay at the moment?",
+    "current monthly rent"
+   ],
+   "type": "latest",
+   "gold": [
+    "m164"
+   ],
+   "stale": [
+    "m004"
+   ],
+   "note": "CHF 1,480 Oerlikon; old WG 1,150"
+  },
+  {
+   "id": "q049",
+   "qs": [
+    "What is my current gross salary?",
+    "ETH pay per month now"
+   ],
+   "type": "latest",
+   "gold": [
+    "m175"
+   ],
+   "stale": [
+    "m023"
+   ],
+   "note": "5,010 since Sept; old 4,880"
+  },
+  {
+   "id": "q050",
+   "qs": [
+    "When and where is the group meeting now?",
+    "current weekly group meeting slot"
+   ],
+   "type": "latest",
+   "gold": [
+    "m223"
+   ],
+   "stale": [
+    "m089",
+    "m003"
+   ],
+   "note": "Wednesday 11:00 CAB H 53; two earlier slots are stale"
+  },
+  {
+   "id": "q051",
+   "qs": [
+    "Did TailLoRA get accepted at ICML? What is the paper's status?",
+    "TailLoRA ICML decision"
+   ],
+   "type": "latest",
+   "gold": [
+    "m108"
+   ],
+   "stale": [
+    "m054"
+   ],
+   "note": "accepted as poster on 1 May"
+  },
+  {
+   "id": "q052",
+   "qs": [
+    "What is the walltime limit of the standard gpu partition now?",
+    "gpu partition max hours"
+   ],
+   "type": "latest",
+   "gold": [
+    "m193"
+   ],
+   "stale": [
+    "m010"
+   ],
+   "note": "48h since October; old node says 24h (but also holds gpu-long info)"
+  },
+  {
+   "id": "q053",
+   "qs": [
+    "Which Franchise and premium do I have for next year's health insurance?",
+    "Krankenkasse 2027 premium"
+   ],
+   "type": "latest",
+   "gold": [
+    "m225"
+   ],
+   "stale": [
+    "m005"
+   ],
+   "note": "1,500 Franchise, CHF 441"
+  },
+  {
+   "id": "q054",
+   "qs": [
+    "How much tax refund did I end up getting?",
+    "Steuer Rückerstattung final amount"
+   ],
+   "type": "latest",
+   "gold": [
+    "m227"
+   ],
+   "stale": [
+    "m191"
+   ],
+   "note": "CHF 512 final vs 640 expected"
+  },
+  {
+   "id": "q055",
+   "qs": [
+    "Does Priya eat eggs and cheese now?",
+    "Priya diet for dinner planning"
+   ],
+   "type": "latest",
+   "gold": [
+    "m197"
+   ],
+   "stale": [
+    "m101"
+   ],
+   "note": "vegetarian since October"
+  },
+  {
+   "id": "q056",
+   "qs": [
+    "What software environment and torch version do I use on Euler?",
+    "current cluster environment setup"
+   ],
+   "type": "latest",
+   "gold": [
+    "m042"
+   ],
+   "stale": [],
+   "note": "update: uv, torch 2.5.1+cu124, timm 1.0.9"
+  },
+  {
+   "id": "q057",
+   "qs": [
+    "What date was Mom's knee surgery originally planned for?",
+    "first planned date for Mom's meniscus operation"
+   ],
+   "type": "history",
+   "gold": [
+    "m026"
+   ],
+   "stale": [],
+   "note": "originally 12 January, moved to 20 January"
+  },
+  {
+   "id": "q058",
+   "qs": [
+    "What was my original time goal for the Zurich Marathon before I lowered it?",
+    "first marathon goal pace"
+   ],
+   "type": "history",
+   "gold": [
+    "m017"
+   ],
+   "stale": [],
+   "note": "originally sub 3:20 (4:44/km), lowered to 3:25"
+  },
+  {
+   "id": "q059",
+   "qs": [
+    "How many seeds did Keller demand at first?",
+    "earlier seed requirement before the reviews"
+   ],
+   "type": "history",
+   "gold": [
+    "m001"
+   ],
+   "stale": [],
+   "note": "originally 3 seeds, later 5"
+  },
+  {
+   "id": "q060",
+   "qs": [
+    "How many GPUs did the group have before the buy-in?",
+    "old Euler GPU quota"
+   ],
+   "type": "history",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "originally 8 concurrent A100-40GB"
+  },
+  {
+   "id": "q061",
+   "qs": [
+    "What ablations and hyperparameter choices did I settle for TailLoRA?",
+    "TailLoRA design decisions lr, interval, metric"
+   ],
+   "type": "overview",
+   "gold": [
+    "m080",
+    "m043",
+    "m037",
+    "m033"
+   ],
+   "stale": [],
+   "note": "covers a chunk of the CIFAR-100-LT results summary"
+  },
+  {
+   "id": "q062",
+   "qs": [
+    "Summarise what the three ICML reviewers asked for",
+    "ICML 2026 review requests overview"
+   ],
+   "type": "overview",
+   "gold": [
+    "m076",
+    "m077",
+    "m078"
+   ],
+   "stale": [
+    "m214"
+   ],
+   "note": "three near-identical review notes"
+  },
+  {
+   "id": "q063",
+   "qs": [
+    "List the cluster problems I debugged and what fixed them",
+    "Euler war stories"
+   ],
+   "type": "overview",
+   "gold": [
+    "m046",
+    "m105",
+    "m162",
+    "m165"
+   ],
+   "stale": [],
+   "note": "debugging lessons"
+  },
+  {
+   "id": "q064",
+   "qs": [
+    "Everything I have done about my back problem",
+    "back pain treatment and diagnosis history"
+   ],
+   "type": "overview",
+   "gold": [
+    "m016",
+    "m032",
+    "m069",
+    "m177",
+    "m113"
+   ],
+   "stale": [],
+   "note": "health node set"
+  },
+  {
+   "id": "q065",
+   "qs": [
+    "Which trips have I booked for conferences and races?",
+    "travel bookings overview"
+   ],
+   "type": "overview",
+   "gold": [
+    "m118",
+    "m120",
+    "m182",
+    "m196",
+    "m195"
+   ],
+   "stale": [],
+   "note": "travel bookings"
+  },
+  {
+   "id": "q066",
+   "qs": [
+    "Which reproduction attempts did not work out?",
+    "failed reproductions and why"
+   ],
+   "type": "overview",
+   "gold": [
+    "m125",
+    "m129",
+    "m058"
+   ],
+   "stale": [],
+   "note": "reproduction failures"
+  },
+  {
+   "id": "q067",
+   "qs": [
+    "Do the flight and hotel for Seoul fit under the grant cap, and what is not covered?",
+    "Seoul expenses versus Studienstiftung limit"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m146",
+    "m119"
+   ],
+   "stale": [],
+   "note": "needs the cap CHF 1,500 and the costs"
+  },
+  {
+   "id": "q068",
+   "qs": [
+    "Why did the ImageNet-LT run need a special partition and what are its limits?",
+    "long job partition rules and the 31 h run"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m083",
+    "m010"
+   ],
+   "stale": [],
+   "note": "31 h > 24 h; gpu-long 120 h and 2 GPUs"
+  },
+  {
+   "id": "q069",
+   "qs": [
+    "How many ranks go to the last four blocks in TailLoRA out of which total budget?",
+    "rank allocation of late blocks and budget"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m126",
+    "m033"
+   ],
+   "stale": [],
+   "note": "43 of 96"
+  },
+  {
+   "id": "q070",
+   "qs": [
+    "How much WG deposit do I get back and when?",
+    "when is the old room handed over and what comes back"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m006",
+    "m204"
+   ],
+   "stale": [],
+   "note": "CHF 1,150 within two weeks of the 31 Oct handover"
+  },
+  {
+   "id": "q071",
+   "qs": [
+    "What did the ICLR reviewer with score 3 want?",
+    "ICLR negative review, equal budget baselines"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m216"
+   ],
+   "stale": [
+    "m077",
+    "m151"
+   ],
+   "note": "ICLR review 3; other score-3 reviews exist (ICML 2, NeurIPS 3)"
+  },
+  {
+   "id": "q072",
+   "qs": [
+    "What can Marek not eat?",
+    "Marek dinner restrictions"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m102"
+   ],
+   "stale": [
+    "m197"
+   ],
+   "note": "hazelnuts"
+  },
+  {
+   "id": "q073",
+   "qs": [
+    "What am I planning for Mom's birthday?",
+    "Mom birthday plan"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m172"
+   ],
+   "stale": [
+    "m087"
+   ],
+   "note": "9 Sept, Fleurop flowers"
+  },
+  {
+   "id": "q074",
+   "qs": [
+    "How is the Overleaf-mirrored paper repo organised?",
+    "paper repository rules sections macros figures"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m062"
+   ],
+   "stale": [
+    "m061"
+   ],
+   "note": "paper repo not code repo"
+  },
+  {
+   "id": "q075",
+   "qs": [
+    "Result of the DoRA quick test with rank 8",
+    "DoRA few-shot accuracy seed 0"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m049"
+   ],
+   "stale": [
+    "m031"
+   ],
+   "note": "69.4 / 47.9"
+  },
+  {
+   "id": "q076",
+   "qs": [
+    "How much was the early-bird registration for the Vienna workshop?",
+    "Alpine ML Meeting fee"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m152",
+    "m155"
+   ],
+   "stale": [
+    "m114"
+   ],
+   "note": "EUR 190; ICML Seoul fee is a different near-duplicate"
+  },
+  {
+   "id": "q077",
+   "qs": [
+    "What did NeurIPS reviewer 2 ask about the router?",
+    "NeurIPS review that gave an accept"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m150"
+   ],
+   "stale": [
+    "m077",
+    "m215"
+   ],
+   "note": "router collapse question, score 5"
+  },
+  {
+   "id": "q078",
+   "qs": [
+    "Which training plan had the 32 km peak long run at the end of March, and how was fuel handled?",
+    "Zurich 16-week plan long run peak"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m030"
+   ],
+   "stale": [
+    "m163"
+   ],
+   "note": "Zurich plan (peak 32 km, 29 March) vs Valencia plan (34 km, 8 Nov)"
+  },
+  {
+   "id": "q079",
+   "qs": [
+    "What is the name of my cat?",
+    "pet name"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "no pets in the library"
+  },
+  {
+   "id": "q080",
+   "qs": [
+    "What is my car's licence plate?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "no car"
+  },
+  {
+   "id": "q081",
+   "qs": [
+    "What mortgage interest rate did I lock in?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "no mortgage"
+  },
+  {
+   "id": "q082",
+   "qs": [
+    "What's a good hydration for sourdough bread?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "unrelated cooking"
+  },
+  {
+   "id": "q083",
+   "qs": [
+    "What is my favourite band for running playlists?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "not stored"
+  },
+  {
+   "id": "q084",
+   "qs": [
+    "What does Nora do for a living?",
+    "Felix's wife profession"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "topic present (family), fact absent"
+  },
+  {
+   "id": "q085",
+   "qs": [
+    "What is the door code of the new building in Oerlikon?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "was stored and then deleted at the user's request"
+  },
+  {
+   "id": "q086",
+   "qs": [
+    "What is the name of my therapist?",
+    "therapy appointment schedule"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "was stored and then deleted"
+  },
+  {
+   "id": "q087",
+   "qs": [
+    "What is my 5 km personal best?"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "only marathon and half marathon times stored"
+  },
+  {
+   "id": "q088",
+   "qs": [
+    "What did the equal-parameter comparison show in the ICLR rebuttal?",
+    "LoRA r=16 versus CMoE at equal budget result"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "planned but no result stored"
+  }
+ ]
+}

@@ -117,10 +117,17 @@ pub struct HitView {
     pub truncated: bool,
     pub tags: Vec<String>,
     pub occurred: String,
+    /// How many times its text was rewritten: the earlier versions are in its history.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub rewrites: usize,
     /// Summaries above it, nearest first.
     pub path: Vec<Link>,
     /// For a summary: the children that match the question best.
     pub expanded: Vec<Link>,
+}
+
+fn is_zero(n: &usize) -> bool {
+    *n == 0
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -442,6 +449,7 @@ impl Service {
                     truncated: h.truncated,
                     tags: node.map(|n| n.tags.clone()).unwrap_or_default(),
                     occurred: node.map(|n| n.occurred.clone()).unwrap_or_default(),
+                    rewrites: t.history(&h.id).iter().filter(|e| e.op == "update").count(),
                     path: h
                         .path
                         .iter()

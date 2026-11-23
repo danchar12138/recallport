@@ -848,3 +848,6 @@ fn settle(mut events: Vec<Event>) -> Result<Vec<Event>> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod study;

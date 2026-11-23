@@ -484,6 +484,7 @@ async fn memories(State(w): State<Web>, Query(p): Query<HashMap<String, String>>
                     since: from,
                     until: through,
                     tag: tag_filter,
+                    expand: 4,
                     ..SearchOpts::default()
                 });
                 (stats, Some(result), None)
@@ -1250,6 +1251,7 @@ async fn api_search(State(w): State<Web>, Query(p): Query<HashMap<String, String
             .get("scope")
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty()),
+        expand: 0,
         ..SearchOpts::default()
     };
     match w

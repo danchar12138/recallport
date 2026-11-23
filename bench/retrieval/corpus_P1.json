@@ -1,0 +1,3996 @@
+{
+ "persona": "28 岁中文独立开发者，住杭州，做本地优先的桌面笔记应用「墨格」（Tauri + Rust + SQLite）和业余 2D 游戏引擎 Kiln；养一只英短蓝猫年糕，有一台群晖 NAS，Windows 与 Linux 双机切换。",
+ "today": "2026-11-20",
+ "events": [
+  {
+   "op": "write",
+   "key": "m001",
+   "title": "墨格技术栈",
+   "content": "墨格（本地优先的笔记应用）确定用 Tauri 2 + Rust 做桌面端，前端用 Svelte 5。放弃 Electron 的原因是安装包动辄 120MB 以上，而目标用户要的是轻量。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m002",
+   "title": "墨格存储选型",
+   "content": "墨格的本地存储选 rusqlite（开 bundled 特性）而不是 sqlx：笔记应用不需要异步数据库，编译更快，FTS5 开箱可用。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2025-11-26"
+  },
+  {
+   "op": "write",
+   "key": "m003",
+   "title": "现住址与租金",
+   "content": "用户目前住在滨江区长河街道的一居室，月租 3800 元，押一付三，房东陈先生，租约到 2026-03-31。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2025-11-27"
+  },
+  {
+   "op": "write",
+   "key": "m004",
+   "title": "Hetzner 月费",
+   "content": "博客和墨格官网的后端放在 Hetzner CX22（2 vCPU / 4GB）上，Falkenstein 机房，月费 €3.79。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2025-11-28"
+  },
+  {
+   "op": "write",
+   "key": "m005",
+   "title": "",
+   "content": "NAS 是群晖 DS923+，插了 2 块 WD Red Plus 8TB 做 SHR（等效 RAID1），可用空间约 7.2TB，2024 年底买的。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2025-11-30"
+  },
+  {
+   "op": "write",
+   "key": "m006",
+   "title": "年糕基本情况",
+   "content": "用户养了一只英短蓝猫，名叫年糕，公猫，2023 年 3 月出生，已绝育。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m007",
+   "title": "",
+   "content": "今天杭州下了一整天的雨，没出门，在家写代码。",
+   "tags": [],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m008",
+   "title": "编辑器内核选型",
+   "content": "编辑器内核选 CodeMirror 6 而不是 TipTap：笔记以 Markdown 源码为主，CM6 的 decoration 能做实时预览，TipTap 的 schema 太重。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m009",
+   "title": "腾讯云轻量",
+   "content": "腾讯云轻量应用服务器（上海，2 核 2G）用来做国内访问测试和内网穿透，年付 198 元，2026-12-03 到期。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m010",
+   "title": "对 AI 回答的偏好",
+   "content": "用户对 AI 助手的偏好：回答简洁，直接给命令和代码，不要长篇解释；用中文回复，代码注释也写中文。",
+   "tags": [
+    "偏好"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m011",
+   "title": "Windows 白屏根因",
+   "content": "Windows 上 pnpm tauri dev 启动后白屏。根因是系统优化工具把 WebView2 运行时锁在了 119 版本，而 Vite 6 默认的 build target 对它不兼容；把 vite.config 里的 build.target 设成 'chrome105' 后恢复正常。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m012",
+   "title": "moge.app 域名",
+   "content": "moge.app 在 Namecheap 注册，每年 $14.98，2027-03-12 到期，已开自动续费。",
+   "tags": [
+    "域名"
+   ],
+   "occurred": "2025-12-06"
+  },
+  {
+   "op": "write",
+   "key": "m013",
+   "title": "老周的口味",
+   "content": "老周（大学室友，在上海做后端）爱吃辣、不吃香菜，酸菜鱼是他的最爱。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m014",
+   "title": "小林的口味",
+   "content": "小林（前同事，做设计）吃蛋奶素，对虾蟹过敏，喜欢日料里的素食选项和手冲咖啡。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m015",
+   "title": "Claude Pro 订阅",
+   "content": "Claude Pro 订阅 $20/月，每月 8 号用 VISA 扣费，主要用来跑 Claude Code。",
+   "tags": [
+    "订阅"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m016",
+   "title": "1Password 订阅",
+   "content": "1Password Families 年付 $59.88，每年 2 月 17 日扣费，家庭成员里共享给了妈妈。",
+   "tags": [
+    "订阅"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m017",
+   "title": "网易云会员",
+   "content": "网易云音乐黑胶 VIP 连续包月 15 元，每月 21 号扣。",
+   "tags": [
+    "订阅"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m018",
+   "title": "墨格依赖版本",
+   "content": "墨格当前依赖：tauri 2.1.1，rusqlite 0.32.1，serde 1.0.215，Rust 工具链 1.83.0 stable，Node 22.11，pnpm 9.14。",
+   "tags": [
+    "墨格",
+    "依赖版本"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m019",
+   "title": "2025 年体检",
+   "content": "2025-12-10 在爱康国宾（武林广场店）做了年度体检，花费 1280 元。尿酸 452 μmol/L（偏高，正常 <420），甘油三酯 2.1 mmol/L，其余指标正常，体重 78kg。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m020",
+   "title": "",
+   "content": "同一次体检的 B 超显示轻度脂肪肝，医生建议减重 5kg 左右、少喝酒、少吃夜宵，半年后复查。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m021",
+   "title": "提交信息规范",
+   "content": "代码和提交信息里不要出现 emoji；提交信息用 Conventional Commits 格式，描述部分写中文。",
+   "tags": [
+    "偏好"
+   ],
+   "occurred": "2025-12-11"
+  },
+  {
+   "op": "write",
+   "key": "m022",
+   "title": "locked 报错复盘",
+   "content": "墨格在 Linux 上偶发 `database is locked`（SQLITE_BUSY）的复盘：现象是后台索引任务和用户保存笔记同时发生时，约每 200 次保存失败 1 次。根因有两个：一是连接用默认的 DELETE journal 模式，读写互斥；二是没设 busy_timeout，遇锁立刻报错。修复：启动时执行 PRAGMA journal_mode=WAL、busy_timeout=5000、synchronous=NORMAL，并把所有写操作收敛到一个独立写线程，通过 mpsc channel 排队，读操作另开 4 个只读连接。验证：200 线程并发写压测跑 30 分钟零失败，WAL 文件峰值 48MB，退出时 checkpoint 回收。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m023",
+   "title": "年糕的猫粮",
+   "content": "年糕吃皇家（Royal Canin）英短成猫粮 BS34，10kg 装约 398 元，大概 5 周吃完一袋，在天猫旗舰店买。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2025-12-14"
+  },
+  {
+   "op": "write",
+   "key": "m024",
+   "title": "台式机配置",
+   "content": "Windows 台式机配置：Ryzen 7 7800X3D、32GB DDR5-6000、RTX 4070 12GB、三星 990 Pro 2TB。",
+   "tags": [
+    "硬件"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m025",
+   "title": "",
+   "content": "ThinkPad T14 Gen 5（AMD 7840U，16GB 内存）装 Ubuntu 24.04，出差和去咖啡馆用。",
+   "tags": [
+    "硬件"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m026",
+   "title": "主力编辑器",
+   "content": "主力编辑器是 VS Code，搭配 rust-analyzer 和 Svelte 官方插件；clippy 只开 clippy::all，pedantic 太吵。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2025-12-16"
+  },
+  {
+   "op": "write",
+   "key": "m027",
+   "title": "Kiln 引擎简介",
+   "content": "业余项目 Kiln 是用 Rust + wgpu 写的 2D 小游戏引擎，ECS 用自己写的 archetype 存储而不用 bevy_ecs，主要目的是学习。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2025-12-18"
+  },
+  {
+   "op": "write",
+   "key": "m028",
+   "title": "",
+   "content": "终端环境：Windows 上用 Windows Terminal + PowerShell 7 + starship，Linux 上用 Alacritty + zsh。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2025-12-19"
+  },
+  {
+   "op": "write",
+   "key": "m029",
+   "title": "Kiln 域名",
+   "content": "kiln-engine.dev 在 Cloudflare Registrar 注册，每年 $12.18，2026-12-20 到期。",
+   "tags": [
+    "域名"
+   ],
+   "occurred": "2025-12-20"
+  },
+  {
+   "op": "write",
+   "key": "m030",
+   "title": "",
+   "content": "12 月 21 日和老周、小林在武林路的绿茶餐厅聚餐，人均 85 元；老周特意叮嘱服务员不要放香菜，小林点的是素菜和豆腐。",
+   "tags": [
+    "朋友",
+    "饭局"
+   ],
+   "occurred": "2025-12-21"
+  },
+  {
+   "op": "write",
+   "key": "m031",
+   "title": "link.exe 冲突",
+   "content": "Windows 下 cargo build 报 `link: extra operand`，原因是 Git for Windows 的 usr\\bin\\link.exe 排在 MSVC 的 link.exe 前面。把 Git 的 usr\\bin 从 PATH 里去掉，或用 x64 Native Tools 命令行，问题消失。",
+   "tags": [
+    "bug",
+    "Windows"
+   ],
+   "occurred": "2025-12-22"
+  },
+  {
+   "op": "write",
+   "key": "m032",
+   "title": "",
+   "content": "国内拉 crates 用 rsproxy.cn 的 sparse 源（sparse+https://rsproxy.cn/index/），配在 ~/.cargo/config.toml，Linux 和 Windows 各配一份。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2025-12-23"
+  },
+  {
+   "op": "write",
+   "key": "m033",
+   "title": "",
+   "content": "平安夜没出门，窝在家把墨格的 CI 修好了，有点孤单。",
+   "tags": [],
+   "occurred": "2025-12-24"
+  },
+  {
+   "op": "write",
+   "key": "m034",
+   "title": "水电燃气费",
+   "content": "滨江这套房的租约规定水电燃气另付，电费 0.63 元/度，水费 4.1 元/吨，物业费房东出。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2025-12-28"
+  },
+  {
+   "op": "write",
+   "key": "m035",
+   "title": "",
+   "content": "用户的招商银行信用卡尾号 3306，额度 50000 元。",
+   "tags": [
+    "金额"
+   ],
+   "occurred": "2025-12-29"
+  },
+  {
+   "op": "write",
+   "key": "m036",
+   "title": "12 月云与订阅开销",
+   "content": "2025 年 12 月云服务和订阅合计约 207 元：Hetzner €3.79（约 30 元）、腾讯云折算 16.5 元、Claude Pro $20（约 145 元）、网易云黑胶 15 元。",
+   "tags": [
+    "开销"
+   ],
+   "occurred": "2025-12-31"
+  },
+  {
+   "op": "write",
+   "key": "m037",
+   "title": "2026 年度计划",
+   "content": "2026 年度计划：1）墨格 v0.3 在 3 月底发布，年底前做到 v0.4（插件系统 + 手机端调研）；2）Kiln 做出第一个可玩的 demo 并上 itch.io；3）体重从 78kg 降到 72kg，每周力量训练 3 次；4）存款攒到 30 万（目前约 18.5 万），每月定投 2000 元；5）学日语，7 月考 JLPT N5；6）至少参加两次线下 Rust meetup 并做一次分享；7）外包每月不超过 2 个，保证每周至少 3 天完整的自己项目时间。",
+   "tags": [
+    "计划"
+   ],
+   "occurred": "2026-01-02"
+  },
+  {
+   "op": "write",
+   "key": "m038",
+   "title": "Kiln 依赖版本",
+   "content": "Kiln 当前依赖 wgpu 22.1.0 和 winit 0.30.5；wgpu 23 起 Surface 相关 API 有改动，暂时不升级。",
+   "tags": [
+    "Kiln",
+    "依赖版本"
+   ],
+   "occurred": "2026-01-03"
+  },
+  {
+   "op": "write",
+   "key": "m039",
+   "title": "DNS 与托管",
+   "content": "DNS 全部托管在 Cloudflare（免费计划）；墨格官网静态页走 Cloudflare Pages，Hetzner 上只跑 API 和同步网关。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2026-01-05"
+  },
+  {
+   "op": "delete",
+   "key": "m035",
+   "occurred": "2026-01-05"
+  },
+  {
+   "op": "write",
+   "key": "m040",
+   "title": "减重目标",
+   "content": "减重目标：2026-06 前体重从 78kg 降到 72kg（身高 176cm），主要靠每周 3 次力量训练和控制夜宵。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-01-06"
+  },
+  {
+   "op": "write",
+   "key": "m041",
+   "title": "同步冲突策略",
+   "content": "墨格同步的冲突策略决定用按字段时间戳的 LWW（last-write-wins），不上 CRDT（yrs）：单人多设备场景冲突极少，实测 yrs 会让数据库体积从 12MB 涨到 38MB。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "write",
+   "key": "m042",
+   "title": "年糕疫苗",
+   "content": "年糕 2026-01-09 在文三路的安安宠物医院打了猫三联和狂犬疫苗，共 260 元，下次加强针在 2027-01。",
+   "tags": [
+    "猫",
+    "健康"
+   ],
+   "occurred": "2026-01-09"
+  },
+  {
+   "op": "write",
+   "key": "m043",
+   "title": "开源协议选择",
+   "content": "墨格的开源协议选 MPL-2.0 而不是 MIT，防止被闭源商用改版直接套壳；Kiln 则用 MIT / Apache-2.0 双协议。",
+   "tags": [
+    "技术决策"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m044",
+   "title": "基金定投",
+   "content": "每月 15 日在支付宝定投沪深 300 ETF 联接，每次 2000 元。",
+   "tags": [
+    "理财"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "write",
+   "key": "m045",
+   "title": "存款目标",
+   "content": "2026 年底的存款目标是 30 万，截至 2026-01 约 18.5 万。",
+   "tags": [
+    "理财"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "write",
+   "key": "m046",
+   "title": "",
+   "content": "moge.app 的收件用 Cloudflare Email Routing 转发到 Gmail，设了 support@ 和 hi@ 两个别名。",
+   "tags": [
+    "域名"
+   ],
+   "occurred": "2026-01-13"
+  },
+  {
+   "op": "write",
+   "key": "m047",
+   "title": "取消 ChatGPT Plus",
+   "content": "取消了 ChatGPT Plus（$20/月），因为 Claude Pro 已经够用；最后一次扣费是 2026-01-14。",
+   "tags": [
+    "订阅"
+   ],
+   "occurred": "2026-01-14"
+  },
+  {
+   "op": "write",
+   "key": "m048",
+   "title": "同步传输层",
+   "content": "墨格同步的传输层先只支持 WebDAV（对接群晖 NAS 的 WebDAV Server，端口 5006），S3 兼容留到 v0.4 之后再说。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-01-15"
+  },
+  {
+   "op": "write",
+   "key": "m049",
+   "title": "启明教育外包",
+   "content": "接了启明教育的外包：桌面端课件播放器的 Tauri 打包与自动更新，报价 18000 元，分两期，首付 50%，对接人王老师。",
+   "tags": [
+    "外包"
+   ],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m050",
+   "title": "",
+   "content": "今天状态很好，一口气把设置页写完了。",
+   "tags": [],
+   "occurred": "2026-01-18"
+  },
+  {
+   "op": "write",
+   "key": "m051",
+   "title": "服务器 SSH 加固",
+   "content": "Hetzner 服务器的 SSH 只允许密钥登录，端口改成 22022，装了 fail2ban，用默认配置。",
+   "tags": [
+    "云服务",
+    "安全"
+   ],
+   "occurred": "2026-01-19"
+  },
+  {
+   "op": "write",
+   "key": "m052",
+   "title": "同步加密方案",
+   "content": "同步数据用 XChaCha20-Poly1305 加密，密钥由用户口令经 Argon2id（内存 64MB、迭代 3、并行 1）派生，服务端（NAS）只存密文。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-01-20"
+  },
+  {
+   "op": "write",
+   "key": "m053",
+   "title": "健身房",
+   "content": "在滨江办了乐刻运动的月卡，169 元/月，离家步行 8 分钟，周一三五去。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-01-20"
+  },
+  {
+   "op": "write",
+   "key": "m054",
+   "title": "",
+   "content": "Kiln 在 Linux Vulkan 下报 `Surface lost`，根因是窗口最小化后 size 变成 0x0，resize 时没有重新 configure surface。加了 if size.width == 0 || size.height == 0 { return } 解决。",
+   "tags": [
+    "Kiln",
+    "bug"
+   ],
+   "occurred": "2026-01-22"
+  },
+  {
+   "op": "write",
+   "key": "m055",
+   "title": "妈妈的信息",
+   "content": "妈妈住在宁波，生日是 8 月 14 日，今年满 60 岁，喜欢绿植和越剧。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2026-01-24"
+  },
+  {
+   "op": "write",
+   "key": "m056",
+   "title": "爸爸的信息",
+   "content": "爸爸生日是 11 月 3 日，已退休，爱钓鱼，血压偏高在吃氨氯地平。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2026-01-24"
+  },
+  {
+   "op": "write",
+   "key": "m057",
+   "title": "",
+   "content": "编译加速：Windows 用 sccache + lld-link，Linux 用 mold 2.34；cargo check 从 41 秒降到 12 秒。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2026-01-26"
+  },
+  {
+   "op": "write",
+   "key": "m058",
+   "title": "",
+   "content": "DS923+ 加装了一条 Crucial 16GB DDR4 ECC 内存（总共 20GB），花了 480 元，为了多跑几个 Docker 容器。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2026-01-27"
+  },
+  {
+   "op": "write",
+   "key": "m059",
+   "title": "",
+   "content": "Svelte 5 里用 $effect 同步状态导致无限循环：effect 内既读又写同一个 $state。改用 $derived 计算，或在 effect 里用 untrack 包住写入。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-01-28"
+  },
+  {
+   "op": "write",
+   "key": "m060",
+   "title": "黄山计划",
+   "content": "打算 5 月 1 日到 5 日去黄山，已订宏村的民宿，420 元/晚住 2 晚，山上的住宿还没订。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-01-31"
+  },
+  {
+   "op": "write",
+   "key": "m061",
+   "title": "NAS 异地备份",
+   "content": "NAS 的异地备份用 Backblaze B2，桶名 nas-offsite-2026，目前存了约 1.8TB，按 $6/TB/月约 $10.8/月，群晖 Hyper Backup 每晚 2 点增量。",
+   "tags": [
+    "NAS",
+    "备份"
+   ],
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "write",
+   "key": "m062",
+   "title": "v0.3 发布计划",
+   "content": "墨格 v0.3 的范围：全文搜索、标签、同步 beta；计划 2026-03-31 发布。",
+   "tags": [
+    "墨格",
+    "计划"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "write",
+   "key": "m063",
+   "title": "备份保留策略",
+   "content": "Hyper Backup 的保留策略：30 天内保留每日版本，之后每周保留一个，最多 60 个版本；备份任务开了客户端加密，密钥另存在 1Password。",
+   "tags": [
+    "NAS",
+    "备份"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "write",
+   "key": "m064",
+   "title": "",
+   "content": "力量训练用 StrongLifts 5x5：周一、三、五，深蹲从 60kg 起步，每次加 2.5kg。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-02-04"
+  },
+  {
+   "op": "write",
+   "key": "m065",
+   "title": "",
+   "content": "Tauri updater 的签名密钥用 `tauri signer generate` 生成，私钥放在 1Password，公钥写进 tauri.conf.json 的 plugins.updater.pubkey。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-02-05"
+  },
+  {
+   "op": "write",
+   "key": "m066",
+   "title": "",
+   "content": "Kiln 精灵批渲染基准：10 万个精灵，在 Windows 台式机（RTX 4070）上跑 144fps，是垂直同步上限。",
+   "tags": [
+    "Kiln",
+    "性能"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m067",
+   "title": "",
+   "content": "同一个精灵批渲染基准在 ThinkPad T14（Linux，AMD 780M 核显）上只有 38fps，瓶颈在 instance buffer 上传。",
+   "tags": [
+    "Kiln",
+    "性能"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m068",
+   "title": "看房 A 古翠新村",
+   "content": "看房 A：西湖区文三路古翠新村一居室，月租 4200 元，步行 6 分钟到地铁 2 号线，有电梯，朝南。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-02-08"
+  },
+  {
+   "op": "write",
+   "key": "m069",
+   "title": "看房 B 星耀城",
+   "content": "看房 B：滨江区星耀城旁边的老小区一居室，月租 3600 元，没电梯、在 6 楼，离现在住的地方更近。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-02-08"
+  },
+  {
+   "op": "write",
+   "key": "m070",
+   "title": "FTS5 中文搜索",
+   "content": "FTS5 搜不到中文：默认的 unicode61 分词器不会切中文。方案是写入前用 jieba-rs 切词，用空格拼起来再入 FTS 表，查询时同样先分词。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-02-10"
+  },
+  {
+   "op": "summary",
+   "key": "s01",
+   "title": "墨格核心选型",
+   "content": "墨格（Tauri 2 + Rust + Svelte 5）的核心选型已经定下：本地存储 rusqlite（bundled，带 FTS5），编辑器内核 CodeMirror 6，同步用字段级 LWW 而非 CRDT，传输先走 WebDAV，数据端到端加密（XChaCha20-Poly1305 + Argon2id）。v0.3 计划 2026-03-31 发布，范围是全文搜索、标签和同步 beta。",
+   "adopt": [
+    "m001",
+    "m002",
+    "m008",
+    "m041",
+    "m048",
+    "m052",
+    "m062"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m071",
+   "title": "年糕的习性",
+   "content": "年糕不喜欢被抱，爱睡在显示器后面的支架上；对三文鱼冻干特别狂热，听到包装袋的声音就跑过来。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m072",
+   "title": "春节回宁波",
+   "content": "春节 2 月 13 日回宁波，待到 2 月 22 日；给爸妈各包了 2000 元红包，带了知味观的点心。",
+   "tags": [
+    "家人",
+    "春节"
+   ],
+   "occurred": "2026-02-13"
+  },
+  {
+   "op": "write",
+   "key": "m073",
+   "title": "",
+   "content": "情人节一个人在家煮了面，顺便给年糕开了罐头。",
+   "tags": [],
+   "occurred": "2026-02-14"
+  },
+  {
+   "op": "write",
+   "key": "m074",
+   "title": "不用 SQLCipher",
+   "content": "评估过用 SQLCipher 加密墨格的本地数据库，最后放弃：bundled 构建在 Windows 上很麻烦，而且依赖系统磁盘加密加同步时的端到端加密已经够用。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-02-16"
+  },
+  {
+   "op": "write",
+   "key": "m075",
+   "title": "",
+   "content": "墨格导入 5 万条笔记的基准：首次全量索引 14.2 秒，增量索引约 3ms/条，内存峰值 310MB。",
+   "tags": [
+    "墨格",
+    "性能"
+   ],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m076",
+   "title": "rusqlite 的 issue",
+   "content": "给 rusqlite 提了一个 issue，希望暴露 FTS5 自定义 tokenizer 的注册接口；维护者回复说欢迎提 PR，但要先确认 bundled 构建的 feature 开关。",
+   "tags": [
+    "开源"
+   ],
+   "occurred": "2026-02-20"
+  },
+  {
+   "op": "write",
+   "key": "m077",
+   "title": "NAS 的 IP",
+   "content": "家里路由器是 Redmi AX6000，NAS 固定 IP 是 192.168.31.20，DHCP 里做了静态绑定。",
+   "tags": [
+    "NAS",
+    "网络"
+   ],
+   "occurred": "2026-02-21"
+  },
+  {
+   "op": "write",
+   "key": "m078",
+   "title": "NAS 容器清单",
+   "content": "NAS 上跑的 Docker 容器：Jellyfin、Uptime Kuma、Woodpecker（server + agent），Immich 还在评估。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m079",
+   "title": "",
+   "content": "NAS 管理员账号 admin_hz 的临时密码是 Nas#2026hz，装好之后要改掉。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m080",
+   "title": "Kiln 音频库",
+   "content": "Kiln 的音频库选 kira 而不是 rodio，因为 kira 支持精确的时钟同步和 tween。",
+   "tags": [
+    "Kiln",
+    "技术决策"
+   ],
+   "occurred": "2026-02-25"
+  },
+  {
+   "op": "write",
+   "key": "m081",
+   "title": "尿酸饮食建议",
+   "content": "医生对尿酸偏高的建议：每天喝水 2L 以上，少吃内脏、浓肉汤和啤酒，暂不吃药，三个月后复测。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-02-26"
+  },
+  {
+   "op": "write",
+   "key": "m082",
+   "title": "",
+   "content": "咖啡限制：下午 2 点之后不喝，每天最多 2 杯，因为睡眠本来就偏浅。",
+   "tags": [
+    "健康",
+    "偏好"
+   ],
+   "occurred": "2026-02-27"
+  },
+  {
+   "op": "summary",
+   "key": "s06",
+   "title": "NAS 与家庭网络",
+   "content": "家里的 NAS 是群晖 DS923+，两块 8TB 盘做 SHR，内存扩到 20GB，上面跑 Jellyfin、Uptime Kuma、Woodpecker；路由器 Redmi AX6000，NAS 固定 IP 192.168.31.20。",
+   "adopt": [
+    "m005",
+    "m058",
+    "m078",
+    "m077"
+   ],
+   "occurred": "2026-02-28"
+  },
+  {
+   "op": "summary",
+   "key": "s05",
+   "title": "订阅与会员",
+   "content": "目前的固定订阅：Claude Pro $20/月（每月 8 号扣）、1Password Families $59.88/年（2 月 17 日续）、网易云黑胶 15 元/月；ChatGPT Plus 已在 1 月取消。",
+   "adopt": [
+    "m015",
+    "m016",
+    "m017",
+    "m047"
+   ],
+   "occurred": "2026-03-01"
+  },
+  {
+   "op": "delete",
+   "key": "m079",
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "write",
+   "key": "m083",
+   "title": "",
+   "content": "用 Garmin 记录睡眠，平均 6 小时 40 分，目标是 7.5 小时；深睡比例偏低，最近在尝试 24 点前上床。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "write",
+   "key": "m084",
+   "title": "代码签名",
+   "content": "Windows 安装包的代码签名：买不起 EV 证书，先申请 Azure Trusted Signing（$9.99/月），审批要求个人开发者做身份验证，还在等结果。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-03-04"
+  },
+  {
+   "op": "write",
+   "key": "m085",
+   "title": "年糕泌尿问题",
+   "content": "年糕查出下泌尿道有鸟粪石结晶，医生建议多喝水、吃处方粮 Hill's c/d，4 月复查。",
+   "tags": [
+    "猫",
+    "健康"
+   ],
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m086",
+   "title": "",
+   "content": "常去的咖啡店是文三路的目的地咖啡，手冲一杯 38 元；自己在家用 1Zpresso JX 磨豆机。",
+   "tags": [
+    "爱好"
+   ],
+   "occurred": "2026-03-07"
+  },
+  {
+   "op": "update",
+   "key": "m005",
+   "content": "NAS 是群晖 DS923+，现在插了 3 块 WD Red Plus 8TB 做 SHR（单盘冗余），可用空间约 14.5TB；第三块是 2026-03-08 加的，花了 1299 元。",
+   "title": "",
+   "occurred": "2026-03-08"
+  },
+  {
+   "op": "write",
+   "key": "m087",
+   "title": "日语学习目标",
+   "content": "开始学日语：用 Duolingo 加《标准日本语》初级上，每天 30 分钟，目标是 2026-07-05 考 JLPT N5。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-03-10"
+  },
+  {
+   "op": "write",
+   "key": "m088",
+   "title": "",
+   "content": "墨格暂时不做 macOS 版本：没有 Apple 开发者账号（$99/年），也没有 Mac 做测试，目前只发 Windows 和 Linux（AppImage + deb）。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m089",
+   "title": "",
+   "content": "Kiln 的美术资源超过了 GitHub LFS 的 1GB 免费额度，迁到了 NAS 上自建的 Gitea（端口 3000），源码仍然留在 GitHub。",
+   "tags": [
+    "Kiln",
+    "NAS"
+   ],
+   "occurred": "2026-03-13"
+  },
+  {
+   "op": "write",
+   "key": "m090",
+   "title": "",
+   "content": "老周 3 月跳槽去了美团（上海），薪资涨了大约三成，做的是后端基础设施。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "write",
+   "key": "m091",
+   "title": "",
+   "content": "老周向用户借了 20000 元，说 6 月底前还。",
+   "tags": [
+    "朋友",
+    "金额"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "write",
+   "key": "m092",
+   "title": "",
+   "content": "软件管理：Windows 用 Scoop，Linux 用 apt，语言和 Node 版本用 mise 统一管理，两边都用同一份 .mise.toml。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2026-03-15"
+  },
+  {
+   "op": "write",
+   "key": "m093",
+   "title": "力量训练进度",
+   "content": "目前力量水平：深蹲 5x5 做到 85kg，卧推 60kg，硬拉 100kg。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-03-16"
+  },
+  {
+   "op": "write",
+   "key": "m094",
+   "title": "",
+   "content": "Kiln 的 2D 物理决定接 rapier2d 0.22，不自己写碰撞检测。",
+   "tags": [
+    "Kiln",
+    "技术决策"
+   ],
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "update",
+   "key": "m062",
+   "content": "墨格 v0.3 发布推迟到 2026-04-30：同步 beta 的冲突测试没跑完，原定 3 月 31 日的版本来不及。范围不变：全文搜索、标签、同步 beta。",
+   "title": "v0.3 发布计划",
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m095",
+   "title": "蓝鲸科技外包",
+   "content": "蓝鲸科技（深圳）的外包：用 Rust 写一个 CSV 清洗命令行工具，报价 9600 元，7 天交付，对接人李工。",
+   "tags": [
+    "外包"
+   ],
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m096",
+   "title": "",
+   "content": "Hetzner 服务器开了每日自动备份，加收 20%，约 €0.76/月。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2026-03-22"
+  },
+  {
+   "op": "write",
+   "key": "m097",
+   "title": "",
+   "content": "每周日备餐：鸡胸肉加西兰花，够一周 5 天的午餐，折合每餐约 18 元，为了控制体重。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-03-22"
+  },
+  {
+   "op": "write",
+   "key": "m098",
+   "title": "开始跑步",
+   "content": "开始跑步：每周二、六各 5 公里，配速约 6'20\"/km，买了 Garmin Forerunner 165（1980 元）。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-03-24"
+  },
+  {
+   "op": "write",
+   "key": "m099",
+   "title": "2025 年收入与个税",
+   "content": "2025 年度个税汇算：自由职业加外包总收入约 236000 元，已缴个税 18450 元，汇算后退税 1230 元。",
+   "tags": [
+    "金额"
+   ],
+   "occurred": "2026-03-25"
+  },
+  {
+   "op": "write",
+   "key": "m100",
+   "title": "",
+   "content": "在看 Jon Gjengset 的 Crust of Rust 系列，看完了 lifetimes 和 atomics 两集，下一集打算看 channels。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-03-26"
+  },
+  {
+   "op": "write",
+   "key": "m101",
+   "title": "",
+   "content": "表弟小宇今年高考想报计算机，用户答应把闲置的旧笔记本送给他。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2026-03-27"
+  },
+  {
+   "op": "write",
+   "key": "m102",
+   "title": "莫干山周末",
+   "content": "3 月 29 日周末去莫干山，住山里的民宿一晚 1350 元，当天徒步 12 公里，油菜花刚好开了。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-03-29"
+  },
+  {
+   "op": "write",
+   "key": "m103",
+   "title": "",
+   "content": "Windows 和 Linux 之间共享文件放 NAS 的 SMB 共享目录，不用 NTFS 分区，因为 Linux 下 ntfs3 偶尔掉盘。",
+   "tags": [
+    "NAS",
+    "开发环境"
+   ],
+   "occurred": "2026-03-30"
+  },
+  {
+   "op": "summary",
+   "key": "s04",
+   "title": "云服务与域名",
+   "content": "云上资产：Hetzner CX22 月费 €3.79（博客、官网后端），腾讯云轻量年付 198 元（2026-12-03 到期），moge.app 每年 $14.98（2027-03 到期），kiln-engine.dev 每年 $12.18（2026-12-20 到期），NAS 异地备份走 Backblaze B2 约 $10.8/月。",
+   "adopt": [
+    "m004",
+    "m009",
+    "m012",
+    "m029",
+    "m061"
+   ],
+   "occurred": "2026-03-30"
+  },
+  {
+   "op": "write",
+   "key": "m104",
+   "title": "搬家清单",
+   "content": "搬家清单（4 月 5 日）：货拉拉预约好了 260 元；NAS 不拆盘，关机后整机自己抱；路由器和光猫带走，旧宽带要提前退；年糕用航空箱，最后一趟带；退租要提前通知房东陈先生并抄水电燃气表；新家入住当天先拍照留证，记录墙面和家电的原有损坏；搬完先接通网络，再把 NAS 开机检查 SHR 状态是否正常；旧家押金 3800 元约定 4 月 12 日退还。",
+   "tags": [
+    "搬家",
+    "计划"
+   ],
+   "occurred": "2026-03-31"
+  },
+  {
+   "op": "update",
+   "key": "m018",
+   "content": "墨格当前依赖：tauri 2.4.0，rusqlite 0.33.0，serde 1.0.219，Rust 工具链 1.86.0 stable，Node 22.12 LTS，pnpm 9.15。",
+   "title": "墨格依赖版本",
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "delete",
+   "key": "m091",
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "update",
+   "key": "m004",
+   "content": "Hetzner 4 月 1 日起涨价，CX22（2 vCPU / 4GB，Falkenstein）月费从 €3.79 涨到 €4.59；博客和墨格官网后端继续放在这台。",
+   "title": "Hetzner 月费",
+   "occurred": "2026-04-03"
+  },
+  {
+   "op": "write",
+   "key": "m105",
+   "title": "",
+   "content": "Windows 上 pnpm install 报 EPERM: operation not permitted, symlink：原因是没开开发者模式；在设置里打开开发者模式（或用管理员终端）就好了。",
+   "tags": [
+    "bug",
+    "Windows"
+   ],
+   "occurred": "2026-04-04"
+  },
+  {
+   "op": "write",
+   "key": "m106",
+   "title": "现住址与租金",
+   "content": "用户搬进了西湖区文三路的古翠新村一居室，月租 4200 元，押二付一，租约 2026-04-05 到 2027-04-04，房东是赵女士。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-05",
+   "supersedes": "m003"
+  },
+  {
+   "op": "write",
+   "key": "m107",
+   "title": "搬家当天",
+   "content": "4 月 5 日搬家：货拉拉 260 元，加上给师傅的 100 元辛苦费；NAS 整机自己抱，年糕全程在航空箱里叫了一路。",
+   "tags": [
+    "搬家"
+   ],
+   "occurred": "2026-04-05"
+  },
+  {
+   "op": "write",
+   "key": "m108",
+   "title": "",
+   "content": "新家换了华硕 RT-AX88U 路由器，NAS 的固定 IP 改成了 192.168.50.20。",
+   "tags": [
+    "NAS",
+    "网络"
+   ],
+   "occurred": "2026-04-06",
+   "supersedes": "m077"
+  },
+  {
+   "op": "write",
+   "key": "m109",
+   "title": "新家宽带",
+   "content": "新家办了中国电信 500M 宽带，一年 1199 元，光猫改桥接，路由器拨号。",
+   "tags": [
+    "网络"
+   ],
+   "occurred": "2026-04-06"
+  },
+  {
+   "op": "write",
+   "key": "m110",
+   "title": "",
+   "content": "灵活就业的社保从支付宝城市服务缴，杭州养老加医疗每月约 1260 元。",
+   "tags": [
+    "金额"
+   ],
+   "occurred": "2026-04-08"
+  },
+  {
+   "op": "write",
+   "key": "m111",
+   "title": "",
+   "content": "Kiln 的第一个 demo 是弹幕射击《Starfall》，关卡数据用 RON 格式存储。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-04-09"
+  },
+  {
+   "op": "update",
+   "key": "m085",
+   "content": "年糕 4 月 10 日复查，尿检里的鸟粪石结晶已经消失；处方粮 Hill's c/d 再吃满 2 个月，之后可以换回普通粮。最初（3 月 5 日）查出的是下泌尿道鸟粪石结晶。",
+   "title": "年糕泌尿问题",
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m112",
+   "title": "",
+   "content": "搬家后换成乐刻运动文三路店，办了年卡 1380 元，有效期 2026-04-12 到 2027-04-11，离家 500 米。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-04-12",
+   "supersedes": "m053"
+  },
+  {
+   "op": "write",
+   "key": "m113",
+   "title": "旧房押金",
+   "content": "旧房押金 3800 元由陈先生 4 月 12 日退回，扣了 150 元保洁费。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m114",
+   "title": "Wayland 窗口闪烁",
+   "content": "墨格在 Ubuntu 24.04 + Wayland 下窗口闪烁、拖拽卡顿，根因是 WebKitGTK 2.44 的 DMA-BUF 渲染问题，设置环境变量 WEBKIT_DISABLE_DMABUF_RENDERER=1 解决。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-04-15"
+  },
+  {
+   "op": "write",
+   "key": "m115",
+   "title": "小林的婚礼",
+   "content": "小林要结婚了，婚礼定在 2026-10-01，苏州金鸡湖边；用户打算随礼 1888 元。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-04-18"
+  },
+  {
+   "op": "write",
+   "key": "m116",
+   "title": "Keychron Q1 Pro",
+   "content": "买了 Keychron Q1 Pro 红轴机械键盘，1099 元，用在 Windows 台式机上。",
+   "tags": [
+    "购物",
+    "硬件"
+   ],
+   "occurred": "2026-04-20"
+  },
+  {
+   "op": "summary",
+   "key": "s13",
+   "title": "租房与搬家",
+   "content": "用户在 2026-04-05 从滨江的 3800 元/月一居搬到了西湖区古翠新村（月租 4200，有电梯、近地铁 2 号线）；搬家前对比过滨江星耀城的老小区（3600 元但无电梯）。搬家当天货拉拉 260 元，旧房押金 4 月 12 日退回。",
+   "adopt": [
+    "m068",
+    "m069",
+    "m106",
+    "m107",
+    "m113"
+   ],
+   "occurred": "2026-04-20"
+  },
+  {
+   "op": "write",
+   "key": "m117",
+   "title": "代码签名更新",
+   "content": "Azure Trusted Signing 的个人开发者申请被拒（中国区不支持身份验证），改申请 SignPath Foundation 的开源免费签名计划；通过前先发未签名版本。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-04-22",
+   "supersedes": "m084"
+  },
+  {
+   "op": "write",
+   "key": "m118",
+   "title": "Tauri 的 PR",
+   "content": "向 tauri-apps/plugins-workspace 提交了 PR，修复 updater 在 Linux AppImage 下载后丢失可执行权限的问题，4 月 23 日已被合并。",
+   "tags": [
+    "开源"
+   ],
+   "occurred": "2026-04-23"
+  },
+  {
+   "op": "write",
+   "key": "m119",
+   "title": "",
+   "content": "下班后去西湖边走了一圈，天气很好，心情不错。",
+   "tags": [],
+   "occurred": "2026-04-26"
+  },
+  {
+   "op": "write",
+   "key": "m120",
+   "title": "Immich 迁移复盘",
+   "content": "Google Photos 迁移到 Immich 的复盘：Takeout 导出 420GB，分成 38 个 zip，图片和元数据 JSON 是分开的，直接导入会丢拍摄时间；后来用 immich-go 把 JSON 合并回去才还原。导入跑了 3 天，转码把 DS923+ 的 Ryzen R1600 吃满，期间临时停掉了 Jellyfin。最终导入 38214 张，缺了约 120 个 Live Photo 的视频部分，不打算补。之后设置了每周日凌晨 3 点的数据库备份任务。",
+   "tags": [
+    "NAS",
+    "复盘"
+   ],
+   "occurred": "2026-04-26"
+  },
+  {
+   "op": "write",
+   "key": "m121",
+   "title": "迁移到 Immich",
+   "content": "照片从 Google Photos 迁到 NAS 上的 Immich，约 38000 张、420GB，Immich 版本 v1.121。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2026-04-27"
+  },
+  {
+   "op": "write",
+   "key": "m122",
+   "title": "",
+   "content": "启明教育的二期尾款 9000 元 4 月 28 日已到账，一期首付 9000 元之前已收。",
+   "tags": [
+    "外包",
+    "金额"
+   ],
+   "occurred": "2026-04-28"
+  },
+  {
+   "op": "write",
+   "key": "m123",
+   "title": "",
+   "content": "4 月 30 日在社区医院复测：尿酸 438 μmol/L，仍偏高；甘油三酯 1.7 mmol/L，比去年体检的 2.1 好一些。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-04-30"
+  },
+  {
+   "op": "write",
+   "key": "m124",
+   "title": "",
+   "content": "每年 3、4 月花粉过敏，鼻塞打喷嚏，吃氯雷他定，每片 1.2 元左右。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-04-30"
+  },
+  {
+   "op": "write",
+   "key": "m125",
+   "title": "黄山之行",
+   "content": "黄山 5 月 2 日上山，住西海大饭店一晚 980 元，当晚大雾没看到云海；宏村民宿住了 2 晚共 840 元。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-05-02"
+  },
+  {
+   "op": "write",
+   "key": "m126",
+   "title": "",
+   "content": "JLPT N5 报名费 550 元，考点在杭州外国语学校，准考证上写的考试时间是 2026-07-05 下午。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-05-04"
+  },
+  {
+   "op": "write",
+   "key": "m127",
+   "title": "",
+   "content": "墨格的安装包放在 Cloudflare R2，bucket 名 moge-releases，免费额度 10GB 够用，出站流量不收费。",
+   "tags": [
+    "云服务",
+    "墨格"
+   ],
+   "occurred": "2026-05-05"
+  },
+  {
+   "op": "write",
+   "key": "m128",
+   "title": "v0.3.0 发布",
+   "content": "墨格 v0.3.0 在 5 月 6 日发布，GitHub 首日 Star 约 85 个，在 Hacker News 发了帖但没上首页。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-05-06"
+  },
+  {
+   "op": "write",
+   "key": "m129",
+   "title": "",
+   "content": "WSL2 的 .wslconfig 设成 memory=12GB、processors=8；cargo 的 target 目录放在 WSL 内部的 ext4 里，不放 /mnt/c，编译快了约 3 倍。",
+   "tags": [
+    "开发环境"
+   ],
+   "occurred": "2026-05-08"
+  },
+  {
+   "op": "write",
+   "key": "m130",
+   "title": "",
+   "content": "买了 Myprotein 乳清蛋白粉 2.5kg，389 元，每次练完喝一勺，大概能喝三个月。",
+   "tags": [
+    "健身",
+    "购物"
+   ],
+   "occurred": "2026-05-09"
+  },
+  {
+   "op": "write",
+   "key": "m131",
+   "title": "10 公里成绩",
+   "content": "5 月 10 日参加钱塘江 10 公里跑，成绩 58 分 12 秒，第一次跑进一小时。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-05-10"
+  },
+  {
+   "op": "write",
+   "key": "m132",
+   "title": "手机",
+   "content": "用户的手机是 Pixel 8（Android 15），主要用来测 Tauri mobile 的 Android 构建；号码是中国联通 59 元/月的套餐。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m133",
+   "title": "v0.3.0 发布复盘",
+   "content": "墨格 v0.3.0 发布一周的复盘：1）发布当天 AppImage 在 Debian 12 上打不开，因为在 Ubuntu 24.04 的 runner 上构建，链接了 glibc 2.39，之后改回 ubuntu-22.04 构建并发了 v0.3.1；2）Windows 的 SmartScreen 提示未知发布者，签名申请还没下来；3）同步 beta 只有 3 个人试用，其中一人反馈 WebDAV 路径含中文时返回 404，已改成对路径做 URL 编码；4）首周共收到 17 个 issue，其中 9 个是中文输入法相关，说明输入法兼容是最大的坑。",
+   "tags": [
+    "墨格",
+    "复盘"
+   ],
+   "occurred": "2026-05-13"
+  },
+  {
+   "op": "write",
+   "key": "m134",
+   "title": "",
+   "content": "报名了 5 月 24 到 26 日的 Rust Gamedev 线上 game jam，主题是 Fragile，打算用 Kiln 做。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m135",
+   "title": "自动猫砂盆",
+   "content": "618 买了小佩 MAX 全自动猫砂盆，1699 元，年糕用了三天就适应了。",
+   "tags": [
+    "猫",
+    "购物"
+   ],
+   "occurred": "2026-05-18"
+  },
+  {
+   "op": "write",
+   "key": "m136",
+   "title": "输入法光标跳动",
+   "content": "用户提的 issue：中文输入法在 CM6 里组合输入时光标乱跳，根因是 compositionend 之前触发了 decoration 重建；用 view.composing 判断，输入法结束后再更新，问题解决。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-05-20"
+  },
+  {
+   "op": "write",
+   "key": "m137",
+   "title": "",
+   "content": "中午吃了奎元馆的片儿川，28 元。",
+   "tags": [],
+   "occurred": "2026-05-21"
+  },
+  {
+   "op": "write",
+   "key": "m138",
+   "title": "",
+   "content": "在 Rust 杭州 meetup 认识了阿森，做嵌入式的，用 embassy 框架，已经加了微信。",
+   "tags": [
+    "朋友",
+    "开源"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m139",
+   "title": "",
+   "content": "阿森的微信号是 asen_emb88，手机尾号 7731。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m140",
+   "title": "",
+   "content": "给年糕买了宠物医疗险，年费 468 元，报销比例 80%，免赔额 200 元。",
+   "tags": [
+    "猫",
+    "金额"
+   ],
+   "occurred": "2026-05-25"
+  },
+  {
+   "op": "write",
+   "key": "m141",
+   "title": "",
+   "content": "jam 提交了《Fragile Tea》，最后排名 87/212，得分最高的是美术项，3.9 分。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-05-27"
+  },
+  {
+   "op": "write",
+   "key": "m142",
+   "title": "Fragile Tea 复盘",
+   "content": "Jam post-mortem for Fragile Tea: cut the audio mixer on day two and regretted it; lesson learned, freeze scope by noon of day one and keep a 'must ship' list of five items.",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-05-28"
+  },
+  {
+   "op": "write",
+   "key": "m143",
+   "title": "",
+   "content": "NAS 的第二块盘（WD Red Plus 8TB）SMART 报重新分配扇区数 16，先观察，每天看一次。",
+   "tags": [
+    "NAS",
+    "硬件"
+   ],
+   "occurred": "2026-05-29"
+  },
+  {
+   "op": "write",
+   "key": "m144",
+   "title": "5 月云与订阅开销",
+   "content": "2026 年 5 月云服务和订阅合计约 291 元：Hetzner €4.59（约 36 元）、腾讯云折算 16.5 元、Backblaze B2 $10.8（约 78 元）、Claude Pro $20（约 145 元）、网易云黑胶 15 元，R2 免费。",
+   "tags": [
+    "开销"
+   ],
+   "occurred": "2026-06-01"
+  },
+  {
+   "op": "summary",
+   "key": "s02",
+   "title": "墨格 Bug 根因合集",
+   "content": "墨格踩过的主要坑及根因：Windows 白屏是 WebView2 被锁在 119 版本加 Vite 6 的 target 不兼容；`database is locked` 是 DELETE journal 加没设 busy_timeout，改 WAL + 单写线程；FTS5 搜不到中文是 unicode61 不会切词，要先 jieba 分词；Wayland 闪烁是 WebKitGTK 的 DMA-BUF 问题；输入法光标乱跳是 composition 期间重建 decoration；Svelte 的 $effect 死循环是读写同一个 $state。",
+   "adopt": [
+    "m011",
+    "m022",
+    "m070",
+    "m114",
+    "m136",
+    "m059"
+   ],
+   "occurred": "2026-06-01"
+  },
+  {
+   "op": "write",
+   "key": "m145",
+   "title": "年糕换猫粮",
+   "content": "年糕换成渴望（Orijen）六种鱼猫粮，5.4kg 装 568 元，因为皇家吃了之后偶尔软便；处方粮阶段已经结束。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-06-02",
+   "supersedes": "m023"
+  },
+  {
+   "op": "update",
+   "key": "m095",
+   "content": "蓝鲸科技（深圳）的外包：用 Rust 写 CSV 清洗命令行工具，对方追加了需求，加价 2400 元，总价变为 12000 元，交付期延长到 10 天，对接人李工。",
+   "title": "蓝鲸科技外包",
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "write",
+   "key": "m146",
+   "title": "",
+   "content": "阿森下个月要在 Rust 杭州 meetup 分享 embassy 的 async 调度，讲 20 分钟。",
+   "tags": [
+    "开源"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "delete",
+   "key": "m139",
+   "occurred": "2026-06-05"
+  },
+  {
+   "op": "write",
+   "key": "m147",
+   "title": "",
+   "content": "年糕最近迷上了带羽毛的逗猫棒，29 元一根，两天就被咬坏了一根。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-06-06"
+  },
+  {
+   "op": "write",
+   "key": "m148",
+   "title": "洗牙与智齿",
+   "content": "去杭州口腔医院洗牙 198 元，医生发现左下一颗智齿阻生，建议拔掉，约了 6 月 28 日。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-06-08"
+  },
+  {
+   "op": "write",
+   "key": "m149",
+   "title": "墨格 Star 数",
+   "content": "墨格的 GitHub Star 数目前是 412，每周下载量大约 230 次。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-06-10"
+  },
+  {
+   "op": "write",
+   "key": "m150",
+   "title": "28 岁生日",
+   "content": "6 月 11 日是用户 28 岁生日，老周从上海寄来一套机械键帽，小林送了一本 Rust 周边的帆布袋，晚上自己吃了蛋糕，年糕也分到一点奶油。",
+   "tags": [
+    "生日"
+   ],
+   "occurred": "2026-06-11"
+  },
+  {
+   "op": "update",
+   "key": "m143",
+   "content": "NAS 第二块盘（WD Red Plus 8TB）的 SMART 重新分配扇区数涨到 88，已向 WD 申请保修换新（RMA），14 天后新盘寄到，换盘后 SHR 重建用了约 19 小时，状态恢复正常。",
+   "title": "",
+   "occurred": "2026-06-14"
+  },
+  {
+   "op": "write",
+   "key": "m151",
+   "title": "Windows 上的 Rust",
+   "content": "台式机 Windows 上的 Rust 是 1.86.0（MSVC 工具链），需要 VS Build Tools 2022 里的 Desktop development with C++。",
+   "tags": [
+    "开发环境",
+    "Windows"
+   ],
+   "occurred": "2026-06-15"
+  },
+  {
+   "op": "write",
+   "key": "m152",
+   "title": "Linux 上的 Rust",
+   "content": "ThinkPad 的 Ubuntu 上 Rust 是 1.85.0（rustup 安装，GNU 工具链），还没跟着升到 1.86。",
+   "tags": [
+    "开发环境",
+    "Linux"
+   ],
+   "occurred": "2026-06-15"
+  },
+  {
+   "op": "write",
+   "key": "m153",
+   "title": "",
+   "content": "相机是富士 X-T30 II 加 23mm F2，一共 7300 元，周末拍街头。",
+   "tags": [
+    "爱好",
+    "购物"
+   ],
+   "occurred": "2026-06-20"
+  },
+  {
+   "op": "summary",
+   "key": "s07",
+   "title": "年糕档案",
+   "content": "年糕是 2023 年 3 月出生的英短蓝猫公猫，已绝育；1 月打了三联加狂犬疫苗，3 月查出泌尿道结晶，4 月复查已消失；现在吃渴望六种鱼猫粮，用小佩 MAX 自动猫砂盆；不爱被抱，爱睡在显示器支架上，最爱三文鱼冻干。",
+   "adopt": [
+    "m006",
+    "m145",
+    "m042",
+    "m071",
+    "m085",
+    "m135"
+   ],
+   "occurred": "2026-06-20"
+  },
+  {
+   "op": "write",
+   "key": "m154",
+   "title": "",
+   "content": "Rust 杭州 meetup 6 月 21 日在云栖小镇，用户做了 15 分钟的 lightning talk《Tauri 本地优先同步》。",
+   "tags": [
+    "开源"
+   ],
+   "occurred": "2026-06-21"
+  },
+  {
+   "op": "write",
+   "key": "m155",
+   "title": "Kiln 脚本层选型",
+   "content": "Kiln 的脚本层决定用 rhai，不用 Lua（mlua）：纯 Rust 实现，不用管 C 依赖，交叉编译省心。",
+   "tags": [
+    "Kiln",
+    "技术决策"
+   ],
+   "occurred": "2026-06-22"
+  },
+  {
+   "op": "write",
+   "key": "m156",
+   "title": "",
+   "content": "今天不想去健身房，窝在家看了一晚上视频。",
+   "tags": [],
+   "occurred": "2026-06-24"
+  },
+  {
+   "op": "write",
+   "key": "m157",
+   "title": "拔智齿",
+   "content": "智齿拔了，花了 680 元，吃了三天流食。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-06-28"
+  },
+  {
+   "op": "write",
+   "key": "m158",
+   "title": "NAS 的 UPS",
+   "content": "NAS 配了 APC BK650M2-CH 的 UPS，459 元，群晖里设置断电 5 分钟后安全关机。",
+   "tags": [
+    "NAS",
+    "硬件"
+   ],
+   "occurred": "2026-06-30"
+  },
+  {
+   "op": "write",
+   "key": "m159",
+   "title": "",
+   "content": "每周三上午看 This Week in Rust，挑两三条和 wgpu、Tauri 相关的看。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-07-02"
+  },
+  {
+   "op": "write",
+   "key": "m160",
+   "title": "",
+   "content": "在读《Designing Data-Intensive Applications》第二版，读到第 5 章复制，对同步方案里的冲突处理很有启发。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-07-02"
+  },
+  {
+   "op": "write",
+   "key": "m161",
+   "title": "LNK1104 根因",
+   "content": "Windows 上 cargo build 偶发 LNK1104: cannot open file，根因是 Defender 实时扫描占用了 target 目录里刚生成的 exe；把 D:\\dev\\target 加入 Defender 排除项后不再出现。",
+   "tags": [
+    "bug",
+    "Windows"
+   ],
+   "occurred": "2026-07-03"
+  },
+  {
+   "op": "write",
+   "key": "m162",
+   "title": "戴尔 4K 显示器",
+   "content": "买了戴尔 U2723QE，27 寸 4K，京东 3299 元，USB-C 一根线连 ThinkPad 供电加显示。",
+   "tags": [
+    "购物",
+    "硬件"
+   ],
+   "occurred": "2026-07-05"
+  },
+  {
+   "op": "write",
+   "key": "m163",
+   "title": "",
+   "content": "年糕吃渴望之后软便好转，一个月大概吃一袋 5.4kg 的猫粮不到，嘴馋时偶尔给几块三文鱼冻干当零食。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-07-06"
+  },
+  {
+   "op": "write",
+   "key": "m164",
+   "title": "不做账号体系",
+   "content": "墨格不做云端账号体系，坚持本地优先加自带同步；有人建议做付费 Pro 版，用户决定改成赞助模式：爱发电加 GitHub Sponsors。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-07-08"
+  },
+  {
+   "op": "write",
+   "key": "m165",
+   "title": "",
+   "content": "通关了《Hades II》，用了 52 个小时，最喜欢的武器是夜之杖。",
+   "tags": [
+    "爱好"
+   ],
+   "occurred": "2026-07-10"
+  },
+  {
+   "op": "write",
+   "key": "m166",
+   "title": "",
+   "content": "阿杰（做游戏策划）愿意帮 Kiln 的 demo 做关卡测试，爱玩 roguelike，不喜欢复杂的菜单。",
+   "tags": [
+    "朋友",
+    "Kiln"
+   ],
+   "occurred": "2026-07-12"
+  },
+  {
+   "op": "update",
+   "key": "m040",
+   "content": "减重目标：2026 年 6 月底体重已降到 72.3kg（起点 78kg，身高 176cm），新目标是 2026-12-31 前到 70kg；继续每周 3 次力量加 2 次跑步。",
+   "title": "减重目标",
+   "occurred": "2026-07-15"
+  },
+  {
+   "op": "write",
+   "key": "m167",
+   "title": "",
+   "content": "Tauri 2 的 fs 插件没配 scope 时读文件会报 `forbidden path`，要在 src-tauri/capabilities/default.json 里给 fs:scope 加上允许的目录。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-07-16"
+  },
+  {
+   "op": "write",
+   "key": "m168",
+   "title": "",
+   "content": "今天去剪了头发，58 元，理发师说发际线还行。",
+   "tags": [],
+   "occurred": "2026-07-18"
+  },
+  {
+   "op": "write",
+   "key": "m169",
+   "title": "",
+   "content": "Kiln 的编辑器 UI 用 egui 0.29，和墨格用 Svelte 是两套完全不同的技术栈。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-07-19"
+  },
+  {
+   "op": "update",
+   "key": "m115",
+   "content": "小林的婚礼从 2026-10-01 改到了 2026-10-17，因为国庆当天场地订不到；地点仍是苏州金鸡湖边，随礼打算 1888 元。最初定的日期是 10 月 1 日。",
+   "title": "小林的婚礼",
+   "occurred": "2026-07-20"
+  },
+  {
+   "op": "write",
+   "key": "m170",
+   "title": "",
+   "content": "墨格不做任何遥测，也不自动上报崩溃；崩溃日志只写本地，用户在 issue 里主动贴。",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-07-22"
+  },
+  {
+   "op": "write",
+   "key": "m171",
+   "title": "妈妈生日宴订位",
+   "content": "给妈妈 60 岁生日订了宁波状元楼的包间，一桌 1880 元，8 月 14 日中午 12 点开席。",
+   "tags": [
+    "家人",
+    "生日"
+   ],
+   "occurred": "2026-07-25"
+  },
+  {
+   "op": "write",
+   "key": "m172",
+   "title": "",
+   "content": "腾讯云轻量续费价格涨到 268 元/年（原来 198 元），用户决定到期（2026-12-03）后不再续费，国内测试改用 Hetzner 加 Cloudflare。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2026-07-28",
+   "supersedes": "m009"
+  },
+  {
+   "op": "write",
+   "key": "m173",
+   "title": "",
+   "content": "7 月底去深圳出差 3 天，年糕由小区的邻居阿姨每天上门喂一次，一次 40 元。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-07-30"
+  },
+  {
+   "op": "write",
+   "key": "m174",
+   "title": "罗技 MX Master",
+   "content": "鼠标是罗技 MX Master 3S，549 元，用 Easy-Switch 在台式机和 ThinkPad 之间切换。",
+   "tags": [
+    "购物",
+    "硬件"
+   ],
+   "occurred": "2026-08-02"
+  },
+  {
+   "op": "write",
+   "key": "m175",
+   "title": "",
+   "content": "午觉睡过头了，起来已经下午 5 点，一天就这样过去了。",
+   "tags": [],
+   "occurred": "2026-08-03"
+  },
+  {
+   "op": "update",
+   "key": "m094",
+   "content": "Kiln 放弃 rapier2d：wasm 体积太大，而且用到的功能只有 AABB 碰撞。改成自研 AABB 加空间哈希。最初（3 月）的决定是接 rapier2d 0.22。",
+   "title": "",
+   "occurred": "2026-08-05"
+  },
+  {
+   "op": "write",
+   "key": "m176",
+   "title": "",
+   "content": "Uptime Kuma 监控 Hetzner 机器和两个域名的证书有效期，告警通过 Telegram bot 推送。",
+   "tags": [
+    "NAS",
+    "云服务"
+   ],
+   "occurred": "2026-08-07"
+  },
+  {
+   "op": "write",
+   "key": "m177",
+   "title": "备份失败 os error 32",
+   "content": "墨格自动备份在 Windows 上偶发 os error 32（文件被占用）：备份目录在 Documents 下被 OneDrive 同步占用了 VACUUM INTO 的目标文件。把默认备份目录移到 AppData\\Local 后解决。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-08-09"
+  },
+  {
+   "op": "write",
+   "key": "m178",
+   "title": "启明教育新对接人",
+   "content": "启明教育的对接人王老师离职了，现在换成刘老师；三期需求预计 3 个月内启动。",
+   "tags": [
+    "外包"
+   ],
+   "occurred": "2026-08-10",
+   "supersedes": "m049"
+  },
+  {
+   "op": "summary",
+   "key": "s12",
+   "title": "外包客户",
+   "content": "目前有两个外包客户：启明教育（杭州，Tauri 课件播放器，18000 元分两期，尾款 4 月已收，对接人已换成刘老师）和蓝鲸科技（深圳，Rust CSV 清洗工具，加价后总价 12000 元，对接人李工）。",
+   "adopt": [
+    "m049",
+    "m122",
+    "m095",
+    "m178"
+   ],
+   "occurred": "2026-08-12"
+  },
+  {
+   "op": "write",
+   "key": "m179",
+   "title": "妈妈生日当天",
+   "content": "8 月 14 日妈妈 60 岁生日，送了金镯子 6800 元，在状元楼吃饭，一共 12 个人。",
+   "tags": [
+    "家人",
+    "生日"
+   ],
+   "occurred": "2026-08-14"
+  },
+  {
+   "op": "write",
+   "key": "m180",
+   "title": "",
+   "content": "墨格的数据库迁移用 refinery，迁移文件放在 src-tauri/migrations/，命名 V{序号}__描述.sql；曾经手改已发布的迁移文件，导致校验和不一致启动失败。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-08-14"
+  },
+  {
+   "op": "update",
+   "key": "m044",
+   "content": "每月 15 日在支付宝定投沪深 300 ETF 联接，从 8 月起每次加到 3000 元（原来是 2000 元）。",
+   "title": "基金定投",
+   "occurred": "2026-08-16"
+  },
+  {
+   "op": "write",
+   "key": "m181",
+   "title": "",
+   "content": "楼上邻居装修，电钻声吵了一整天，烦。",
+   "tags": [],
+   "occurred": "2026-08-18"
+  },
+  {
+   "op": "write",
+   "key": "m182",
+   "title": "升降桌",
+   "content": "颈椎不舒服，买了乐歌 E5 升降桌，1499 元，站姿每次不超过 40 分钟。",
+   "tags": [
+    "购物",
+    "健康"
+   ],
+   "occurred": "2026-08-20"
+  },
+  {
+   "op": "write",
+   "key": "m183",
+   "title": "",
+   "content": "Ubuntu 上墨格的中文显示成方块，原因是系统没装 CJK 字体，安装 fonts-noto-cjk 后正常；deb 包里把它加进 Recommends。",
+   "tags": [
+    "墨格",
+    "bug"
+   ],
+   "occurred": "2026-08-21"
+  },
+  {
+   "op": "write",
+   "key": "m184",
+   "title": "大阪京都机票",
+   "content": "9 月 15 日到 19 日去大阪加京都，订了杭州到大阪的春秋航空往返机票，共 2860 元。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-08-22"
+  },
+  {
+   "op": "write",
+   "key": "m185",
+   "title": "",
+   "content": "最近有点 burnout，不太想写代码，周末打算出去走走。",
+   "tags": [],
+   "occurred": "2026-08-25"
+  },
+  {
+   "op": "write",
+   "key": "m186",
+   "title": "两个项目的 CI",
+   "content": "Kiln 的 CI 用 NAS 上自建的 Woodpecker，墨格的 CI 用 GitHub Actions，因为墨格要在 Windows 和 Linux 上都构建，还要上传发布包。",
+   "tags": [
+    "Kiln",
+    "墨格"
+   ],
+   "occurred": "2026-08-26"
+  },
+  {
+   "op": "write",
+   "key": "m187",
+   "title": "",
+   "content": "墨格的 GitHub Actions 矩阵用 windows-latest 和 ubuntu-22.04，不用 24.04：AppImage 要在较老的 glibc 上构建才能兼容更多发行版。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-08-26"
+  },
+  {
+   "op": "write",
+   "key": "m188",
+   "title": "",
+   "content": "Reviewed a PR from contributor ferris-fan adding dark theme tokens to Moge; asked them to split the CSS variables into tokens.css before merging.",
+   "tags": [
+    "墨格",
+    "开源"
+   ],
+   "occurred": "2026-08-28"
+  },
+  {
+   "op": "write",
+   "key": "m189",
+   "title": "日本行程计划",
+   "content": "日本行程计划（9 月 15 到 19 日）：第 1 天到关西机场，住大阪心斋桥的商务酒店；第 2 天京都，早上 6 点去伏见稻荷，下午清水寺，晚上住乌丸的 Hotel Resol；第 3 天岚山和嵐電，买了关西广域周游券 11500 日元；第 4 天奈良喂鹿加大阪城；第 5 天早上去黑门市场，下午坐飞机回杭州。预算 10000 元以内，小林推荐了京都的一家素食拉面店，要提前订位。",
+   "tags": [
+    "旅行",
+    "计划"
+   ],
+   "occurred": "2026-08-30"
+  },
+  {
+   "op": "summary",
+   "key": "s03",
+   "title": "Kiln 技术决策",
+   "content": "Kiln 是 Rust + wgpu 的 2D 引擎：ECS 自研 archetype 存储，音频用 kira，脚本层用 rhai，物理放弃 rapier2d 改成自研 AABB 加空间哈希，编辑器 UI 用 egui 0.29；第一个 demo 是弹幕射击《Starfall》。",
+   "adopt": [
+    "m027",
+    "m080",
+    "m094",
+    "m155",
+    "m169",
+    "m111"
+   ],
+   "occurred": "2026-08-31"
+  },
+  {
+   "op": "write",
+   "key": "m190",
+   "title": "",
+   "content": "Claude 订阅从 Pro 升级到 Max 5x，$100/月，因为每天跑 Claude Code 额度总是不够用，扣费日仍是每月 8 号。",
+   "tags": [
+    "订阅"
+   ],
+   "occurred": "2026-09-01",
+   "supersedes": "m015"
+  },
+  {
+   "op": "write",
+   "key": "m191",
+   "title": "",
+   "content": "老周 9 月 12 到 13 日来杭州玩，住西溪；要订不放香菜、能吃辣的馆子。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-09-02"
+  },
+  {
+   "op": "write",
+   "key": "m192",
+   "title": "墨格自动备份",
+   "content": "墨格的自动备份：每次退出时用 VACUUM INTO 把 SQLite 备份到 backups/ 目录，保留最近 10 份。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-09-03"
+  },
+  {
+   "op": "write",
+   "key": "m193",
+   "title": "新眼镜",
+   "content": "近视度数左眼 -4.25、右眼 -4.0，换了蔡司镜片的新眼镜，1680 元。",
+   "tags": [
+    "健康",
+    "购物"
+   ],
+   "occurred": "2026-09-05"
+  },
+  {
+   "op": "write",
+   "key": "m194",
+   "title": "",
+   "content": "Kiln 的资源热重载用 notify 6.1 监听 assets 目录，贴图和 RON 关卡文件改了会自动重载，shader 暂时不支持。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-09-06"
+  },
+  {
+   "op": "write",
+   "key": "m195",
+   "title": "同步协议版本号",
+   "content": "Decided to version the Moge sync protocol: every request carries the header X-Moge-Sync-Version: 2, and clients older than 0.3.2 get HTTP 426 Upgrade Required.",
+   "tags": [
+    "墨格",
+    "技术决策"
+   ],
+   "occurred": "2026-09-08"
+  },
+  {
+   "op": "write",
+   "key": "m196",
+   "title": "",
+   "content": "在 V2EX 发了墨格的帖子，约 80 条回复，主要吐槽没有手机端，所以把 Android 版放进了 v0.4 的路线。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-09-09"
+  },
+  {
+   "op": "write",
+   "key": "m197",
+   "title": "",
+   "content": "Hetzner 上的 HTTPS 由 Caddy 2.8.4 自动签发 Let's Encrypt 证书，Caddyfile 在 /etc/caddy/。",
+   "tags": [
+    "云服务"
+   ],
+   "occurred": "2026-09-09"
+  },
+  {
+   "op": "update",
+   "key": "m098",
+   "content": "每周二、四、六各跑一次：周二和周四 5 公里，周六长距离 8 到 10 公里，配速约 6'00\"/km；用的是 Garmin Forerunner 165（1980 元）。",
+   "title": "跑步计划",
+   "occurred": "2026-09-10"
+  },
+  {
+   "op": "write",
+   "key": "m198",
+   "title": "",
+   "content": "9 月 12 日带老周去新白鹿吃饭，人均 70 元；他吃不惯杭帮菜的甜口，点了一份辣的口味虾。",
+   "tags": [
+    "朋友",
+    "饭局"
+   ],
+   "occurred": "2026-09-12"
+  },
+  {
+   "op": "write",
+   "key": "m199",
+   "title": "",
+   "content": "把咖啡洒在键盘上了，幸好 Keychron 能拆，擦干就好。",
+   "tags": [],
+   "occurred": "2026-09-14"
+  },
+  {
+   "op": "update",
+   "key": "m078",
+   "content": "NAS 上跑的 Docker 容器：Jellyfin、Uptime Kuma、Woodpecker（server + agent）、Immich（已正式上线，替代 Google Photos）。",
+   "title": "NAS 容器清单",
+   "occurred": "2026-09-14"
+  },
+  {
+   "op": "write",
+   "key": "m200",
+   "title": "",
+   "content": "京都伏见稻荷大社早上 6 点去人很少，爬到山顶用了 90 分钟；住乌丸的 Hotel Resol，一晚约 14000 日元。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m201",
+   "title": "Kiln 周期性卡顿复盘",
+   "content": "Kiln 帧率每隔约 2 秒掉一次的复盘：现象是平均 144fps，但每 2 秒左右有一次 40 到 50ms 的卡顿。用 Tracy 抓帧，发现卡顿帧里 wgpu 的 create_buffer 耗时突增。根因是每帧都为 instance 数据新建 Buffer，wgpu 内部回收有约 2 秒的延迟批处理，积压后集中释放造成卡顿。修复：改用 StagingBelt 预分配，instance buffer 用 3 帧的环形复用，容量不够时按 2 倍扩容而不是每帧重建。结果：p99 帧时间从 22ms 降到 8ms，卡顿消失。",
+   "tags": [
+    "Kiln",
+    "bug",
+    "性能"
+   ],
+   "occurred": "2026-09-17"
+  },
+  {
+   "op": "write",
+   "key": "m202",
+   "title": "日本之行花费",
+   "content": "日本五天总花费约 9800 元（含机票 2860 元），关西广域周游券 11500 日元用得很值，伏见稻荷和奈良是最喜欢的两处。",
+   "tags": [
+    "旅行",
+    "开销"
+   ],
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "update",
+   "key": "m093",
+   "content": "目前力量水平：深蹲 5x5 做到 100kg，卧推 70kg，硬拉 130kg（3 月时是 85/60/100）。",
+   "title": "力量训练进度",
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "write",
+   "key": "m203",
+   "title": "Keychron K3 Pro",
+   "content": "给 ThinkPad 配了便携的 Keychron K3 Pro 矮轴茶轴键盘，599 元，出差带着用。",
+   "tags": [
+    "购物",
+    "硬件"
+   ],
+   "occurred": "2026-09-22"
+  },
+  {
+   "op": "summary",
+   "key": "s14",
+   "title": "旅行记录",
+   "content": "2026 年的出行：3 月底莫干山周末（民宿 1350 元/晚）；5 月初黄山（西海大饭店 980 元，没看到云海）；9 月 15 到 19 日大阪京都，机票 2860 元，计划预算 1 万元以内，关西周游券很划算。",
+   "adopt": [
+    "m102",
+    "m125",
+    "m184",
+    "m189",
+    "m200"
+   ],
+   "occurred": "2026-09-22"
+  },
+  {
+   "op": "update",
+   "key": "m087",
+   "content": "日语学习目标：7 月 5 日的 JLPT N5 已通过；新目标是 2027-07 考 N4，每天继续 30 分钟，用《标准日本语》初级下。最初的目标是 2026-07-05 考 N5。",
+   "title": "日语学习目标",
+   "occurred": "2026-09-25"
+  },
+  {
+   "op": "write",
+   "key": "m204",
+   "title": "",
+   "content": "年糕半夜 3 点跑酷，把用户吵醒了，睡眠被打断，心情很差。",
+   "tags": [
+    "猫"
+   ],
+   "occurred": "2026-09-28"
+  },
+  {
+   "op": "update",
+   "key": "m045",
+   "content": "存款目标下调到 25 万（日本旅行和搬家花销超预期）；截至 2026-09 约 22.4 万。",
+   "title": "存款目标",
+   "occurred": "2026-09-30"
+  },
+  {
+   "op": "write",
+   "key": "m205",
+   "title": "Kiln tagline",
+   "content": "Kiln's README tagline is 'A tiny 2D game engine that does less, on purpose.'",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-10-02"
+  },
+  {
+   "op": "write",
+   "key": "m206",
+   "title": "人体工学椅",
+   "content": "买了西昊 Doro C300 人体工学椅，1299 元，坐了一周腰舒服多了。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2026-10-03"
+  },
+  {
+   "op": "write",
+   "key": "m207",
+   "title": "",
+   "content": "在 Tauri 官方 Discord 里问到 sidecar 路径问题：externalBin 里要写不带后缀的名字，打包时二进制文件名必须加上 target triple 后缀，例如 -x86_64-pc-windows-msvc。",
+   "tags": [
+    "墨格",
+    "开源"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "summary",
+   "key": "s15",
+   "title": "开源与社区",
+   "content": "开源参与：给 rusqlite 提过 FTS5 tokenizer 接口的 issue，向 tauri plugins-workspace 贡献了 updater 的 AppImage 权限修复（已合并）；6 月在 Rust 杭州 meetup 做了 15 分钟分享，认识了做嵌入式的阿森；Tauri sidecar 的问题在官方 Discord 得到了解答。",
+   "adopt": [
+    "m076",
+    "m118",
+    "m154",
+    "m138",
+    "m207"
+   ],
+   "occurred": "2026-10-06"
+  },
+  {
+   "op": "write",
+   "key": "m208",
+   "title": "",
+   "content": "宽带从电信 500M 升级到 1000M，一年 1499 元，用来给 NAS 异地备份提速。",
+   "tags": [
+    "网络"
+   ],
+   "occurred": "2026-10-08",
+   "supersedes": "m109"
+  },
+  {
+   "op": "write",
+   "key": "m209",
+   "title": "Kiln itch 页面",
+   "content": "Kiln 的 itch.io 页面上线，放了 Windows 和 Linux 两个版本的 Starfall demo，定价先免费。",
+   "tags": [
+    "Kiln"
+   ],
+   "occurred": "2026-10-08"
+  },
+  {
+   "op": "write",
+   "key": "m210",
+   "title": "",
+   "content": "今天降温到 12 度，穿了第一次外套。",
+   "tags": [],
+   "occurred": "2026-10-09"
+  },
+  {
+   "op": "write",
+   "key": "m211",
+   "title": "",
+   "content": "Immich 升级到 v1.135，升级前先在 NAS 上做了数据库快照；升级后相册的人脸聚类重跑了一晚。",
+   "tags": [
+    "NAS"
+   ],
+   "occurred": "2026-10-11"
+  },
+  {
+   "op": "write",
+   "key": "m212",
+   "title": "墨格 v0.4 路线",
+   "content": "墨格 v0.4 路线：1）插件系统用 WASM（wasmtime 26），不用 Lua，沙箱隔离更好，插件只能通过 host function 访问笔记 API，权限在 manifest 里声明；2）S3 兼容传输推到 v0.5，v0.4 只保留 WebDAV；3）Android 版用 Tauri mobile，先做只读浏览和快速记录；4）导入器支持 Obsidian vault 和普通 Markdown 文件夹；5）把 FTS 的 jieba 词典做成可下载的语言包，缩小安装包。优先级：插件 > 导入器 > Android > 语言包。",
+   "tags": [
+    "墨格",
+    "计划"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "update",
+   "key": "m026",
+   "content": "主力编辑器换成了 Zed（0.16x），Rust 项目基本都在 Zed 里写；VS Code 只在调试 Tauri 前端和 Svelte 时用。",
+   "title": "主力编辑器",
+   "occurred": "2026-10-14"
+  },
+  {
+   "op": "write",
+   "key": "m213",
+   "title": "爸爸的生日礼物",
+   "content": "给爸爸 11 月 3 日的生日寄了一支 Shimano 钓竿，899 元，提前一周到。",
+   "tags": [
+    "家人",
+    "生日"
+   ],
+   "occurred": "2026-10-14"
+  },
+  {
+   "op": "write",
+   "key": "m214",
+   "title": "",
+   "content": "买了 Pixel 10，5799 元，作为日常手机；Pixel 8 留作 Tauri mobile 的测试机。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-10-15",
+   "supersedes": "m132"
+  },
+  {
+   "op": "summary",
+   "key": "s16",
+   "title": "设备与外设",
+   "content": "常用设备：Windows 台式机（7800X3D、RTX 4070、32GB）配戴尔 U2723QE 4K 显示器和 Keychron Q1 Pro；ThinkPad T14 Gen 5 跑 Ubuntu，配 Keychron K3 Pro；鼠标是 MX Master 3S 两台机器切换；桌椅是乐歌 E5 升降桌和西昊 Doro C300。",
+   "adopt": [
+    "m024",
+    "m025",
+    "m162",
+    "m116",
+    "m203",
+    "m174",
+    "m182"
+   ],
+   "occurred": "2026-10-16"
+  },
+  {
+   "op": "write",
+   "key": "m215",
+   "title": "小林婚礼随礼",
+   "content": "小林的婚礼在苏州金鸡湖边，随礼 1888 元；他们特意给素食的朋友安排了素席，小林自己吃蛋奶素。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-10-17"
+  },
+  {
+   "op": "write",
+   "key": "m216",
+   "title": "半马成绩",
+   "content": "10 月 18 日参加杭州湾半程马拉松，成绩 2 小时 07 分 35 秒，配速约 6'02\"，后半程膝盖有点痛。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-10-18"
+  },
+  {
+   "op": "write",
+   "key": "m217",
+   "title": "墨格 Star 数",
+   "content": "墨格的 GitHub Star 数已经到 1030，每周下载量约 900 次；主要增长来自 V2EX 的那篇帖子和 v0.3.2 的更新。",
+   "tags": [
+    "墨格"
+   ],
+   "occurred": "2026-10-20",
+   "supersedes": "m149"
+  },
+  {
+   "op": "summary",
+   "key": "s11",
+   "title": "家人信息",
+   "content": "家人：妈妈住宁波，8 月 14 日生日（今年 60 岁，在状元楼摆了一桌，送金镯子）；爸爸 11 月 3 日生日，已退休爱钓鱼，血压偏高，今年送了钓竿；春节回宁波待了 10 天。",
+   "adopt": [
+    "m055",
+    "m056",
+    "m072",
+    "m171",
+    "m179",
+    "m213"
+   ],
+   "occurred": "2026-10-20"
+  },
+  {
+   "op": "write",
+   "key": "m218",
+   "title": "",
+   "content": "领了一张外卖红包，满 30 减 12，晚饭点了黄焖鸡。",
+   "tags": [],
+   "occurred": "2026-10-21"
+  },
+  {
+   "op": "write",
+   "key": "m219",
+   "title": "2026 年体检",
+   "content": "2026-10-22 在爱康国宾（武林广场店）做了年度体检，花费 1380 元。尿酸 410 μmol/L（比去年的 452 降了），甘油三酯 1.4 mmol/L，B 超脂肪肝已经没有了，体重 72.9kg。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-10-22"
+  },
+  {
+   "op": "summary",
+   "key": "s09",
+   "title": "健身与跑步",
+   "content": "健身：乐刻年卡，StrongLifts 5x5 每周三次，现在深蹲 100kg、卧推 70kg、硬拉 130kg；跑步每周二四六，5 月跑进 10 公里 58 分 12 秒，10 月半马 2 小时 07 分 35 秒。",
+   "adopt": [
+    "m064",
+    "m093",
+    "m098",
+    "m131",
+    "m216",
+    "m112"
+   ],
+   "occurred": "2026-10-25"
+  },
+  {
+   "op": "write",
+   "key": "m220",
+   "title": "续租谈判",
+   "content": "房东赵女士说明年 4 月续租要涨到 4500 元/月，用户打算谈到 4300 元；现在的租约到 2027-04-04。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-10-26"
+  },
+  {
+   "op": "write",
+   "key": "m221",
+   "title": "流感疫苗",
+   "content": "10 月 28 日在社区卫生服务中心打了流感疫苗，128 元。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-10-28"
+  },
+  {
+   "op": "write",
+   "key": "m222",
+   "title": "Kiln 依赖版本",
+   "content": "Kiln 把依赖升级到 wgpu 24.0.0 和 winit 0.30.8，Surface 的 API 改动按迁移指南改完了，Starfall 的画面没有回归。",
+   "tags": [
+    "Kiln",
+    "依赖版本"
+   ],
+   "occurred": "2026-10-30",
+   "supersedes": "m038"
+  },
+  {
+   "op": "summary",
+   "key": "s08",
+   "title": "健康与体检",
+   "content": "健康状况：2025-12 体检尿酸 452、轻度脂肪肝、体重 78kg；经过运动和控制饮食，2026-10 体检尿酸降到 410、脂肪肝消失、体重 72.9kg；4 月复测尿酸 438，医生建议多喝水少吃内脏，暂不吃药；6 月拔了智齿，10 月打了流感疫苗。",
+   "adopt": [
+    "m019",
+    "m020",
+    "m081",
+    "m123",
+    "m219"
+   ],
+   "occurred": "2026-11-01"
+  },
+  {
+   "op": "write",
+   "key": "m223",
+   "title": "",
+   "content": "kiln-engine.dev 12 月 20 日到期，Cloudflare 自动续费要扣 $12.18，但绑定的卡 11 月底过期，要先换卡。",
+   "tags": [
+    "域名"
+   ],
+   "occurred": "2026-11-02"
+  },
+  {
+   "op": "write",
+   "key": "m224",
+   "title": "",
+   "content": "爸爸生日，打电话聊了半小时，他说钓竿很趁手。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "write",
+   "key": "m225",
+   "title": "v0.4 beta 日期",
+   "content": "墨格 v0.4 beta 的发布日期定在 2026-12-15。",
+   "tags": [
+    "墨格",
+    "计划"
+   ],
+   "occurred": "2026-11-05"
+  },
+  {
+   "op": "update",
+   "key": "m209",
+   "content": "Kiln 在 itch.io 的 Starfall demo 改成自定价（pay what you want），最低 $0，建议价 $3；之前是完全免费。",
+   "title": "Kiln 的 itch.io 页面",
+   "occurred": "2026-11-08"
+  },
+  {
+   "op": "write",
+   "key": "m226",
+   "title": "",
+   "content": "Kiln 的年底目标：做出 tilemap 编辑器，支持导入 LDtk 的关卡；明年 3 月之前出 0.1 版本。",
+   "tags": [
+    "Kiln",
+    "计划"
+   ],
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "write",
+   "key": "m227",
+   "title": "",
+   "content": "双十一买了索尼 WH-1000XM5 降噪耳机，1899 元，在咖啡馆写代码用。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2026-11-11"
+  },
+  {
+   "op": "write",
+   "key": "m228",
+   "title": "RustChinaConf 计划",
+   "content": "RustChinaConf 2026 在成都，12 月举办，用户打算去，门票 1200 元，机票酒店另算。",
+   "tags": [
+    "开源",
+    "计划"
+   ],
+   "occurred": "2026-11-12"
+  },
+  {
+   "op": "write",
+   "key": "m229",
+   "title": "阿杰的口味",
+   "content": "阿杰爱吃火锅，不吃内脏，不吃辣的话只能点清汤锅底，对花生没问题。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-11-14"
+  },
+  {
+   "op": "update",
+   "key": "m225",
+   "content": "墨格 v0.4 beta 的发布日期从 2026-12-15 推迟到 2027-01-10：WASM 插件的权限模型还没定稿。",
+   "title": "v0.4 beta 日期",
+   "occurred": "2026-11-15"
+  },
+  {
+   "op": "summary",
+   "key": "s10",
+   "title": "朋友的饮食偏好",
+   "content": "朋友的口味：老周爱吃辣不吃香菜；小林吃蛋奶素，对虾蟹过敏；阿杰爱吃火锅、不吃内脏。",
+   "adopt": [
+    "m013",
+    "m014",
+    "m229"
+   ],
+   "occurred": "2026-11-15"
+  },
+  {
+   "op": "update",
+   "key": "m029",
+   "content": "kiln-engine.dev 已在 11 月 16 日换卡并手动续费 $12.18，新的到期日是 2027-12-20。原来的到期日是 2026-12-20。",
+   "title": "Kiln 域名",
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "summary",
+   "key": "s17",
+   "title": "开发项目总览",
+   "content": "用户有两个自己的项目：墨格（Tauri 笔记应用，选型、Bug 根因见子汇总）和 Kiln（Rust + wgpu 小游戏引擎）。两者都用 Rust，但技术栈不同：墨格用 Svelte 和 rusqlite，Kiln 用 egui 和 kira。",
+   "adopt": [
+    "s01",
+    "s02",
+    "s03"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "summary",
+   "key": "s18",
+   "title": "基础设施与设备",
+   "content": "基础设施方面：Hetzner 加 Cloudflare 做线上，NAS 做存储和 CI，订阅清单集中在 Claude、1Password 等；设备以 Windows 台式机和 Ubuntu 笔记本双机为主。",
+   "adopt": [
+    "s04",
+    "s05",
+    "s06",
+    "s16"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "summary",
+   "key": "s19",
+   "title": "生活与关系",
+   "content": "生活方面：年糕的健康和饮食、家人生日、朋友口味、搬家后的房租，以及今年的几次出行。",
+   "adopt": [
+    "s07",
+    "s10",
+    "s11",
+    "s13",
+    "s14"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "summary",
+   "key": "s20",
+   "title": "健康与运动",
+   "content": "健康与运动：体检指标从 2025 年底到 2026 年 10 月明显好转，力量和跑步成绩稳步提升。",
+   "adopt": [
+    "s08",
+    "s09"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "update",
+   "key": "m228",
+   "content": "决定不去 RustChinaConf 2026 了：门票 1200 元加机票酒店太贵，也和 12 月初的外包交付冲突；最初的计划是要去。",
+   "title": "RustChinaConf 计划",
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "write",
+   "key": "m230",
+   "title": "",
+   "content": "今天有点感冒，嗓子疼，早点睡了。",
+   "tags": [],
+   "occurred": "2026-11-18"
+  }
+ ],
+ "queries": [
+  {
+   "id": "q001",
+   "qs": [
+    "墨格为什么不用 Electron",
+    "墨格技术栈 为什么选 Tauri"
+   ],
+   "type": "direct",
+   "gold": [
+    "m001"
+   ],
+   "stale": [],
+   "note": "直接问技术栈选型原因"
+  },
+  {
+   "id": "q002",
+   "qs": [
+    "年糕是什么时候打的疫苗",
+    "年糕 疫苗 医院 多少钱"
+   ],
+   "type": "direct",
+   "gold": [
+    "m042"
+   ],
+   "stale": [],
+   "note": "问疫苗日期与费用"
+  },
+  {
+   "id": "q003",
+   "qs": [
+    "moge.app 域名什么时候到期",
+    "moge.app 每年续费多少"
+   ],
+   "type": "direct",
+   "gold": [
+    "m012"
+   ],
+   "stale": [],
+   "note": "域名到期日与价格"
+  },
+  {
+   "id": "q004",
+   "qs": [
+    "NAS 异地备份用什么服务，每个月多少钱",
+    "Backblaze B2 备份桶"
+   ],
+   "type": "direct",
+   "gold": [
+    "m061"
+   ],
+   "stale": [],
+   "note": "NAS 异地备份方案"
+  },
+  {
+   "id": "q005",
+   "qs": [
+    "Fragile Tea 这次 game jam 排名多少",
+    "jam 最后得分最高的是哪项"
+   ],
+   "type": "direct",
+   "gold": [
+    "m141"
+   ],
+   "stale": [],
+   "note": "jam 排名 87/212，美术项 3.9"
+  },
+  {
+   "id": "q006",
+   "qs": [
+    "墨格同步用的是什么加密算法",
+    "同步加密 密钥派生 Argon2id 参数"
+   ],
+   "type": "direct",
+   "gold": [
+    "m052"
+   ],
+   "stale": [],
+   "note": "XChaCha20-Poly1305 + Argon2id"
+  },
+  {
+   "id": "q007",
+   "qs": [
+    "年糕是什么品种，几岁了",
+    "我家猫的出生年月和性别"
+   ],
+   "type": "direct",
+   "gold": [
+    "m006"
+   ],
+   "stale": [],
+   "note": "猫的基本信息"
+  },
+  {
+   "id": "q008",
+   "qs": [
+    "墨格里 FTS5 搜不到中文怎么解决的",
+    "jieba 分词 FTS5"
+   ],
+   "type": "direct",
+   "gold": [
+    "m070"
+   ],
+   "stale": [],
+   "note": "先用 jieba 切词再入 FTS 表"
+  },
+  {
+   "id": "q009",
+   "qs": [
+    "上一年度到手的钱和报税结果是怎样的",
+    "2025 年全年进账与退税"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m099"
+   ],
+   "stale": [],
+   "note": "记忆写 236000 元收入、已缴个税 18450、退税 1230；问法不含这些词"
+  },
+  {
+   "id": "q010",
+   "qs": [
+    "哪个朋友点菜时要提醒厨房回避味道冲的香草",
+    "有位上海的老同学的忌口"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m013"
+   ],
+   "stale": [],
+   "note": "老周不吃香菜；问法用'味道冲的香草'"
+  },
+  {
+   "id": "q011",
+   "qs": [
+    "家里那台网络存储现在能用多大空间",
+    "群晖现在总共多少容量"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m005"
+   ],
+   "stale": [],
+   "note": "update 后：3 块 8TB，可用 14.5TB"
+  },
+  {
+   "id": "q012",
+   "qs": [
+    "笔记软件为什么抛弃基于 Chromium 的桌面框架",
+    "为什么没选体量大的跨平台壳"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m001"
+   ],
+   "stale": [],
+   "note": "Electron 安装包 120MB+"
+  },
+  {
+   "id": "q013",
+   "qs": [
+    "和 AI 聊天时我希望它怎么回答",
+    "对助手输出风格的要求"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m010"
+   ],
+   "stale": [],
+   "note": "回答简洁、直接给命令、中文"
+  },
+  {
+   "id": "q014",
+   "qs": [
+    "迁居当天的运输开销是多少",
+    "搬运师傅那天一共付了多少钱"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m107"
+   ],
+   "stale": [],
+   "note": "货拉拉 260 + 辛苦费 100"
+  },
+  {
+   "id": "q015",
+   "qs": [
+    "为什么没采用所见即所得的富文本框架来做编辑器",
+    "编辑器底层库的取舍"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m008"
+   ],
+   "stale": [],
+   "note": "CM6 vs TipTap"
+  },
+  {
+   "id": "q016",
+   "qs": [
+    "化验单上某项偏高，医生让忌口的清单",
+    "高尿酸 饮食 医生怎么说"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m081"
+   ],
+   "stale": [],
+   "note": "少吃内脏浓汤啤酒，喝水 2L"
+  },
+  {
+   "id": "q017",
+   "qs": [
+    "为什么构建服务器要选老一点的 Linux 镜像",
+    "发行包兼容性和构建环境版本的关系"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m187"
+   ],
+   "stale": [],
+   "note": "ubuntu-22.04 为了较老的 glibc"
+  },
+  {
+   "id": "q018",
+   "qs": [
+    "外接的高分辨率大屏是什么牌子，多少钱",
+    "桌上那块显示设备的型号"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m162"
+   ],
+   "stale": [],
+   "note": "戴尔 U2723QE 3299 元"
+  },
+  {
+   "id": "q019",
+   "qs": [
+    "以前退订过哪个 AI 会员",
+    "停掉的付费聊天机器人订阅"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m047"
+   ],
+   "stale": [],
+   "note": "取消 ChatGPT Plus，最后扣费 2026-01-14"
+  },
+  {
+   "id": "q020",
+   "qs": [
+    "做设计的那位朋友在饮食上不能碰什么",
+    "谁对甲壳类过敏"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m014"
+   ],
+   "stale": [],
+   "note": "小林：蛋奶素，虾蟹过敏"
+  },
+  {
+   "id": "q021",
+   "qs": [
+    "上次修那个偶尔写不进去的数据库问题到底是怎么回事",
+    "数据库偶发失败的根因和修法"
+   ],
+   "type": "vague",
+   "gold": [
+    "m022"
+   ],
+   "stale": [],
+   "note": "只记得大意：偶发写入失败 -> database is locked 复盘"
+  },
+  {
+   "id": "q022",
+   "qs": [
+    "之前那个窗口一闪一闪、拖动很卡的问题怎么解决的",
+    "Linux 桌面上界面闪烁"
+   ],
+   "type": "vague",
+   "gold": [
+    "m114"
+   ],
+   "stale": [],
+   "note": "Wayland 闪烁，设环境变量"
+  },
+  {
+   "id": "q023",
+   "qs": [
+    "游戏引擎每隔几秒就卡一下是什么原因",
+    "Kiln 周期性掉帧后来怎么修的"
+   ],
+   "type": "vague",
+   "gold": [
+    "m201"
+   ],
+   "stale": [],
+   "note": "每 2 秒卡顿，create_buffer 每帧新建"
+  },
+  {
+   "id": "q024",
+   "qs": [
+    "今年有一次周末去山里住民宿徒步的事",
+    "油菜花那次出游"
+   ],
+   "type": "vague",
+   "gold": [
+    "m102"
+   ],
+   "stale": [],
+   "note": "莫干山，3 月 29 日"
+  },
+  {
+   "id": "q025",
+   "qs": [
+    "那个答应帮忙试玩的朋友是谁，他喜欢什么类型",
+    "谁帮我测关卡"
+   ],
+   "type": "vague",
+   "gold": [
+    "m166"
+   ],
+   "stale": [],
+   "note": "阿杰，爱 roguelike"
+  },
+  {
+   "id": "q026",
+   "qs": [
+    "搬家之前看过的那几套房子都是什么情况",
+    "挑房子时比较过哪些小区"
+   ],
+   "type": "vague",
+   "gold": [
+    "m068",
+    "m069"
+   ],
+   "stale": [],
+   "note": "古翠新村 4200 与星耀城 3600，两条都是答案"
+  },
+  {
+   "id": "q027",
+   "qs": [
+    "以前开发时一启动界面是空白的那个问题怎么解决的",
+    "Windows 上调试窗口全白"
+   ],
+   "type": "vague",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "WebView2 锁版本 + vite target"
+  },
+  {
+   "id": "q028",
+   "qs": [
+    "LNK1104"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m161"
+   ],
+   "stale": [],
+   "note": "报错码关键词，根因是 Defender 占用"
+  },
+  {
+   "id": "q029",
+   "qs": [
+    "WEBKIT_DISABLE_DMABUF_RENDERER"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m114"
+   ],
+   "stale": [],
+   "note": "环境变量名"
+  },
+  {
+   "id": "q030",
+   "qs": [
+    "Hotel Resol 乌丸"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m200"
+   ],
+   "stale": [],
+   "note": "京都住宿"
+  },
+  {
+   "id": "q031",
+   "qs": [
+    "BS34"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m023"
+   ],
+   "stale": [],
+   "note": "皇家猫粮型号，旧记忆（换粮后仍是该型号的唯一来源）"
+  },
+  {
+   "id": "q032",
+   "qs": [
+    "U2723QE"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m162"
+   ],
+   "stale": [],
+   "note": "显示器型号"
+  },
+  {
+   "id": "q033",
+   "qs": [
+    "immich-go Takeout 元数据"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m120"
+   ],
+   "stale": [],
+   "note": "迁移复盘的关键词"
+  },
+  {
+   "id": "q034",
+   "qs": [
+    "Fragile Tea post-mortem"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m142"
+   ],
+   "stale": [],
+   "note": "英文关键词"
+  },
+  {
+   "id": "q035",
+   "qs": [
+    "What plan is the blog server on and what does it cost per month?",
+    "Hetzner server specs and monthly price"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m004"
+   ],
+   "stale": [],
+   "note": "英问中；update 后月费 €4.59"
+  },
+  {
+   "id": "q036",
+   "qs": [
+    "How did I fix the blank white screen when running tauri dev on Windows?",
+    "white screen WebView2 vite target"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m011"
+   ],
+   "stale": [],
+   "note": "英问中"
+  },
+  {
+   "id": "q037",
+   "qs": [
+    "Did I choose CRDT or last-write-wins for the sync conflicts, and why?",
+    "sync conflict strategy decision"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m041"
+   ],
+   "stale": [],
+   "note": "英问中"
+  },
+  {
+   "id": "q038",
+   "qs": [
+    "Kiln 的 README 上那句宣传语是什么",
+    "Kiln 的 tagline"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m205"
+   ],
+   "stale": [],
+   "note": "中问英"
+  },
+  {
+   "id": "q039",
+   "qs": [
+    "同步协议的版本号放在哪个请求头里，太旧的客户端会收到什么状态码",
+    "同步协议 版本 头 426"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m195"
+   ],
+   "stale": [],
+   "note": "中问英"
+  },
+  {
+   "id": "q040",
+   "qs": [
+    "谁给墨格提了暗色主题的 PR，我要求他怎么改",
+    "dark theme 贡献者 PR 的评审意见"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m188"
+   ],
+   "stale": [],
+   "note": "中问英"
+  },
+  {
+   "id": "q041",
+   "qs": [
+    "三月份那次去山里徒步的住宿花了多少",
+    "三月底周末的出游"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m102"
+   ],
+   "stale": [],
+   "note": "3 月 29 日莫干山，民宿 1350"
+  },
+  {
+   "id": "q042",
+   "qs": [
+    "五一假期去哪里玩了，住在哪",
+    "劳动节那次爬山"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m125"
+   ],
+   "stale": [],
+   "note": "5 月 2 日黄山"
+  },
+  {
+   "id": "q043",
+   "qs": [
+    "去年十二月体检查出了什么问题",
+    "年底那次体检的结果"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m019",
+    "m020"
+   ],
+   "stale": [
+    "m219"
+   ],
+   "note": "2025-12-10 体检：尿酸 452 + 轻度脂肪肝；不是 2026 年 10 月那次"
+  },
+  {
+   "id": "q044",
+   "qs": [
+    "十月中旬参加的婚礼随了多少礼金",
+    "秋天在苏州的婚礼"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m215"
+   ],
+   "stale": [],
+   "note": "10 月 17 日小林婚礼，随礼 1888"
+  },
+  {
+   "id": "q045",
+   "qs": [
+    "六月底那次拔牙花了多少",
+    "夏天处理智齿的费用"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m157"
+   ],
+   "stale": [],
+   "note": "6 月 28 日拔智齿 680"
+  },
+  {
+   "id": "q046",
+   "qs": [
+    "九月中旬在京都的住宿",
+    "秋天去日本第二天住在哪"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m200"
+   ],
+   "stale": [],
+   "note": "9 月 16 日"
+  },
+  {
+   "id": "q047",
+   "qs": [
+    "墨格现在用的 tauri 是哪个版本",
+    "目前墨格依赖 Rust 工具链版本"
+   ],
+   "type": "latest",
+   "gold": [
+    "m018"
+   ],
+   "stale": [],
+   "note": "update 后：tauri 2.4.0，Rust 1.86.0"
+  },
+  {
+   "id": "q048",
+   "qs": [
+    "Kiln 目前用的 wgpu 是哪个版本",
+    "Kiln 图形库依赖现在多少"
+   ],
+   "type": "latest",
+   "gold": [
+    "m222"
+   ],
+   "stale": [
+    "m038"
+   ],
+   "note": "追加式改口：24.0.0"
+  },
+  {
+   "id": "q049",
+   "qs": [
+    "腾讯云轻量到期后还续不续",
+    "腾讯云服务器的处理决定"
+   ],
+   "type": "latest",
+   "gold": [
+    "m172"
+   ],
+   "stale": [
+    "m009"
+   ],
+   "note": "决定不续费"
+  },
+  {
+   "id": "q050",
+   "qs": [
+    "我现在住在哪里，房租多少",
+    "目前租的房子地址和月租"
+   ],
+   "type": "latest",
+   "gold": [
+    "m106"
+   ],
+   "stale": [
+    "m003"
+   ],
+   "note": "古翠新村 4200"
+  },
+  {
+   "id": "q051",
+   "qs": [
+    "年糕现在吃什么牌子的猫粮",
+    "目前给猫吃的粮"
+   ],
+   "type": "latest",
+   "gold": [
+    "m145"
+   ],
+   "stale": [
+    "m023"
+   ],
+   "note": "渴望六种鱼"
+  },
+  {
+   "id": "q052",
+   "qs": [
+    "墨格 v0.4 beta 现在定在什么时候发布",
+    "v0.4 beta 的最新发布日期"
+   ],
+   "type": "latest",
+   "gold": [
+    "m225"
+   ],
+   "stale": [],
+   "note": "update 后：2027-01-10"
+  },
+  {
+   "id": "q053",
+   "qs": [
+    "现在健身房办的是什么卡，到什么时候",
+    "乐刻目前的会员"
+   ],
+   "type": "latest",
+   "gold": [
+    "m112"
+   ],
+   "stale": [
+    "m053"
+   ],
+   "note": "年卡 1380，到 2027-04-11"
+  },
+  {
+   "id": "q054",
+   "qs": [
+    "NAS 当前的固定 IP 是多少",
+    "NAS 局域网地址现在是什么"
+   ],
+   "type": "latest",
+   "gold": [
+    "m108"
+   ],
+   "stale": [
+    "m077"
+   ],
+   "note": "192.168.50.20"
+  },
+  {
+   "id": "q055",
+   "qs": [
+    "现在订的 Claude 是什么档位，一个月多少钱",
+    "Claude 订阅目前每月费用"
+   ],
+   "type": "latest",
+   "gold": [
+    "m190"
+   ],
+   "stale": [
+    "m015"
+   ],
+   "note": "Max 5x $100/月"
+  },
+  {
+   "id": "q056",
+   "qs": [
+    "墨格 GitHub 现在有多少 Star",
+    "墨格目前的星标和下载量"
+   ],
+   "type": "latest",
+   "gold": [
+    "m217"
+   ],
+   "stale": [
+    "m149"
+   ],
+   "note": "1030 star"
+  },
+  {
+   "id": "q057",
+   "qs": [
+    "Hetzner 涨价之前月费是多少",
+    "Hetzner 最初的价格"
+   ],
+   "type": "history",
+   "gold": [
+    "m004"
+   ],
+   "stale": [],
+   "note": "旧值 €3.79/月，现为 €4.59"
+  },
+  {
+   "id": "q058",
+   "qs": [
+    "墨格 v0.3 最初计划哪天发布",
+    "v0.3 原定发布日期"
+   ],
+   "type": "history",
+   "gold": [
+    "m062"
+   ],
+   "stale": [],
+   "note": "旧值 2026-03-31，后推迟到 2026-04-30"
+  },
+  {
+   "id": "q059",
+   "qs": [
+    "NAS 刚买来时装了几块硬盘",
+    "NAS 最初的盘位配置"
+   ],
+   "type": "history",
+   "gold": [
+    "m005"
+   ],
+   "stale": [],
+   "note": "旧值：2 块 8TB，可用约 7.2TB，后加到 3 块"
+  },
+  {
+   "id": "q060",
+   "qs": [
+    "小林的婚礼最早定的是哪一天",
+    "婚礼最初的日期"
+   ],
+   "type": "history",
+   "gold": [
+    "m115"
+   ],
+   "stale": [],
+   "note": "旧值 2026-10-01，后改到 10-17"
+  },
+  {
+   "id": "q061",
+   "qs": [
+    "我在墨格的技术选型上做过哪些决定",
+    "墨格有哪些关键架构决策"
+   ],
+   "type": "overview",
+   "gold": [
+    "m001",
+    "m002",
+    "m008",
+    "m041",
+    "m052"
+   ],
+   "stale": [],
+   "note": "覆盖 s01 的子节点"
+  },
+  {
+   "id": "q062",
+   "qs": [
+    "墨格踩过哪些坑，根因分别是什么",
+    "墨格 bug 根因汇总"
+   ],
+   "type": "overview",
+   "gold": [
+    "m011",
+    "m022",
+    "m070",
+    "m114",
+    "m136"
+   ],
+   "stale": [],
+   "note": "覆盖 s02 的子节点"
+  },
+  {
+   "id": "q063",
+   "qs": [
+    "Kiln 引擎都做过哪些技术决定",
+    "Kiln 的库选型"
+   ],
+   "type": "overview",
+   "gold": [
+    "m027",
+    "m080",
+    "m094",
+    "m155",
+    "m169"
+   ],
+   "stale": [],
+   "note": "覆盖 s03 的子节点（rapier 已 update 为自研 AABB）"
+  },
+  {
+   "id": "q064",
+   "qs": [
+    "家里 NAS 上部署和配置了哪些东西",
+    "NAS 相关的设置和硬件升级"
+   ],
+   "type": "overview",
+   "gold": [
+    "m078",
+    "m058",
+    "m061",
+    "m158"
+   ],
+   "stale": [],
+   "note": "NAS 多点答案"
+  },
+  {
+   "id": "q065",
+   "qs": [
+    "今年都去过哪些地方旅行",
+    "出游记录"
+   ],
+   "type": "overview",
+   "gold": [
+    "m102",
+    "m125",
+    "m200",
+    "m202"
+   ],
+   "stale": [],
+   "note": "旅行多点答案"
+  },
+  {
+   "id": "q066",
+   "qs": [
+    "我的体检和身体指标有什么变化",
+    "健康指标的历史"
+   ],
+   "type": "overview",
+   "gold": [
+    "m019",
+    "m219",
+    "m123"
+   ],
+   "stale": [],
+   "note": "体检、复测多点答案"
+  },
+  {
+   "id": "q067",
+   "qs": [
+    "带老周吃饭时他的忌口和那顿饭花了多少",
+    "老周来杭州那顿饭的人均和口味限制"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m013",
+    "m198"
+   ],
+   "stale": [],
+   "note": "要组合口味与饭局两条"
+  },
+  {
+   "id": "q068",
+   "qs": [
+    "搬家当天的运费加上新家房租分别是多少",
+    "搬到新家的花费和月租"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m107",
+    "m106"
+   ],
+   "stale": [],
+   "note": "运费 + 房租"
+  },
+  {
+   "id": "q069",
+   "qs": [
+    "Kiln 同样的基准在台式机和笔记本上差多少帧",
+    "精灵批渲染的两台机器的对比"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m066",
+    "m067"
+   ],
+   "stale": [],
+   "note": "144 vs 38 fps"
+  },
+  {
+   "id": "q070",
+   "qs": [
+    "两个外包项目的总价加起来是多少",
+    "启明教育和蓝鲸科技一共多少钱"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m049",
+    "m095"
+   ],
+   "stale": [],
+   "note": "18000 + 12000（update 后）"
+  },
+  {
+   "id": "q071",
+   "qs": [
+    "老周爱吃什么，不能吃什么",
+    "老周的口味"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m013"
+   ],
+   "stale": [
+    "m014"
+   ],
+   "note": "近似干扰：小林/阿杰的口味"
+  },
+  {
+   "id": "q072",
+   "qs": [
+    "启明教育外包报价多少，对接人是谁",
+    "启明教育的项目"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m049"
+   ],
+   "stale": [
+    "m095"
+   ],
+   "note": "近似干扰：蓝鲸科技"
+  },
+  {
+   "id": "q073",
+   "qs": [
+    "去年体检的尿酸是多少，有没有脂肪肝",
+    "2025 年体检指标"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m019"
+   ],
+   "stale": [
+    "m219"
+   ],
+   "note": "近似干扰：2026 年 10 月体检"
+  },
+  {
+   "id": "q074",
+   "qs": [
+    "Keychron K3 Pro 多少钱，在哪用",
+    "出差带的那把键盘"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m203"
+   ],
+   "stale": [
+    "m116"
+   ],
+   "note": "近似干扰：Keychron Q1 Pro"
+  },
+  {
+   "id": "q075",
+   "qs": [
+    "妈妈的生日是哪天",
+    "妈妈今年多大，喜欢什么"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m055"
+   ],
+   "stale": [
+    "m056"
+   ],
+   "note": "近似干扰：爸爸的生日"
+  },
+  {
+   "id": "q076",
+   "qs": [
+    "古翠新村的租金是多少",
+    "文三路那套房的看房情况"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m068"
+   ],
+   "stale": [
+    "m069"
+   ],
+   "note": "近似干扰：星耀城"
+  },
+  {
+   "id": "q077",
+   "qs": [
+    "kiln-engine.dev 在哪注册的，一年多少钱",
+    "Kiln 的域名费用"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m029"
+   ],
+   "stale": [
+    "m012"
+   ],
+   "note": "近似干扰：moge.app"
+  },
+  {
+   "id": "q078",
+   "qs": [
+    "ThinkPad 上装的 Rust 是什么版本",
+    "Linux 笔记本的 rustc 版本"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m152"
+   ],
+   "stale": [
+    "m151"
+   ],
+   "note": "近似干扰：Windows 台式机的 Rust 版本"
+  },
+  {
+   "id": "q079",
+   "qs": [
+    "我开的是什么车，上次保养是什么时候",
+    "车辆 保养 记录"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关话题：库里没有车"
+  },
+  {
+   "id": "q080",
+   "qs": [
+    "去云南旅游的行程安排是什么",
+    "云南 大理 丽江 行程"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关话题：没去过云南"
+  },
+  {
+   "id": "q081",
+   "qs": [
+    "孩子在哪家幼儿园，学费多少",
+    "幼儿园 接送 时间"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关话题：没有孩子"
+  },
+  {
+   "id": "q082",
+   "qs": [
+    "持有的股票买入价和仓位",
+    "茅台 持仓 成本"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关话题：只有基金定投，没存股票持仓"
+  },
+  {
+   "id": "q083",
+   "qs": [
+    "雅思成绩是多少分",
+    "IELTS 考试 总分"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关话题"
+  },
+  {
+   "id": "q084",
+   "qs": [
+    "年糕现在体重多少公斤",
+    "猫的体重 称重记录"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（猫）但体重没存过"
+  },
+  {
+   "id": "q085",
+   "qs": [
+    "NAS 管理员账号的密码是什么",
+    "群晖 admin 密码"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "内容已被 delete（用户要求忘掉）"
+  },
+  {
+   "id": "q086",
+   "qs": [
+    "招商银行信用卡的额度是多少",
+    "信用卡 额度 尾号"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "内容已被 delete"
+  },
+  {
+   "id": "q087",
+   "qs": [
+    "Hetzner 服务器的公网 IP 是多少",
+    "Hetzner 机器 IP 地址"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（Hetzner）但 IP 没存过"
+  },
+  {
+   "id": "q088",
+   "qs": [
+    "老周的生日是哪天",
+    "老周 出生日期 几月几号"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（老周）但生日没存过"
+  }
+ ]
+}

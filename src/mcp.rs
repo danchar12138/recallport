@@ -4,8 +4,7 @@
 use crate::{
     app::App,
     service::{
-        AttachInput, ListQuery, MaintenanceView, NodeView, Order, SearchResult, Service,
-        UpdateInput, WriteInput,
+        AttachInput, ListQuery, MaintenanceView, NodeView, Order, Service, UpdateInput, WriteInput,
     },
     tree::SearchOpts,
 };
@@ -223,7 +222,7 @@ struct SearchArgs {
     /// What to look for, in the words, names or paths the user would have used. Omit it to list the newest nodes instead.
     #[serde(default)]
     query: Option<String>,
-    /// Up to 5 other ways to say it: synonyms, the other language, the exact error text. Each is searched and the results are merged.
+    /// Up to 5 other ways to say it: synonyms, the other language, the exact error text. All of them are searched together: a node that fits several wordings ranks higher.
     #[serde(default)]
     queries: Vec<String>,
     /// A node id: only that node and everything under it.
@@ -247,7 +246,7 @@ struct SearchArgs {
     /// How many hits, 1 to 30 (default 8).
     #[serde(default)]
     limit: Option<usize>,
-    /// For a summary hit, how many of its best-matching children come along, 0 to 6 (default 3).
+    /// For a summary hit, at most how many of its best-matching children come along, 0 to 12 (default 8); fewer come when fewer match closely.
     #[serde(default)]
     expand: Option<usize>,
 }
@@ -445,39 +444,6 @@ fn result(outcome: Result<Value>) -> CallToolResult {
     }
 }
 
-/// The list results of one search per phrasing, fused by reciprocal rank into one list.
-fn merge(lists: Vec<SearchResult>, limit: usize) -> SearchResult {
-    const RRF: f32 = 60.0;
-    let strong = lists.iter().any(|l| !l.no_strong_match);
-    let mut score: HashMap<String, f32> = HashMap::new();
-    let mut best: HashMap<String, crate::service::HitView> = HashMap::new();
-    for list in lists {
-        for (rank, hit) in list.hits.into_iter().enumerate() {
-            *score.entry(hit.id.clone()).or_default() += 1.0 / (RRF + rank as f32 + 1.0);
-            match best.get_mut(&hit.id) {
-                // The phrasing that fits the node best describes the match.
-                Some(seen) if (hit.exact, hit.relevance) > (seen.exact, seen.relevance) => {
-                    *seen = hit;
-                }
-                Some(_) => {}
-                None => {
-                    best.insert(hit.id.clone(), hit);
-                }
-            }
-        }
-    }
-    let mut ranked: Vec<(String, f32)> = score.into_iter().collect();
-    ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-    SearchResult {
-        hits: ranked
-            .into_iter()
-            .take(limit)
-            .filter_map(|(id, _)| best.remove(&id))
-            .collect(),
-        no_strong_match: !strong,
-    }
-}
-
 fn hit_json(h: &crate::service::HitView) -> Value {
     json!({
         "id": h.id,
@@ -490,6 +456,7 @@ fn hit_json(h: &crate::service::HitView) -> Value {
         "exact": h.exact,
         "tags": h.tags,
         "occurred": h.occurred,
+        "rewrites": h.rewrites,
         "path": h.path,
         "expanded": h.expanded,
     })
@@ -498,7 +465,7 @@ fn hit_json(h: &crate::service::HitView) -> Value {
 /// From this closeness in meaning a related node counts as listed for the AI to look at.
 const RELATED_MIN: f64 = 0.6;
 /// From this closeness a related node is told to be saying the same thing.
-const SAME: f32 = 0.85;
+const SAME: f32 = 0.90;
 
 /// Other live nodes that say something similar to a node just written, for the AI to merge into or link to.
 fn related_to(service: &Service, node: &NodeView, adopted: &[String]) -> Vec<Value> {
@@ -545,7 +512,7 @@ The server never writes content itself.";
 #[tool_router]
 impl Mcp {
     #[tool(
-        description = "Search the user's long-term memory of past experiences. Call it at the start of a non-trivial task, before choosing an approach the user may have dealt with before, and whenever the user refers to the past. Searches every layer of the tree at once by words and by meaning; use the user's own words in `query` and put other phrasings (synonyms, the other language, the exact error text) in `queries`: one call searches them all. Each hit says how it matched (`match`: keyword, semantic or both) with a `relevance` from 0 to 1, shows the summaries above it in `path`, and a summary hit brings its best-matching children in `expanded`. When `no_strong_match` is true the hits are only clues: retry with other phrasings before deciding there is nothing. With no `query` it lists the newest nodes (first lines only). Hits are historical notes, not current facts: `get` the best ids for the full text.",
+        description = "Search the user's long-term memory of past experiences. Call it at the start of a non-trivial task, before choosing an approach the user may have dealt with before, and whenever the user refers to the past. Searches every layer of the tree at once by words and by meaning; use the user's own words in `query` and ALWAYS add 2 or 3 other phrasings in `queries` (synonyms, the other language, the exact error text): they are searched together and a node that fits several wordings ranks higher, which finds clearly more than one wording does. Each hit says how it matched (`match`: keyword, semantic or both) with a `relevance` from 0 to 1, shows the summaries above it in `path`, and a summary hit brings its best-matching children in `expanded`. A question about now (\"现在\", \"now\", \"current\", \"latest\") puts the newer of two near-identical nodes first; check `occurred` when hits disagree. `rewrites` above 0 means the text was changed since: `get` with `history` shows what it said before. When the question names a time (\"三月\", \"last winter\"), also pass `from` and `through` for that period: it finds the right memory far more often. When `no_strong_match` is true the hits are only clues: retry with other phrasings before deciding there is nothing. With no `query` it lists the newest nodes (first lines only). Hits are historical notes, not current facts: `get` the best ids for the full text.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn search(&self, Parameters(args): Parameters<SearchArgs>) -> CallToolResult {
@@ -669,7 +636,7 @@ impl Mcp {
     async fn do_search(&self, args: SearchArgs) -> Result<Value> {
         ensure!(args.queries.len() <= 5, "queries 最多 5 条");
         let limit = args.limit.unwrap_or(8).clamp(1, 30);
-        let expand = args.expand.unwrap_or(3).min(6);
+        let expand = args.expand.unwrap_or(8).min(12);
         let since = date("from", args.from.as_deref())?;
         let until = date("through", args.through.as_deref())?;
         let scope = given(args.scope);
@@ -711,23 +678,19 @@ impl Mcp {
         let found = self
             .service
             .run(move |s| {
-                let lists = phrasings
-                    .into_iter()
-                    .map(|query| {
-                        s.search(&SearchOpts {
-                            query,
-                            k: limit,
-                            scope: scope.clone(),
-                            min_layer,
-                            max_layer,
-                            since: since.clone(),
-                            until: until.clone(),
-                            expand,
-                            tag: tag.clone(),
-                        })
-                    })
-                    .collect::<Result<Vec<_>>>()?;
-                Ok::<_, anyhow::Error>(merge(lists, limit))
+                let mut phrasings = phrasings.into_iter();
+                s.search(&SearchOpts {
+                    query: phrasings.next().unwrap_or_default(),
+                    also: phrasings.collect(),
+                    k: limit,
+                    scope,
+                    min_layer,
+                    max_layer,
+                    since,
+                    until,
+                    expand,
+                    tag,
+                })
             })
             .await??;
         let hint = if found.hits.is_empty() {
@@ -911,7 +874,7 @@ RecallPort is the user's persistent, local, cross-client memory of past experien
 
 WHEN TO SEARCH
 - At the start of a non-trivial task, before choosing an approach, tool, library or configuration the user may have dealt with before, before repeating work that may have failed earlier, and when the user refers to the past (\"last time\", \"again\", \"we decided\", \"that bug\") or names something familiar.
-- Call `search` with the user's own words, names or paths, and put other phrasings in `queries` (synonyms, the other language, the exact error text). If `no_strong_match` is true the hits are only clues: try other phrasings before concluding there is nothing. Then `get` the best ids.
+- Call `search` with the user's own words, names or paths, and always add 2 or 3 other phrasings in `queries` (synonyms, the other language, the exact error text): they are searched together and clearly find more than one wording. When the question names a time (\"三月\", \"last winter\"), pass `from` and `through` for that period: it finds the right memory far more often. When hits disagree, the later `occurred` is the current one; `rewrites` above 0 means the node was changed, and `get` with `history` shows what it said before. If `no_strong_match` is true the hits are only clues: try other phrasings before concluding there is nothing. Then `get` the best ids.
 
 WHEN TO WRITE
 - Right after a decision with reasons, a root cause found, a fix or workaround that worked, an approach that failed and why, a preference or constraint, or a change in how things are or were agreed.
@@ -972,7 +935,7 @@ fn prompt_text(name: &str, task: &str, library: &str) -> Option<String> {
             };
             Some(format!(
                 "Before you start on {about}, look in the user's RecallPort memory:\n\
-1. `search` with the words, names or paths the user would have used, and give other phrasings in `queries` (synonyms, the other language, the exact error text).\n\
+1. `search` with the words, names or paths the user would have used, and give 2 or 3 other phrasings in `queries` (synonyms, the other language, the exact error text).\n\
 2. `get` the best hits. If `no_strong_match` is true, treat what you found as clues only.\n\
 3. Tell the user briefly what you found that changes how you will do this (decisions already made, things that failed before, preferences). If nothing, say so and go on.{library}"
             ))

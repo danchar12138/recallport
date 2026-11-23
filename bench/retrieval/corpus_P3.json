@@ -1,0 +1,3840 @@
+{
+ "persona": "23 岁中国留学生，在悉尼 UNSW 读计算机硕士，记忆以中文为主夹杂英文课程名和术语；涉及课程与 deadline、assignment 踩坑、合租与搬家、签证银行手机、兼职、实习申请、汇率省钱、回国机票和健身。",
+ "today": "2026-11-20",
+ "events": [
+  {
+   "op": "write",
+   "key": "m001",
+   "title": "兼职：鼎香麻辣烫",
+   "content": "用户在 Haymarket 的鼎香麻辣烫做 casual，后厨配菜加收银，时薪 $27，每两周的周四发薪，店长是王姐。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2025-11-21"
+  },
+  {
+   "op": "write",
+   "key": "m002",
+   "title": "",
+   "content": "用户每周排班：周五 18:00–22:00、周六 11:00–17:00、周日 11:00–17:00，一周 16 小时、两周 32 小时，低于学生签证每两周 48 小时的上限。",
+   "tags": [
+    "兼职",
+    "签证"
+   ],
+   "occurred": "2025-11-21"
+  },
+  {
+   "op": "write",
+   "key": "m003",
+   "title": "COMP9331 STP 作业",
+   "content": "COMP9331 的 assignment 要用 Python3 在 UDP 之上实现可靠传输协议 STP（握手、滑动窗口、超时重传、四次挥手），report 限 3 页，截止 2025-11-28 18:00。",
+   "tags": [
+    "COMP9331"
+   ],
+   "occurred": "2025-11-22"
+  },
+  {
+   "op": "write",
+   "key": "m004",
+   "title": "",
+   "content": "COMP9331 评分构成：期末 50%、assignment 30%、两次随堂 quiz 共 20%；DN 需要 75 分以上。",
+   "tags": [
+    "COMP9331"
+   ],
+   "occurred": "2025-11-23"
+  },
+  {
+   "op": "write",
+   "key": "m005",
+   "title": "9331 教师与助教",
+   "content": "COMP9331 的 lecturer 是 Dr. Tran，答疑 TA 叫 Marcus，周二下午 3 点有 consultation，邮件回得很快。",
+   "tags": [
+    "COMP9331"
+   ],
+   "occurred": "2025-11-24"
+  },
+  {
+   "op": "write",
+   "key": "m006",
+   "title": "",
+   "content": "用户 2025-11-25 用 Wise 把 ¥10,000 换成 A$2,155，汇率 4.64，手续费大约 ¥42。",
+   "tags": [
+    "汇率"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m007",
+   "title": "体重与目标",
+   "content": "用户身高 178cm，体重 76.5kg，想在 2026 年 8 月前降到 70kg，计划每周去 gym 三次。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m008",
+   "title": "9444 师资",
+   "content": "COMP9444 的 lecturer 是 Dr. Okafor，TA 叫 Jun，consultation 在周一下午 3 点，Jun 回邮件比较慢，一般要两三天。",
+   "tags": [
+    "COMP9444"
+   ],
+   "occurred": "2025-11-25"
+  },
+  {
+   "op": "write",
+   "key": "m009",
+   "title": "9444 作业一",
+   "content": "COMP9444 第一个 assignment 是 Kuzushiji-MNIST 日文手写字符分类，要写 NetFull 和 NetConv，NetConv 准确率 ≥93% 才拿满分；用户的 NetConv 用 3 层 conv + dropout 0.3，测试集 96.1%。",
+   "tags": [
+    "COMP9444"
+   ],
+   "occurred": "2025-11-26"
+  },
+  {
+   "op": "write",
+   "key": "m010",
+   "title": "STP 重传死循环复盘",
+   "content": "COMP9331 STP 作业调试复盘：丢包率 20% 时 sender 会卡住，日志里一直重复 'timeout, resend seq=1042'。根因是 timer 只在发送时启动，收到累计 ACK 后没有重置，窗口滑动后也没有对最早未确认的包重新计时，旧包的超时一直连续触发；另外 receiver 对乱序包没缓存，直接丢掉，造成大量无用重传。修复：1）sender 只保留一个 timer，只对 base 包计时，ACK 推进 base 时重启；2）receiver 用 dict 缓存 out-of-order 包，按 seq 顺序交付；3）timeout 用 EstimatedRTT+4*DevRTT，初始值 0.5 秒。修完后 20% 丢包下传 1MB 文件 4 秒内完成，重传次数从 900 多降到 210 左右。",
+   "tags": [
+    "COMP9331",
+    "调试"
+   ],
+   "occurred": "2025-11-27"
+  },
+  {
+   "op": "write",
+   "key": "m011",
+   "title": "",
+   "content": "用户在 11 月 28 日下午 4 点提交了 COMP9331 的 STP 作业，比截止时间早两小时，提交前自己用 10%、20%、30% 三种丢包率复测过。",
+   "tags": [
+    "COMP9331"
+   ],
+   "occurred": "2025-11-28"
+  },
+  {
+   "op": "write",
+   "key": "m012",
+   "title": "",
+   "content": "周六悉尼下大雨，用户下班路上被淋透，公交晚点了 20 分钟。",
+   "tags": [],
+   "occurred": "2025-11-29"
+  },
+  {
+   "op": "write",
+   "key": "m013",
+   "title": "Kingsford 住处",
+   "content": "用户现住 Kingsford，Gardeners Rd 附近的三室两厅公寓，自己一间房，周租 $295，另外两位室友是小周和阿杰。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m014",
+   "title": "",
+   "content": "Kingsford 住处的押金（bond）是 $1,180，等于 4 周房租，中介已存进 NSW Fair Trading 的 Rental Bonds Online。",
+   "tags": [
+    "租房",
+    "押金"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m015",
+   "title": "室友小周",
+   "content": "室友小周（周屹）是杭州人，在 UNSW 读工程硕士；他不吃香菜，对花生过敏，大家合伙做饭时要避开这两样。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m016",
+   "title": "室友阿杰",
+   "content": "室友阿杰（Jason）学会计，爱吃辣，常常打游戏到凌晨 2 点，晚上 11 点后客厅比较吵。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m017",
+   "title": "水电网分摊",
+   "content": "Kingsford 住处 9–11 月电费账单 $412.60，三人均摊每人 $137.53；网费 Aussie Broadband 每月 $89，三人平分约 $29.67。",
+   "tags": [
+    "租房",
+    "账单"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m018",
+   "title": "",
+   "content": "Kingsford 公寓楼下有投币洗衣房，洗一次 $4、烘干 $3，要用硬币或者刷 laundry app；用户一般周日早上去，人少。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m019",
+   "title": "学生签证",
+   "content": "用户持学生签证 subclass 500，到期日 2027-03-15，附带 8105 工作条件：学期内每两周最多工作 48 小时。",
+   "tags": [
+    "签证"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m020",
+   "title": "OSHC",
+   "content": "用户的 OSHC 买的是 Allianz Care，保到 2027-03-31；看全科医生直接刷卡结算，门诊自付部分事后在 app 里申请报销。",
+   "tags": [
+    "签证",
+    "健康"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m021",
+   "title": "9331 期末规则",
+   "content": "COMP9331 期末考试 2025-12-10 下午 2 点，2 小时，开卷，但只能带一张 A4 双面手写 cheat sheet。",
+   "tags": [
+    "COMP9331",
+    "考试"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m022",
+   "title": "9444 期末规则",
+   "content": "COMP9444 期末 2025-12-12 上午 9 点，闭卷，只允许带一页 A4 单面打印笔记；重点是 backprop 推导和 CNN 输出维度计算。",
+   "tags": [
+    "COMP9444",
+    "考试"
+   ],
+   "occurred": "2025-12-06"
+  },
+  {
+   "op": "write",
+   "key": "m023",
+   "title": "",
+   "content": "用户在 2025 年 9 月买了 ActiveUNSW 的 gym 学期卡，T3 价格 $139，12 月中到期；Kensington 的 gym 在 Sports Centre，周一到周五 6:00–22:00 开放。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m024",
+   "title": "",
+   "content": "用户护照号 E58203417，签发地 南京，2031-06-02 到期，办手机卡和租房时要用。",
+   "tags": [
+    "证件"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m025",
+   "title": "",
+   "content": "COMP9331 的 cheat sheet 用户手写了 STP 状态机、TCP 拥塞控制的 slow start 和 AIMD 图，以及 Dijkstra 的例题，字写得很小，正反两面刚好写满。",
+   "tags": [
+    "COMP9331",
+    "考试"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m026",
+   "title": "",
+   "content": "Kingsford 三人轮流做晚饭：周一小周、周三阿杰、周五用户，周末各吃各的；用户拿手的是番茄炒蛋和葱油拌面。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m027",
+   "title": "",
+   "content": "考试周 UNSW Main Library 的座位要提前一天在预约系统里订，一次最多 4 小时；用户常订 Level 3 靠窗的位置。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m028",
+   "title": "",
+   "content": "考完 COMP9444，用户觉得 backprop 那道大题没做完，晚上和小周去 Haymarket 吃了烤鱼。",
+   "tags": [],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m029",
+   "title": "回国机票（2025 冬）",
+   "content": "用户 2025-12-16 乘东航 MU562 悉尼飞上海浦东，2026-02-07 乘 MU561 回悉尼，往返 A$1,215，含 2 件 23kg 托运。",
+   "tags": [
+    "机票"
+   ],
+   "occurred": "2025-12-14"
+  },
+  {
+   "op": "write",
+   "key": "m030",
+   "title": "",
+   "content": "12 月 16 日的航班是晚上 22:30 起飞；Kingsford 去机场坐 Airport train 加机场站附加费大约 $22。钥匙回国期间留给阿杰。",
+   "tags": [
+    "机票"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m031",
+   "title": "COMP9331 成绩",
+   "content": "COMP9331 最终 78 分（DN）：assignment 27/30，期末 39/50，quiz 12/20。",
+   "tags": [
+    "COMP9331",
+    "成绩"
+   ],
+   "occurred": "2025-12-20"
+  },
+  {
+   "op": "write",
+   "key": "m032",
+   "title": "COMP9444 成绩",
+   "content": "COMP9444 最终 83 分（DN），离 HD 差 2 分；assignment 1 拿了满分，期末 backprop 大题丢了 8 分。",
+   "tags": [
+    "COMP9444",
+    "成绩"
+   ],
+   "occurred": "2025-12-23"
+  },
+  {
+   "op": "write",
+   "key": "m033",
+   "title": "",
+   "content": "用户回国从浦东坐地铁转虹桥再乘高铁回南京，二等座 ¥144，全程大约 3 个半小时，到家是 12 月 17 号晚上。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2025-12-24"
+  },
+  {
+   "op": "write",
+   "key": "m034",
+   "title": "AirPods Pro 2",
+   "content": "用户在京东买了 AirPods Pro 2，¥1,399，准备带回悉尼通勤和上网课时用。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2025-12-26"
+  },
+  {
+   "op": "write",
+   "key": "m035",
+   "title": "父母的饮食",
+   "content": "用户妈妈对海鲜过敏，爸爸爱喝黄酒；这次回家吃饭家里尽量不上虾蟹。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2025-12-28"
+  },
+  {
+   "op": "write",
+   "key": "m036",
+   "title": "家里的狗团子",
+   "content": "用户家里的柴犬叫团子，8 岁，爱吃鸡肉冻干，每年 3 月换毛特别严重。",
+   "tags": [
+    "家人"
+   ],
+   "occurred": "2025-12-30"
+  },
+  {
+   "op": "write",
+   "key": "m037",
+   "title": "",
+   "content": "用户的国内手机号用联通 ¥9/月的保号套餐，从支付宝自动扣款，在悉尼期间只用来收验证码。",
+   "tags": [
+    "手机"
+   ],
+   "occurred": "2026-01-03"
+  },
+  {
+   "op": "write",
+   "key": "m038",
+   "title": "",
+   "content": "表哥林宇在 Melbourne 的 Monash 读 PhD，说好了 Easter 假期用户去墨尔本找他玩。",
+   "tags": [
+    "家人",
+    "旅行"
+   ],
+   "occurred": "2026-01-05"
+  },
+  {
+   "op": "write",
+   "key": "m039",
+   "title": "换汇规则",
+   "content": "用户总结：国内银行电汇手续费太高，现在都用 Wise；家里给的钱等 AUD/CNY 高于 4.60 才一次性大额换，低于这个价位就先少换一点应付开销。",
+   "tags": [
+    "汇率",
+    "省钱"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "write",
+   "key": "m040",
+   "title": "",
+   "content": "用户在家见了高中同学阿凯，他在上海做算法工程师，说他们组今年校招要的人不多，建议用户先拿悉尼的实习经历。",
+   "tags": [
+    "朋友"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m041",
+   "title": "暑期实习计划",
+   "content": "用户计划申请 2026/27 summer internship（悉尼），目标公司是 Atlassian、Canva、CBA、Macquarie、Amazon，2 月开始系统刷题，目标 LeetCode 150 题，以 medium 为主。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "write",
+   "key": "m042",
+   "title": "",
+   "content": "用户在南京配了新眼镜，左眼 -4.25、右眼 -4.00，花了 ¥860；在悉尼配同款要 $300 以上，所以趁回国配。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m043",
+   "title": "",
+   "content": "在家看了一部老电影，一整天没出门，感觉有点浪费。",
+   "tags": [],
+   "occurred": "2026-01-18"
+  },
+  {
+   "op": "write",
+   "key": "m044",
+   "title": "",
+   "content": "在家这几周作息乱了，常常睡到上午 11 点，用户说回悉尼前要把时差和作息调回来。",
+   "tags": [],
+   "occurred": "2026-01-20"
+  },
+  {
+   "op": "write",
+   "key": "m045",
+   "title": "",
+   "content": "用户选 2 月 7 日回悉尼，是因为春节前后机票会涨 A$300 以上，而 T1 要到 2 月 16 日才开学，早回去一周也能先把租房和兼职排班安排好。",
+   "tags": [
+    "机票"
+   ],
+   "occurred": "2026-01-28"
+  },
+  {
+   "op": "write",
+   "key": "m046",
+   "title": "T1 选课",
+   "content": "用户 2026 T1 选了 COMP9417 Machine Learning 和 COMP9321 Data Services Engineering，T1 从 2026-02-16 开始，census date 是 3 月 1 日。",
+   "tags": [
+    "选课"
+   ],
+   "occurred": "2026-02-01"
+  },
+  {
+   "op": "write",
+   "key": "m047",
+   "title": "T1 学费",
+   "content": "T1 学费 2 门课共 $11,760（每门 $5,880），家里 2 月 3 日通过 Flywire 一次性付清。",
+   "tags": [
+    "学费"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "write",
+   "key": "m048",
+   "title": "新室友 Leo",
+   "content": "阿杰 1 月底搬走了，他的房间 2 月 8 日起由 Leo 住，Leo 是马来西亚来的 Data Science 硕士；现在 Kingsford 三个人是用户、小周和 Leo。",
+   "tags": [
+    "室友",
+    "租房"
+   ],
+   "occurred": "2026-02-08",
+   "supersedes": "m016"
+  },
+  {
+   "op": "write",
+   "key": "m049",
+   "title": "Opal 规则",
+   "content": "用户的 Opal 是成人卡，每周（周一到周日）封顶 $50，周日全天封顶 $9 出头；国际学生没有学生折扣，之前申请 concession 被拒过。",
+   "tags": [
+    "交通"
+   ],
+   "occurred": "2026-02-09"
+  },
+  {
+   "op": "write",
+   "key": "m050",
+   "title": "当前体重",
+   "content": "用户回悉尼后称重 78.2kg，在国内一个半月胖了 1.7kg，计划从下周开始每周 3 次 gym 加每晚少吃主食。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-02-10"
+  },
+  {
+   "op": "write",
+   "key": "m051",
+   "title": "",
+   "content": "用户 2 月 11 日买了 ActiveUNSW 的 T1 gym 学期卡，$145；这学期打算周二、周四、周六去练。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-02-11"
+  },
+  {
+   "op": "write",
+   "key": "m052",
+   "title": "COMP9417 评分",
+   "content": "COMP9417 评分：assignment 1 占 15%，assignment 2 占 20%，小组项目 15%，期末 50%；Lecturer 是 Dr. Hu。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m053",
+   "title": "训练安排",
+   "content": "用户的训练安排：周二练推（胸肩三头）、周四练拉（背和二头）、周六练腿；每次 60 到 75 分钟，练完喝一份乳清蛋白。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m054",
+   "title": "COMP9321 评分",
+   "content": "COMP9321 评分：assignment 1（REST API）15%、assignment 2（Flask-RESTx + 模型服务）20%、assignment 3（数据管道）15%，期末 50%；Lecturer 是 Dr. Patel。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-02-13"
+  },
+  {
+   "op": "write",
+   "key": "m055",
+   "title": "",
+   "content": "T1 课表：COMP9417 周二 14:00–16:00 在 Mathews Theatre B；COMP9321 周四 10:00–12:00 在 Clancy Auditorium；周三没有课，所以不排班，用来写作业。",
+   "tags": [
+    "选课"
+   ],
+   "occurred": "2026-02-14"
+  },
+  {
+   "op": "write",
+   "key": "m056",
+   "title": "",
+   "content": "O-Week 用户逛了社团摊位，抽到一张 Subway 的 $15 优惠券，加入了羽毛球社团的邮件列表。",
+   "tags": [],
+   "occurred": "2026-02-15"
+  },
+  {
+   "op": "write",
+   "key": "m057",
+   "title": "T1 排班",
+   "content": "T1 开学后用户的兼职排班改成周六 11:00–19:00 和周日 11:00–17:00，周五晚不上了，一周 14 小时。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2026-02-17",
+   "supersedes": "m002"
+  },
+  {
+   "op": "write",
+   "key": "m058",
+   "title": "9417 助教",
+   "content": "COMP9417 的 TA Liam 打分偏严，要求作业 report 里分类结果必须附 normalised confusion matrix，缺了会直接扣分；他的 consultation 是周三上午 11 点。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m059",
+   "title": "9321 助教",
+   "content": "COMP9321 的 TA 是 Sophie，周四下午 3 点有 consultation，对 Swagger 文档的完整性很在意，每个 endpoint 都要有 description。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m060",
+   "title": "键盘",
+   "content": "用户买了 Keychron K8 Pro（茶轴），$159，在宿舍和图书馆写代码用；之前的旧键盘送给小周了。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2026-02-20"
+  },
+  {
+   "op": "write",
+   "key": "m061",
+   "title": "买菜预算",
+   "content": "用户平时在 Aldi 买菜，每周大约 $55，鸡胸肉 $9.99/kg 是性价比最高的蛋白质，鸡蛋买 12 个装 $4.5。",
+   "tags": [
+    "省钱",
+    "饮食"
+   ],
+   "occurred": "2026-02-21"
+  },
+  {
+   "op": "write",
+   "key": "m062",
+   "title": "",
+   "content": "刚回悉尼两周，时差没倒过来，晚上一个人煮泡面时有点想家，不过过两天就好了。",
+   "tags": [],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m063",
+   "title": "ING 储蓄账户",
+   "content": "用户开了 ING Savings Maximiser，含 bonus 的利率 4.9%；条件是每月存入至少 $1,000 且刷卡 5 笔以上；先转进去 $3,000。",
+   "tags": [
+    "银行",
+    "省钱"
+   ],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m064",
+   "title": "CommBank 账户",
+   "content": "用户日常用 CommBank Smart Access，BSB 062-185，账号 4471 2093，学生免月费；室友转账都转到这个账号。",
+   "tags": [
+    "银行",
+    "账号"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m065",
+   "title": "刷题进度",
+   "content": "用户按 Neetcode 150 刷题，到 2 月底刷了 38 题，错得最多的是 DP 和 sliding window，打算每天固定 2 题。",
+   "tags": [
+    "实习",
+    "学习"
+   ],
+   "occurred": "2026-02-25"
+  },
+  {
+   "op": "write",
+   "key": "m066",
+   "title": "",
+   "content": "小周生日是 3 月 9 日，大家商量买 Black Star Pastry 的草莓西瓜蛋糕，大约 $78，三人均摊。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-02-26"
+  },
+  {
+   "op": "write",
+   "key": "m067",
+   "title": "羽毛球社团",
+   "content": "用户加入了 UNSW Badminton Society，会员费 $20/年，每周二晚上 7 点在 Sports Centre 打球。",
+   "tags": [
+    "爱好"
+   ],
+   "occurred": "2026-02-27"
+  },
+  {
+   "op": "write",
+   "key": "m068",
+   "title": "学长 Kevin",
+   "content": "学长 Kevin 去年毕业，现在在 Atlassian 做 SWE，帮用户内推了 Atlassian，说他们技术面之外很看重 values 那一轮。",
+   "tags": [
+    "实习",
+    "人物"
+   ],
+   "occurred": "2026-02-28"
+  },
+  {
+   "op": "summary",
+   "key": "s01",
+   "title": "Kingsford 合租概况",
+   "content": "用户 2025 年起住 Kingsford 三室两厅，自己一间房，周租 $295，押金 $1,180；水电网三人均摊（9–11 月电费 $412.60、网费 $89/月）。室友先是小周（杭州人，不吃香菜、花生过敏）和阿杰（爱吃辣、熬夜），阿杰 1 月底搬走后换成了 Leo。",
+   "adopt": [
+    "m013",
+    "m014",
+    "m015",
+    "m016",
+    "m017",
+    "m048"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m069",
+   "title": "Atlassian 投递",
+   "content": "用户 3 月 2 日投了 Atlassian 的 Software Engineer Intern（2026/27 summer，悉尼），带了学长 Kevin 的 referral。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "write",
+   "key": "m070",
+   "title": "简历版本",
+   "content": "用户的简历是一页的 Jake's Resume 模板（Overleaf），放了三个项目：STP 可靠传输、COMP9321 的 REST API 服务、InsideAirbnb 价格预测；GitHub 链接放在抬头。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "write",
+   "key": "m071",
+   "title": "显示器",
+   "content": "用户在 Facebook Marketplace 买了台二手 Dell 27 寸 4K 显示器，$180，买来放在 Kingsford 的书桌上写作业用。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2026-03-04"
+  },
+  {
+   "op": "update",
+   "key": "m013",
+   "content": "用户现住 Kingsford，Gardeners Rd 附近的三室两厅公寓，自己一间房。中介 3 月 5 日通知续约涨价，周租从 $295 涨到 $320（2026-03-16 起），另外两位室友是小周和 Leo。",
+   "occurred": "2026-03-05",
+   "title": "Kingsford 住处"
+  },
+  {
+   "op": "write",
+   "key": "m072",
+   "title": "Canva 投递",
+   "content": "用户 3 月 5 日投了 Canva 的 Software Engineering Intern，没有 referral，只投了简历和 GitHub 链接。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m073",
+   "title": "不续约",
+   "content": "用户 3 月 8 日给中介发邮件不续约，Kingsford 租约 4 月 10 日结束；原因是涨价 $25/周，以及 Leo 常在阳台抽烟，烟味飘进用户房间。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-03-08"
+  },
+  {
+   "op": "write",
+   "key": "m074",
+   "title": "",
+   "content": "小周生日买了 Black Star Pastry 的草莓西瓜蛋糕，$78，用户出了 $26，小周很开心，说下次一起去吃海底捞。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-03-09"
+  },
+  {
+   "op": "write",
+   "key": "m075",
+   "title": "Macquarie 投递",
+   "content": "用户 3 月 10 日投了 Macquarie 的 Technology Summer Internship，申请表里要填 WAM 和一段 300 字的动机。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-03-10"
+  },
+  {
+   "op": "write",
+   "key": "m076",
+   "title": "看房记录",
+   "content": "用户 3 月 10 日看了两处房：Randwick Alison Rd 附近的三室，次卧 $340/周含水电网；Kensington Anzac Pde 的 studio $520/周，太贵没考虑。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-03-10"
+  },
+  {
+   "op": "write",
+   "key": "m077",
+   "title": "新租约（Randwick）",
+   "content": "用户 3 月 12 日签了 Randwick 的新租约：租期 12 个月，2026-04-12 到 2027-04-11，次卧周租 $340 含水电网，bond $1,360，室友是 Hana 和老陈。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m078",
+   "title": "",
+   "content": "周五下午排队补办学生证花了 40 分钟，办完又下雨了。",
+   "tags": [],
+   "occurred": "2026-03-13"
+  },
+  {
+   "op": "write",
+   "key": "m079",
+   "title": "",
+   "content": "3 月 14 日用户 23 岁生日，小周和 Leo 订了蛋糕，妈妈发了 ¥520 红包，晚上和朋友吃了烤肉。",
+   "tags": [
+    "生日"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "write",
+   "key": "m080",
+   "title": "Atlassian OA",
+   "content": "Atlassian 的 online assessment 是 HackerRank，90 分钟 2 题：一题 sliding window，一题 graph BFS；用户两题都 AC，大约用了 70 分钟。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-03-15"
+  },
+  {
+   "op": "write",
+   "key": "m081",
+   "title": "",
+   "content": "COMP9417 assignment 1 的截止日期是 3 月 27 日 23:59。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-03-16"
+  },
+  {
+   "op": "delete",
+   "key": "m081"
+  },
+  {
+   "op": "write",
+   "key": "m082",
+   "title": "9417 作业一",
+   "content": "COMP9417 assignment 1（决策树、kNN，用 sklearn）截止 2026-03-20 23:59，占 15%；要求 random_state=42 保证可复现，提交 Jupyter notebook 加 PDF。用户之前把截止日记错了。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-03-17"
+  },
+  {
+   "op": "write",
+   "key": "m083",
+   "title": "",
+   "content": "用户 3 月 18 日用 Wise 把 ¥15,000 换成 A$3,191，汇率 4.70，比 1 月那次划算，因为超过了 4.60 的阈值。",
+   "tags": [
+    "汇率"
+   ],
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "write",
+   "key": "m084",
+   "title": "",
+   "content": "用户 3 月 18 日把 Opal 卡弄丢了，在官网挂失后新卡到了，旧卡余额 $17.30 自动转到新卡。",
+   "tags": [
+    "交通"
+   ],
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "write",
+   "key": "m085",
+   "title": "9321 作业一",
+   "content": "COMP9321 assignment 1 是用 Flask-RESTx 做 REST API，对接 TVMaze，截止 2026-03-27 17:00，占 15%；必须用 SQLite 存储，不能用 ORM 之外的外部库。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-03-19"
+  },
+  {
+   "op": "write",
+   "key": "m086",
+   "title": "CBA 投递",
+   "content": "用户 3 月 20 日投了 Commonwealth Bank（CBA）的 Technology Internship Program，申请表要求上传成绩单，回复说两周内会有 online assessment。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m087",
+   "title": "9321 数据库被锁",
+   "content": "COMP9321 assignment 1 踩坑：本地跑 Flask-RESTx 时偶尔报 'sqlite3.OperationalError: database is locked'，POST 导入 TVMaze 数据到一半就挂。排查了半天，根因是 app.run(debug=True) 带了 reloader，会起两个进程，两个进程同时打开同一个 .db 文件，写入就互相锁住。另外导入函数里没有 commit 就开了第二个 connection。修复：1）调试时 use_reloader=False；2）整个导入过程用同一个 connection，批量 executemany 后统一 commit；3）连接加 timeout=10。改完 100 个节目的导入从 40 秒降到 3 秒，也不再报锁。Sophie 在 consultation 上也提醒过 SQLite 不要多进程写。",
+   "tags": [
+    "COMP9321",
+    "调试"
+   ],
+   "occurred": "2026-03-22"
+  },
+  {
+   "op": "write",
+   "key": "m088",
+   "title": "模拟面试",
+   "content": "用户 3 月 24 日找学长 Kevin 做了一次模拟面试，Kevin 建议行为题用 STAR 结构，并把每个故事控制在 90 秒内。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-03-24"
+  },
+  {
+   "op": "write",
+   "key": "m089",
+   "title": "",
+   "content": "Kingsford 12 月到 2 月的电费账单是 $358.20，三人均摊每人 $119.40；用户 12 月 16 日到 2 月 7 日人在国内，和小周、Leo 商量后少付 $24，实付 $95.40。",
+   "tags": [
+    "租房",
+    "账单"
+   ],
+   "occurred": "2026-03-25"
+  },
+  {
+   "op": "write",
+   "key": "m090",
+   "title": "Macquarie OA",
+   "content": "Macquarie 的 online assessment 是 SHL 数理推理加 1 道 coding，用户 3 月 26 日做的，数理部分时间太紧，3 月 28 日收到拒信。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-03-28"
+  },
+  {
+   "op": "write",
+   "key": "m091",
+   "title": "搬家清单",
+   "content": "搬家计划（4 月 12 日 Kingsford → Randwick）：1）4 月 10 日退租前做 cleaning，拍照留证，中介检查日定在 4 月 11 日上午 10 点；2）找了一个华人小哥的搬家货车，2 小时 $180，已约 4 月 12 日上午 9 点；3）Optus/Aussie Broadband 的网要在 4 月 8 日前取消，否则多收一个月；4）寄国内亲友的包裹地址要改；5）Opal、银行、学校 myUNSW 的住址在搬完一周内更新；6）新房的 bond $1,360 要在 4 月 10 日前转给房东由其存到 Rental Bonds Online；7）旧房 bond $1,180 退回前不要把账号改掉。用户的大件只有一个 27 寸显示器和两箱书。",
+   "tags": [
+    "租房",
+    "搬家"
+   ],
+   "occurred": "2026-03-30"
+  },
+  {
+   "op": "write",
+   "key": "m092",
+   "title": "",
+   "content": "这周 9321 和 9417 两个作业撞车，用户连着三晚睡不到 5 小时，周末兼职回来累得直接睡着。",
+   "tags": [],
+   "occurred": "2026-03-31"
+  },
+  {
+   "op": "summary",
+   "key": "s03",
+   "title": "9331/9444 学期总结",
+   "content": "T3 2025 学了 COMP9331（评分：期末 50%、作业 30%、quiz 20%，Dr. Tran，TA Marcus）和 COMP9444。9331 的 STP 作业踩过 timer 不重置导致重传死循环的坑；9444 作业一 NetConv 做到 96.1%。两门期末都是限带 A4 的考试。最终 9331 拿了 78，9444 拿了 83，都是 DN。",
+   "adopt": [
+    "m003",
+    "m004",
+    "m005",
+    "m009",
+    "m010",
+    "m011",
+    "m021",
+    "m022",
+    "m031",
+    "m032"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m093",
+   "title": "3 月开销",
+   "content": "用户 3 月总支出 $2,284：房租 $1,355、吃饭 $480、交通 $95、手机 $30、其他 $324，比预期略低。",
+   "tags": [
+    "省钱"
+   ],
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "write",
+   "key": "m094",
+   "title": "",
+   "content": "在墨尔本表哥带用户去吃了一家港式茶餐厅，菠萝油 $6.5，奶茶 $5.5，比悉尼的便宜。",
+   "tags": [
+    "旅行",
+    "饮食"
+   ],
+   "occurred": "2026-04-05"
+  },
+  {
+   "op": "write",
+   "key": "m095",
+   "title": "墨尔本 Easter 之行",
+   "content": "Easter 假期（4 月 3–6 日）用户去墨尔本找表哥林宇，Jetstar 往返 $168（只带随身行李），住表哥家省了酒店，去了 Queen Victoria Market 和 Great Ocean Road 一日游（$119）。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-04-06"
+  },
+  {
+   "op": "write",
+   "key": "m096",
+   "title": "Canva take-home",
+   "content": "Canva 4 月 7 日发来 take-home coding challenge，3 天内完成：实现一个 rate limiter 并写单元测试；用户用 Python 写了 token bucket，附了 pytest，4 月 10 日提交，等待反馈。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-04-07"
+  },
+  {
+   "op": "write",
+   "key": "m097",
+   "title": "Amazon OA",
+   "content": "Amazon SDE Intern 的 OA 是 70 分钟 2 道 coding 加 work style 问卷，用户 4 月 8 日做的，第二题（区间合并变种）有 3 个隐藏 case 没过。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-04-08"
+  },
+  {
+   "op": "write",
+   "key": "m098",
+   "title": "",
+   "content": "4 月 8 日称体重 75.9kg，比 2 月回悉尼时的 78.2kg 轻了 2.3kg，进度比预期快。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-04-08"
+  },
+  {
+   "op": "write",
+   "key": "m099",
+   "title": "Atlassian 技术面",
+   "content": "Atlassian 4 月 9 日技术面，Zoom 45 分钟，面试官 Wen；题目是 LRU Cache，follow-up 问多线程下怎么保证线程安全，用户只答出了加锁，没讲到读写锁和分段锁。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-04-09"
+  },
+  {
+   "op": "write",
+   "key": "m100",
+   "title": "",
+   "content": "COMP9417 assignment 1 得分 13/15，被扣的 2 分是 confusion matrix 没有 normalise，TA Liam 在评语里特地写了。",
+   "tags": [
+    "COMP9417",
+    "成绩"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m101",
+   "title": "",
+   "content": "退租前用户和小周花了 3 小时擦烤箱和浴室，买清洁用品花了 $27；中介检查日定在明天上午 10 点。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m102",
+   "title": "",
+   "content": "中介检查完说烤箱里还有油渍，可能要从押金里扣一笔清洁费，具体金额等 bond 退还时通知。",
+   "tags": [
+    "租房",
+    "押金"
+   ],
+   "occurred": "2026-04-11"
+  },
+  {
+   "op": "write",
+   "key": "m103",
+   "title": "",
+   "content": "4 月 12 日搬家完成：货车原定 2 小时 $180，因为 Kingsford 楼下上货慢了 15 分钟，实际付了 $200；新房的钥匙是 Hana 当面给的。",
+   "tags": [
+    "搬家"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m104",
+   "title": "Randwick 新住处",
+   "content": "用户 4 月 12 日起住 Randwick Alison Rd 附近的三室公寓，睡次卧，周租 $340 含水电网；公交 372 路到 UNSW 大约 15 分钟，步行 8 分钟有 Coles。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m105",
+   "title": "室友 Hana",
+   "content": "室友 Hana 来自大阪，在 UNSW 学 Design，住主卧，睡得很早，晚上 10 点后不希望客厅有声音；她是二房东，房租每周一转给她。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-04-13"
+  },
+  {
+   "op": "write",
+   "key": "m106",
+   "title": "室友老陈",
+   "content": "室友老陈（陈博）在 UTS 读 Data Science，做饭很好，最爱做红烧肉，周日常常做一大锅分给大家，他不吃羊肉。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-04-13"
+  },
+  {
+   "op": "write",
+   "key": "m107",
+   "title": "9417 作业二",
+   "content": "COMP9417 assignment 2 是 gradient boosting 加超参数搜索，截止 2026-04-18 23:59，占 20%；报告要写清楚调参过程和 F1。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-04-14"
+  },
+  {
+   "op": "write",
+   "key": "m108",
+   "title": "CBA OA",
+   "content": "CBA 的 online assessment 是 Codility，60 分钟 2 题（数组和字符串各一道），外加一套 Pymetrics 风格的小游戏；用户 4 月 14 日做完，两题都通过。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-04-14"
+  },
+  {
+   "op": "write",
+   "key": "m109",
+   "title": "",
+   "content": "Randwick 的新家有洗衣机，免费用，烘干机要在 app 里付 $2 一次；洗衣时间和 Hana 错开，她习惯周六上午洗。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-14"
+  },
+  {
+   "op": "summary",
+   "key": "s04",
+   "title": "T1：9417 与 9321",
+   "content": "T1 的两门课：COMP9417（Dr. Hu，TA Liam 要求 report 带 normalised confusion matrix，consultation 周三 11 点；assignment 1 截止 3 月 20 日，assignment 2 截止 4 月 18 日）和 COMP9321（Dr. Patel，TA Sophie 重视 Swagger 描述；assignment 1 做 Flask-RESTx + TVMaze，踩过 SQLite database is locked，原因是 debug reloader 起了双进程）。",
+   "adopt": [
+    "m052",
+    "m054",
+    "m082",
+    "m107",
+    "m085",
+    "m087",
+    "m058",
+    "m059",
+    "m055"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m107",
+   "content": "COMP9417 assignment 2 是 gradient boosting 加超参数搜索，占 20%；Moodle 4 月 15 日出故障，Dr. Hu 把截止从 4 月 18 日延到 2026-04-25 23:59；报告要写清楚调参过程和 F1。",
+   "occurred": "2026-04-16"
+  },
+  {
+   "op": "write",
+   "key": "m110",
+   "title": "",
+   "content": "用户一直在 Kingsford 那家华人理发店剪头发，$35，搬到 Randwick 后还是专门坐车回去剪。",
+   "tags": [
+    "生活"
+   ],
+   "occurred": "2026-04-18"
+  },
+  {
+   "op": "write",
+   "key": "m111",
+   "title": "咖啡预算",
+   "content": "用户每天一杯 flat white，在学校咖啡店 $4.5，一周大约 $22；考试周才买第二杯。",
+   "tags": [
+    "省钱",
+    "饮食"
+   ],
+   "occurred": "2026-04-19"
+  },
+  {
+   "op": "write",
+   "key": "m112",
+   "title": "9321 作业二",
+   "content": "COMP9321 assignment 2：用 sklearn 训练一个简单预测模型，再用 Flask-RESTx 暴露 /predict，截止 2026-04-24 17:00，占 20%；评分重点是 Swagger 文档和错误码处理。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-04-21"
+  },
+  {
+   "op": "write",
+   "key": "m113",
+   "title": "CBA 视频面",
+   "content": "CBA 4 月 22 日做了 HireVue 视频面试，4 道行为题，每题准备 30 秒、回答 2 分钟；有一题是 'Tell me about a time you disagreed with a teammate'，用户讲的是 COMP9331 小组讨论的例子。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-04-22"
+  },
+  {
+   "op": "update",
+   "key": "m112",
+   "content": "COMP9321 assignment 2：用 sklearn 训练一个简单预测模型，再用 Flask-RESTx 暴露 /predict，原截止 4 月 24 日，Dr. Patel 在 4 月 22 日公告延期到 2026-04-27 17:00，占 20%；评分重点是 Swagger 文档和错误码处理。",
+   "occurred": "2026-04-22"
+  },
+  {
+   "op": "write",
+   "key": "m114",
+   "title": "9417 换 TA",
+   "content": "COMP9417 的 TA 从 Liam 换成了 Chloe，consultation 改到周四下午 4 点；Chloe 对 confusion matrix 的要求没那么死，主要看分析。",
+   "tags": [
+    "COMP9417"
+   ],
+   "occurred": "2026-04-23",
+   "supersedes": "m058"
+  },
+  {
+   "op": "write",
+   "key": "m115",
+   "title": "",
+   "content": "Amazon 4 月 24 日发来拒信，OA 没过；用户觉得是第二题隐藏 case 没处理空区间。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-04-24"
+  },
+  {
+   "op": "write",
+   "key": "m116",
+   "title": "Canva 结果",
+   "content": "Canva 4 月 24 日邮件回复 take-home 没有通过，不进入面试；邮件里没有给具体原因。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-04-24",
+   "supersedes": "m096"
+  },
+  {
+   "op": "write",
+   "key": "m117",
+   "title": "9417 作业二方案",
+   "content": "COMP9417 assignment 2 用 sklearn 的 GradientBoostingClassifier，GridSearchCV 在 8 核 MacBook 上跑了 3 个小时，改成 RandomizedSearchCV（n_iter=40）后只要 12 分钟，F1 只差 0.004；最终 4 月 25 日晚上 9 点提交，选 learning_rate=0.05、n_estimators=300、max_depth=3。",
+   "tags": [
+    "COMP9417",
+    "调参"
+   ],
+   "occurred": "2026-04-25"
+  },
+  {
+   "op": "write",
+   "key": "m118",
+   "title": "",
+   "content": "Randwick 的垃圾日是周二（黄盖回收周四），倒垃圾按周轮，用户负责每月的第二周。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-04-27"
+  },
+  {
+   "op": "write",
+   "key": "m119",
+   "title": "Atlassian 结果",
+   "content": "Atlassian 4 月 28 日发来拒信，recruiter 口头反馈是技术面 follow-up（线程安全）没答好，其他轮表现还行；说明年可以再申请。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-04-28"
+  },
+  {
+   "op": "write",
+   "key": "m120",
+   "title": "月度预算",
+   "content": "搬到 Randwick 后用户每月预算大约 $2,600：房租 $1,473（含水电网）、吃饭 $500、交通 $100、手机 $22、其他杂项 $500。",
+   "tags": [
+    "省钱"
+   ],
+   "occurred": "2026-04-30"
+  },
+  {
+   "op": "write",
+   "key": "m121",
+   "title": "9321 作业三",
+   "content": "COMP9321 assignment 3 是数据管道：用 pandas 清洗数据、导入 PostgreSQL（docker compose 起服务），截止 2026-05-15 17:00，占 15%。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-05-01"
+  },
+  {
+   "op": "write",
+   "key": "m122",
+   "title": "",
+   "content": "用户 5 月 2 日在 Uniqlo 打折时买了一件 Ultra Light Down 外套，$99，原价 $149。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2026-05-02"
+  },
+  {
+   "op": "write",
+   "key": "m123",
+   "title": "9417 小组项目",
+   "content": "COMP9417 小组项目 4 人（Grace、Tom、阿 Ken 和用户），数据集是 InsideAirbnb 的 Sydney listings，目标预测每晚价格；用户负责 feature engineering 和 XGBoost，demo 在 5 月 8 日。",
+   "tags": [
+    "COMP9417",
+    "小组"
+   ],
+   "occurred": "2026-05-03"
+  },
+  {
+   "op": "update",
+   "key": "m123",
+   "content": "COMP9417 小组项目 4 人（Grace、Tom、阿 Ken 和用户），数据集是 InsideAirbnb 的 Sydney listings，目标预测每晚价格；用户负责 feature engineering 和 XGBoost，demo 从 5 月 8 日提前到 5 月 6 日下午 4 点。",
+   "occurred": "2026-05-04"
+  },
+  {
+   "op": "update",
+   "key": "m014",
+   "content": "Kingsford 住处的押金是 $1,180（4 周房租）。5 月 6 日退回 $1,030，中介扣了 $150 的烤箱和浴室清洁费，用户没有申诉。",
+   "occurred": "2026-05-06",
+   "title": "Kingsford 押金退还"
+  },
+  {
+   "op": "write",
+   "key": "m124",
+   "title": "CBA 终面日",
+   "content": "CBA 的 assessment centre 在 5 月 8 日，线上半天：一个小组案例讨论、一轮 1 对 1 技术面（系统设计入门题）、再和 hiring manager 聊 30 分钟。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-05-08"
+  },
+  {
+   "op": "write",
+   "key": "m125",
+   "title": "9417 期末规则",
+   "content": "COMP9417 期末 2026-05-19 下午 2 点，闭卷，可以带非编程计算器和两页 A4 双面手写笔记；重点是 SVM 对偶和 EM。",
+   "tags": [
+    "COMP9417",
+    "考试"
+   ],
+   "occurred": "2026-05-09"
+  },
+  {
+   "op": "write",
+   "key": "m126",
+   "title": "",
+   "content": "搬到 Randwick 后用户改去 Anytime Fitness Randwick，24 小时营业，$14.95/周，不再续 ActiveUNSW 的卡；6 月起每周去 3 次。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-05-10",
+   "supersedes": "m051"
+  },
+  {
+   "op": "write",
+   "key": "m127",
+   "title": "",
+   "content": "用户复习 COMP9417 时总是混淆 EM 的 E 步和 M 步，打算按 Dr. Hu 的 slides 重推一遍高斯混合的更新公式。",
+   "tags": [
+    "COMP9417",
+    "学习"
+   ],
+   "occurred": "2026-05-11"
+  },
+  {
+   "op": "summary",
+   "key": "s02",
+   "title": "Randwick 新家与搬家",
+   "content": "用户 4 月 12 日搬到 Randwick，次卧周租 $340 含水电网，bond $1,360，租期到 2027-04-11；室友是 Hana（日本人，主卧，早睡，二房东）和老陈（UTS 数据科学，会做红烧肉）。搬家货车 $200；旧房押金扣清洁费后退了 $1,030。",
+   "adopt": [
+    "m076",
+    "m077",
+    "m091",
+    "m103",
+    "m104",
+    "m105",
+    "m106",
+    "m014",
+    "m073"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m128",
+   "title": "Westpac 内推",
+   "content": "Westpac 的 Software Engineer Intern 通过学长 referral 直接进了 final round，5 月 20 日和 hiring manager 视频面试。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m129",
+   "title": "9321 期末规则",
+   "content": "COMP9321 期末 2026-05-21 上午 9 点，Moodle 在线 quiz 90 分钟，开卷，只能看自己的笔记和官方 documentation。",
+   "tags": [
+    "COMP9321",
+    "考试"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m130",
+   "title": "辅导 9024",
+   "content": "用户从 5 月起帮一个学弟辅导 COMP9024，每周日下午 2 小时，$40/小时，现金转账。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2026-05-13"
+  },
+  {
+   "op": "update",
+   "key": "m067",
+   "content": "用户加入了 UNSW Badminton Society，会员费 $20/年；因为周二晚要写作业，改成每周四晚上 8 点在 Sports Centre 打球。",
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m131",
+   "title": "",
+   "content": "COMP9321 assignment 3 在 5 月 15 日下午 3 点提交，docker compose 在助教机器上能一键起来，用户提前自己在干净的虚拟机里验证过。",
+   "tags": [
+    "COMP9321"
+   ],
+   "occurred": "2026-05-15"
+  },
+  {
+   "op": "write",
+   "key": "m132",
+   "title": "",
+   "content": "5 月 17 日用户感冒发烧三天，在 Randwick 的 GP 看诊 $85，用 Allianz app 报销了 $62，药另花 $14。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-05-17"
+  },
+  {
+   "op": "write",
+   "key": "m133",
+   "title": "笔记本",
+   "content": "用户的电脑是 MacBook Air M2 16GB/512GB，2024 年 9 月买的，电池健康 89%，一直用得很顺。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-05-18"
+  },
+  {
+   "op": "write",
+   "key": "m134",
+   "title": "",
+   "content": "Westpac final 面试 5 月 20 日进行，45 分钟，主要聊项目经历和 system design 入门，对方说两周内通知。",
+   "tags": [
+    "实习",
+    "面试"
+   ],
+   "occurred": "2026-05-20"
+  },
+  {
+   "op": "write",
+   "key": "m135",
+   "title": "CBA offer",
+   "content": "CBA offer email (2026-05-22): 'We are pleased to offer you a place on our Summer Internship Program, starting Monday 18 January 2027 for 10 weeks, at $1,580 per week before tax. Please confirm your acceptance by 5 June 2026.' Recruiter is Natalie.",
+   "tags": [
+    "实习",
+    "offer"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m136",
+   "title": "",
+   "content": "用户 5 月 25 日回信接受了 CBA 的暑期实习 offer，比 6 月 5 日的截止早了十天。",
+   "tags": [
+    "实习",
+    "offer"
+   ],
+   "occurred": "2026-05-25"
+  },
+  {
+   "op": "write",
+   "key": "m137",
+   "title": "",
+   "content": "5 月 24 到 27 日这几天情绪很低：Atlassian、Canva 都被拒了，9417 小组有人不回消息，没怎么吃饭，跟妈妈视频时哭了一会儿。",
+   "tags": [
+    "情绪"
+   ],
+   "occurred": "2026-05-26"
+  },
+  {
+   "op": "write",
+   "key": "m138",
+   "title": "EH 的 offer",
+   "content": "Employment Hero 也给了实习 offer（部分远程，周薪 $1,300），但用户已接受 CBA，打算婉拒。",
+   "tags": [
+    "实习",
+    "offer"
+   ],
+   "occurred": "2026-05-28"
+  },
+  {
+   "op": "write",
+   "key": "m139",
+   "title": "",
+   "content": "Tyro 4 月投的，5 月 29 日做完一轮电话面试后一直没有下文，用户已经不抱希望。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-05-29"
+  },
+  {
+   "op": "write",
+   "key": "m140",
+   "title": "Westpac 结果",
+   "content": "Westpac 5 月 30 日发来拒信，说最终选了另一位候选人，没有给反馈；用户已经有 CBA offer，影响不大。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-05-30",
+   "supersedes": "m128"
+  },
+  {
+   "op": "write",
+   "key": "m141",
+   "title": "",
+   "content": "本次对话主要帮用户润色了 cover letter 的第二段，没有产生新的需要长期保存的信息。",
+   "tags": [],
+   "occurred": "2026-05-31"
+  },
+  {
+   "op": "write",
+   "key": "m142",
+   "title": "",
+   "content": "6 月 1 日用户礼貌回绝了 Employment Hero 的 offer，HR 说以后有机会欢迎再申请。",
+   "tags": [
+    "实习",
+    "offer"
+   ],
+   "occurred": "2026-06-01"
+  },
+  {
+   "op": "write",
+   "key": "m143",
+   "title": "T2 选课",
+   "content": "T2 从 2026-06-01 开始，用户选了 COMP6713（NLP）和 COMP9313（Big Data Management）；census date 是 6 月 28 日。",
+   "tags": [
+    "选课"
+   ],
+   "occurred": "2026-06-02"
+  },
+  {
+   "op": "write",
+   "key": "m144",
+   "title": "T2 排班",
+   "content": "T2 兼职排班改成周六 11:00–17:00 和周三 18:00–22:00，一周 10 小时，周日留给 9024 辅导和写作业。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2026-06-02",
+   "supersedes": "m057"
+  },
+  {
+   "op": "write",
+   "key": "m145",
+   "title": "COMP9321 成绩",
+   "content": "COMP9321 最终 88 分（HD）：assignment 1/2/3 分别 13/15、18/20、14/15，期末 43/50。",
+   "tags": [
+    "COMP9321",
+    "成绩"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "write",
+   "key": "m146",
+   "title": "COMP9417 成绩",
+   "content": "COMP9417 最终 69 分（CR）：assignment 1/2 是 13/15 和 17/20，小组项目 12/15，期末只有 27/50，EM 那道大题基本没写出来。",
+   "tags": [
+    "COMP9417",
+    "成绩"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "write",
+   "key": "m147",
+   "title": "T2 学费",
+   "content": "T2 学费 2 门课共 $11,760，6 月 3 日由家里通过 Flywire 付清。",
+   "tags": [
+    "学费"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "summary",
+   "key": "s05",
+   "title": "兼职情况",
+   "content": "用户在 Haymarket 的鼎香麻辣烫做 casual，时薪 $27，每两周周四发薪；排班先是周五晚加周末，T1 起改为周六日共 14 小时，T2 起改成周六加周三晚 10 小时；另外每周日辅导 COMP9024 $40/小时。",
+   "adopt": [
+    "m001",
+    "m002",
+    "m057",
+    "m144",
+    "m130"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s06",
+   "title": "实习申请总览",
+   "content": "2026/27 summer intern 的申请：Atlassian（OA 过、技术面线程安全没答好，被拒）、Canva（take-home 没过）、Macquarie（SHL 没过）、Amazon（OA 没过）、Westpac（final 后被拒）、Employment Hero（有 offer 已婉拒）；最终接受了 CBA，2027-01-18 开始，10 周，周薪 $1,580。",
+   "adopt": [
+    "m069",
+    "m080",
+    "m099",
+    "m119",
+    "m072",
+    "m096",
+    "m116",
+    "m075",
+    "m090",
+    "m097",
+    "m115",
+    "m086",
+    "m108",
+    "m113",
+    "m124",
+    "m135",
+    "m136",
+    "m128",
+    "m140",
+    "m138",
+    "m142"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m148",
+   "title": "",
+   "content": "COMP6713（NLP）第一周作业要用 BERT 做 fine-tune，GPU 要用 Colab，用户觉得这学期和 9313 的作业叠在一起会撑不住。",
+   "tags": [
+    "COMP6713"
+   ],
+   "occurred": "2026-06-10"
+  },
+  {
+   "op": "write",
+   "key": "m149",
+   "title": "手机套餐",
+   "content": "用户的澳洲手机用 Boost Mobile，$30/月、40GB，没有合约锁定，已经用了一年多。",
+   "tags": [
+    "手机"
+   ],
+   "occurred": "2026-06-12"
+  },
+  {
+   "op": "write",
+   "key": "m150",
+   "title": "深蹲 PR",
+   "content": "用户 6 月 14 日在 Anytime Fitness 深蹲做到 100kg×5，硬拉 140kg×3，是目前的 PR。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-06-14"
+  },
+  {
+   "op": "write",
+   "key": "m151",
+   "title": "",
+   "content": "悉尼 6 月 17 日早上只有 7 度，是今年最冷的一天，用户穿上了 Uniqlo 的羽绒服。",
+   "tags": [],
+   "occurred": "2026-06-17"
+  },
+  {
+   "op": "update",
+   "key": "m050",
+   "content": "用户目前体重 73.6kg（6 月 20 日称），比 2 月回悉尼时的 78.2kg 轻了 4.6kg，离 70kg 的目标还差 3.6kg。",
+   "occurred": "2026-06-20"
+  },
+  {
+   "op": "write",
+   "key": "m152",
+   "title": "Perisher 滑雪",
+   "content": "用户 6 月 20–21 日参加学联的 Perisher 滑雪团，$480 含大巴、雪票和一晚住宿，另租雪具 $85；第一次滑雪，摔了很多次但很开心。",
+   "tags": [
+    "旅行",
+    "爱好"
+   ],
+   "occurred": "2026-06-21"
+  },
+  {
+   "op": "write",
+   "key": "m153",
+   "title": "退掉 6713",
+   "content": "用户 6 月 22 日在 census date（6 月 28 日）之前退掉了 COMP6713，不收学费；原因是 9313 作业太重加上兼职，退课后毕业要从 2027 T1 推迟到 2027 T2。",
+   "tags": [
+    "选课",
+    "毕业"
+   ],
+   "occurred": "2026-06-22"
+  },
+  {
+   "op": "write",
+   "key": "m154",
+   "title": "",
+   "content": "2025-26 财年 6 月 30 日结束，用户打算 7 月在 myGov 里等雇主的 income statement 变成 Tax ready，再用 myTax 自己报税。",
+   "tags": [
+    "报税"
+   ],
+   "occurred": "2026-06-25"
+  },
+  {
+   "op": "write",
+   "key": "m155",
+   "title": "9313 评分与教师",
+   "content": "COMP9313 评分：project 1（MapReduce）15%、project 2（Spark RDD）15%、project 3 20%、期末 50%；Lecturer 是 Dr. Kowalski，TA 是王宇，consultation 周五下午 2 点。",
+   "tags": [
+    "COMP9313"
+   ],
+   "occurred": "2026-06-26"
+  },
+  {
+   "op": "update",
+   "key": "m001",
+   "content": "用户在 Haymarket 的鼎香麻辣烫做 casual，后厨配菜加收银，7 月 1 日新财年起时薪从 $27 涨到 $29.5，每两周的周四发薪，店长是王姐。",
+   "occurred": "2026-07-01"
+  },
+  {
+   "op": "write",
+   "key": "m156",
+   "title": "9313 项目一",
+   "content": "COMP9313 project 1 用 Python mrjob 做 MapReduce 词共现统计，截止 2026-07-03 23:59，占 15%；评分看正确性和运行时间排名。",
+   "tags": [
+    "COMP9313"
+   ],
+   "occurred": "2026-07-02"
+  },
+  {
+   "op": "write",
+   "key": "m157",
+   "title": "",
+   "content": "老陈生日是 7 月 4 日，用户送了一盒 Lindt 巧克力，老陈做了一锅红烧肉请大家吃。",
+   "tags": [
+    "室友",
+    "生日"
+   ],
+   "occurred": "2026-07-04"
+  },
+  {
+   "op": "write",
+   "key": "m158",
+   "title": "",
+   "content": "退掉 COMP6713 后，学费 $5,880 在 7 月 8 日退回家里的账户，家里说先留着当 T3 的学费。",
+   "tags": [
+    "学费"
+   ],
+   "occurred": "2026-07-08"
+  },
+  {
+   "op": "write",
+   "key": "m159",
+   "title": "",
+   "content": "周末下午在 Coogee 海边散步，天气很好，用户心情不错。",
+   "tags": [],
+   "occurred": "2026-07-09"
+  },
+  {
+   "op": "write",
+   "key": "m160",
+   "title": "9313 项目二",
+   "content": "COMP9313 project 2 要求只用 Spark RDD（不能用 DataFrame），实现 TF-IDF 相似度 top-k 查询，截止 2026-07-24 23:59，占 15%。",
+   "tags": [
+    "COMP9313"
+   ],
+   "occurred": "2026-07-12"
+  },
+  {
+   "op": "write",
+   "key": "m161",
+   "title": "辅导涨价",
+   "content": "学弟期末要冲刺，7 月起 COMP9024 辅导改成每周两次（周三晚和周日下午），时薪涨到 $50，每次 1.5 小时。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2026-07-15",
+   "supersedes": "m130"
+  },
+  {
+   "op": "summary",
+   "key": "s09",
+   "title": "健身与体重",
+   "content": "用户 2025 年底 76.5kg、目标 2026 年 8 月前降到 70kg；回悉尼后 78.2kg，4 月 75.9kg，6 月 20 日 73.6kg。6 月起在 Randwick 的 Anytime Fitness 每周练三次，深蹲 PR 100kg×5、硬拉 140kg×3。",
+   "adopt": [
+    "m007",
+    "m050",
+    "m098",
+    "m023",
+    "m051",
+    "m126",
+    "m150"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m007",
+   "content": "用户身高 178cm，2025 年底体重 76.5kg；原目标是 2026 年 8 月前到 70kg，7 月 20 日因为练力量增肌，把目标放宽为体重 72kg 以内、体脂降到 15% 左右。",
+   "occurred": "2026-07-20",
+   "title": "体重与目标"
+  },
+  {
+   "op": "write",
+   "key": "m162",
+   "title": "Spark 内存溢出复盘",
+   "content": "COMP9313 project 2 踩坑：本地 PySpark 3.5.1 跑大数据集时报 'java.lang.OutOfMemoryError: Java heap space'。根因是 groupByKey 把同一个 key 的所有 value 拉进同一个 partition，而数据严重倾斜，前 1% 的 term 占了 40% 的记录。修复：1）groupByKey 全部换成 reduceByKey/aggregateByKey；2）对热点 key 加 0–9 的随机 salt 前缀做两阶段聚合；3）spark.driver.memory 设成 4g，spark.sql.shuffle.partitions 从默认 200 降到 64；运行时间从 26 分钟降到 6 分钟。要注意作业要求只能用 RDD，用了 DataFrame 会直接 0 分。",
+   "tags": [
+    "COMP9313",
+    "调试"
+   ],
+   "occurred": "2026-07-22"
+  },
+  {
+   "op": "write",
+   "key": "m163",
+   "title": "报税",
+   "content": "用户 7 月 19 日用 myTax 报了 2025-26 财年的税，7 月 23 日退税 $642 到账 CommBank；用的是 TFN，雇主 super 是 12%，没有申请其他抵扣。",
+   "tags": [
+    "报税"
+   ],
+   "occurred": "2026-07-23"
+  },
+  {
+   "op": "write",
+   "key": "m164",
+   "title": "",
+   "content": "COMP9313 project 2 在 7 月 24 日晚上 8 点提交，最后一版是 reduceByKey 加 salt 的方案，本地 6 分钟跑完。",
+   "tags": [
+    "COMP9313"
+   ],
+   "occurred": "2026-07-24"
+  },
+  {
+   "op": "write",
+   "key": "m165",
+   "title": "",
+   "content": "周日晚上和 Hana、老陈去 Randwick 的 Event Cinemas 看了电影，学生票 $17.5。",
+   "tags": [],
+   "occurred": "2026-07-26"
+  },
+  {
+   "op": "write",
+   "key": "m166",
+   "title": "",
+   "content": "阿杰私下告诉用户，他 T2 挂了两门，学校给了 academic warning，他不想让别人知道。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-07-28"
+  },
+  {
+   "op": "write",
+   "key": "m167",
+   "title": "",
+   "content": "Randwick 房租每周一转给 Hana，备注写 'rent' 加日期；用户设置了 CommBank 的定期转账，$340 每周。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-08-01"
+  },
+  {
+   "op": "summary",
+   "key": "s07",
+   "title": "签证、银行、手机、交通",
+   "content": "用户持学生签证 subclass 500，到期 2027-03-15，学期内每两周最多工作 48 小时；OSHC 是 Allianz Care 保到 2027-03-31。银行：CommBank Smart Access 日常用，ING Savings Maximiser 利率 4.9%（每月存 $1,000 加刷卡 5 笔）。手机用 Boost $30/月；交通用 Opal，每周封顶 $50，国际生无学生折扣。",
+   "adopt": [
+    "m019",
+    "m020",
+    "m064",
+    "m063",
+    "m149",
+    "m049",
+    "m084",
+    "m037"
+   ]
+  },
+  {
+   "op": "delete",
+   "key": "m166"
+  },
+  {
+   "op": "update",
+   "key": "m063",
+   "content": "用户的 ING Savings Maximiser 含 bonus 的利率从 4.9% 降到 4.5%（8 月起），条件不变：每月存入至少 $1,000 且刷卡 5 笔以上；目前存了约 $4,200。",
+   "occurred": "2026-08-02"
+  },
+  {
+   "op": "write",
+   "key": "m168",
+   "title": "",
+   "content": "用户 8 月 5 日用 Wise 把 ¥12,000 换成 A$2,655，汇率 4.52，低于原来 4.60 的阈值，但房租和学费一起到期，只能先换。",
+   "tags": [
+    "汇率"
+   ],
+   "occurred": "2026-08-05"
+  },
+  {
+   "op": "update",
+   "key": "m039",
+   "content": "用户总结：国内银行电汇手续费太高，现在都用 Wise；换汇的汇率阈值调整为 AUD/CNY 高于 4.55 才大额换，低于就只换够用一个月的；8 月那次 4.52 是例外。",
+   "occurred": "2026-08-06"
+  },
+  {
+   "op": "write",
+   "key": "m169",
+   "title": "",
+   "content": "8 月 9 日到 12 日 Randwick 的 NBN 断了三天，用户用手机热点写 9313 的 project 3，多用了 18GB 流量，TPG 后来补了 $15 credit。",
+   "tags": [
+    "租房",
+    "手机"
+   ],
+   "occurred": "2026-08-09"
+  },
+  {
+   "op": "write",
+   "key": "m170",
+   "title": "9313 项目三",
+   "content": "COMP9313 project 3 用 Spark MLlib 的 ALS 做电影推荐，截止 2026-08-14 23:59，占 20%；用户调到 rank=20、regParam=0.1，验证集 RMSE 0.89。",
+   "tags": [
+    "COMP9313"
+   ],
+   "occurred": "2026-08-14"
+  },
+  {
+   "op": "write",
+   "key": "m171",
+   "title": "手机套餐更换",
+   "content": "Boost 涨到 $35/月，用户 8 月 15 日改用 Amaysim 的 60GB 套餐，$22/月，号码带过去了。",
+   "tags": [
+    "手机",
+    "省钱"
+   ],
+   "occurred": "2026-08-15",
+   "supersedes": "m149"
+  },
+  {
+   "op": "write",
+   "key": "m172",
+   "title": "",
+   "content": "用户 8 月 16 日在 Centennial Park 跑了 5 公里，28 分 40 秒，是第一次跑进 29 分钟。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-08-16"
+  },
+  {
+   "op": "write",
+   "key": "m173",
+   "title": "9313 期末规则",
+   "content": "COMP9313 期末 2026-08-27 下午 2 点，闭卷，只能带一张 A4 单面手写笔记；重点是 Spark 的 shuffle 和 Hadoop 的 combiner。",
+   "tags": [
+    "COMP9313",
+    "考试"
+   ],
+   "occurred": "2026-08-18"
+  },
+  {
+   "op": "write",
+   "key": "m174",
+   "title": "",
+   "content": "阿杰生日是 8 月 22 日，虽然搬走了，用户还是在微信发了 $20 的红包，他回了个烤肉的照片。",
+   "tags": [
+    "室友",
+    "生日"
+   ],
+   "occurred": "2026-08-22"
+  },
+  {
+   "op": "update",
+   "key": "m173",
+   "content": "COMP9313 期末原定 8 月 27 日，学校 8 月 22 日通知改到 2026-08-28 下午 2 点，闭卷，只能带一张 A4 单面手写笔记；重点是 Spark 的 shuffle 和 Hadoop 的 combiner。",
+   "occurred": "2026-08-22"
+  },
+  {
+   "op": "write",
+   "key": "m175",
+   "title": "笔记本电池",
+   "content": "用户的 MacBook Air 电池健康降到 84%，Apple 官方换电池 $199，打算等 12 月回国时在国内换（约 ¥ 700 左右）。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-08-25",
+   "supersedes": "m133"
+  },
+  {
+   "op": "write",
+   "key": "m176",
+   "title": "",
+   "content": "9313 期末考完，最后一道 Hadoop combiner 的题用户觉得答得还可以，晚上和老陈吃了红烧肉。",
+   "tags": [],
+   "occurred": "2026-08-27"
+  },
+  {
+   "op": "write",
+   "key": "m177",
+   "title": "",
+   "content": "晚上自己煮的麻婆豆腐盐放多了，老陈说还能吃。",
+   "tags": [],
+   "occurred": "2026-08-29"
+  },
+  {
+   "op": "write",
+   "key": "m178",
+   "title": "辅导 9321",
+   "content": "另一位同校学弟小宇请用户辅导 COMP9321 的 assignment，$45/小时，一共做了 2 次，每次 1 小时。",
+   "tags": [
+    "兼职"
+   ],
+   "occurred": "2026-08-30"
+  },
+  {
+   "op": "write",
+   "key": "m179",
+   "title": "COMP9313 成绩",
+   "content": "COMP9313 最终 81 分（DN）：project 1/2/3 分别 12/15、13/15、17/20，期末 39/50。",
+   "tags": [
+    "COMP9313",
+    "成绩"
+   ],
+   "occurred": "2026-09-02"
+  },
+  {
+   "op": "summary",
+   "key": "s10",
+   "title": "9313 与退课",
+   "content": "T2 用户修了 COMP9313（Dr. Kowalski，三个 project 加期末 50%，project 2 只准用 Spark RDD，踩过 groupByKey 数据倾斜导致的 OOM，改成 reduceByKey 加 salt）；COMP6713 因工作量太大在 census 前退掉，毕业推迟到 2027 T2。9313 最终 81 分。",
+   "adopt": [
+    "m155",
+    "m156",
+    "m160",
+    "m162",
+    "m170",
+    "m179",
+    "m153",
+    "m148",
+    "m173"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m180",
+   "title": "T3 选课",
+   "content": "T3 从 2026-09-14 开始，用户选了 COMP9900（Capstone 项目）和 COMP9517（Computer Vision）；census date 是 10 月 4 日。",
+   "tags": [
+    "选课"
+   ],
+   "occurred": "2026-09-03"
+  },
+  {
+   "op": "update",
+   "key": "m111",
+   "content": "用户每天一杯 flat white，学校咖啡店 9 月起涨到 $5，一周大约 $25；考试周才买第二杯，打算以后在家用 Nespresso 胶囊省钱。",
+   "occurred": "2026-09-05"
+  },
+  {
+   "op": "write",
+   "key": "m181",
+   "title": "蓝山一日游",
+   "content": "9 月 6 日用户和朋友去 Blue Mountains 一日游，坐火车到 Katoomba，Scenic World 通票 $52，看了 Three Sisters，走了 Echo Point 的步道。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-09-06"
+  },
+  {
+   "op": "write",
+   "key": "m182",
+   "title": "",
+   "content": "理发涨到 $40 了，用户 9 月 10 日换了 Haymarket 一家 $30 的理发店，剪得差不多，以后不专门坐车去 Kingsford 了。",
+   "tags": [
+    "生活"
+   ],
+   "occurred": "2026-09-10",
+   "supersedes": "m110"
+  },
+  {
+   "op": "write",
+   "key": "m183",
+   "title": "T3 学费",
+   "content": "T3 学费 2 门课共 $11,760，9 月 10 日付清，其中 $5,880 是 6713 退回的那一笔。",
+   "tags": [
+    "学费"
+   ],
+   "occurred": "2026-09-10"
+  },
+  {
+   "op": "write",
+   "key": "m184",
+   "title": "",
+   "content": "9 月 12 日称体重 72.4kg，体脂大约 17%，健身房的体测仪显示肌肉量涨了 1.2kg。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-09-12"
+  },
+  {
+   "op": "write",
+   "key": "m185",
+   "title": "9900 小组",
+   "content": "COMP9900 小组 4 人：Ethan（后端）、Priya（前端和设计）、Kenji（测试与文档）和用户；用户负责数据库设计、部署和 CI；项目是 Smart Study Planner，Tutor 是 Daniel，Convenor 是 Dr. Reyes。",
+   "tags": [
+    "COMP9900",
+    "小组"
+   ],
+   "occurred": "2026-09-14"
+  },
+  {
+   "op": "write",
+   "key": "m186",
+   "title": "9900 技术栈",
+   "content": "COMP9900 项目技术栈：FastAPI + PostgreSQL 15 + Vue 3，docker compose 本地起服务，GitHub Actions 跑 pytest 做 CI，部署在 Render 的免费实例上。",
+   "tags": [
+    "COMP9900",
+    "技术"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m187",
+   "title": "9900 评分",
+   "content": "COMP9900 assessment: Progressive Demo A 10%, Demo B 15%, final demo 25%, final report 25%, individual contribution (peer assessment) 25%. Sprint reviews every second Friday with tutor Daniel.",
+   "tags": [
+    "COMP9900",
+    "评分"
+   ],
+   "occurred": "2026-09-18"
+  },
+  {
+   "op": "write",
+   "key": "m188",
+   "title": "9517 评分",
+   "content": "COMP9517 评分：个人 assignment 20%（截止 10 月 16 日）、小组项目 30%、期末 50%；Lecturer 是 Dr. Mehta，做图像分类和 object detection。",
+   "tags": [
+    "COMP9517"
+   ],
+   "occurred": "2026-09-19"
+  },
+  {
+   "op": "write",
+   "key": "m189",
+   "title": "毕业计划",
+   "content": "因为退掉 COMP6713，用户预计 2027 T2 毕业（2027-08 结业），所以学生签证需要在 2027-03-15 到期前延期、拿新的 CoE。",
+   "tags": [
+    "毕业",
+    "签证"
+   ],
+   "occurred": "2026-09-24"
+  },
+  {
+   "op": "write",
+   "key": "m190",
+   "title": "",
+   "content": "高中同学阿凯 9 月 25 到 28 日来悉尼玩，睡客厅沙发；用户带他走了 Bondi 到 Coogee 的海岸步道，他请吃了烤鸭。",
+   "tags": [
+    "朋友",
+    "旅行"
+   ],
+   "occurred": "2026-09-26"
+  },
+  {
+   "op": "update",
+   "key": "m120",
+   "content": "用户每月预算上调到约 $2,800：房租 $1,473（含水电网）、吃饭 $550、交通 $100、手机 $22、健身 $65、其他杂项 $590；9 月起健身房月费也算进来了。",
+   "occurred": "2026-09-30",
+   "title": "月度预算"
+  },
+  {
+   "op": "write",
+   "key": "m191",
+   "title": "",
+   "content": "Randwick 家的 Wi-Fi 名称 AlisonRd_5G，密码 hana2026rw!，Hana 说可以告诉来玩的朋友。",
+   "tags": [
+    "租房"
+   ],
+   "occurred": "2026-10-01"
+  },
+  {
+   "op": "delete",
+   "key": "m024"
+  },
+  {
+   "op": "delete",
+   "key": "m191"
+  },
+  {
+   "op": "write",
+   "key": "m192",
+   "title": "9517 个人作业",
+   "content": "COMP9517 个人 assignment：用 OpenCV 的 SIFT 特征匹配加 RANSAC 拼接全景图，截止 2026-10-16 17:00，占 20%；报告限 4 页，要给出内点数量。",
+   "tags": [
+    "COMP9517"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "write",
+   "key": "m193",
+   "title": "9900 CORS 复盘",
+   "content": "COMP9900 联调踩坑：Vue（localhost:5173）请求 FastAPI 一直报 'blocked by CORS policy: No Access-Control-Allow-Origin header'。CORSMiddleware 早就加了，真正的根因是 compose 里 uvicorn 前面还有一层 nginx，location /api 没处理 OPTIONS 预检，直接回了 405。修复：nginx 对 OPTIONS 直接 return 204 并带 Access-Control-Allow-* 头；FastAPI 的 allow_origins 写死前端地址；axios 的 baseURL 统一读 VITE_API_BASE。另外 Postgres 没 healthy 后端就启动会 connection refused，在 compose 里用 depends_on 的 service_healthy 解决。",
+   "tags": [
+    "COMP9900",
+    "调试"
+   ],
+   "occurred": "2026-10-10"
+  },
+  {
+   "op": "write",
+   "key": "m194",
+   "title": "",
+   "content": "COMP9900 的 Demo A 在 10 月 9 日进行，小组得了 8.5/10；评语是 UI 做得好，但测试覆盖率不足，要求 Demo B 前补上后端 pytest。",
+   "tags": [
+    "COMP9900",
+    "成绩"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "write",
+   "key": "m195",
+   "title": "",
+   "content": "这三天用户有点失眠，想家，看到妈妈发来团子在小区草坪上晒太阳的视频，一个人在房间里看了好久。",
+   "tags": [
+    "情绪"
+   ],
+   "occurred": "2026-10-14"
+  },
+  {
+   "op": "write",
+   "key": "m196",
+   "title": "",
+   "content": "COMP9517 个人 assignment 在 10 月 16 日中午提交，拼接出来的全景图内点数 412，比样例多；等成绩。",
+   "tags": [
+    "COMP9517"
+   ],
+   "occurred": "2026-10-16"
+  },
+  {
+   "op": "write",
+   "key": "m197",
+   "title": "签证延期申请",
+   "content": "用户 10 月 18 日在 ImmiAccount 提交了学生签证延期（新 CoE 到 2027-08-27），签证费 $2,000，另外要给 OSHC 续保到新的结业日期之后。",
+   "tags": [
+    "签证"
+   ],
+   "occurred": "2026-10-18"
+  },
+  {
+   "op": "write",
+   "key": "m198",
+   "title": "",
+   "content": "洗衣机里少了一只袜子，找了半天没找到。",
+   "tags": [],
+   "occurred": "2026-10-21"
+  },
+  {
+   "op": "summary",
+   "key": "s11",
+   "title": "COMP9900 项目",
+   "content": "COMP9900 小组 4 人（Ethan 后端、Priya 前端、Kenji 测试，用户负责 DB、部署和 CI），做 Smart Study Planner，技术栈 FastAPI + PostgreSQL + Vue 3，docker compose 部署；评分 Demo A 10%、Demo B 15%、最终 demo 25%、报告 25%、个人贡献 25%。踩过 CORS 预检被 nginx 拦掉的坑。Demo A 得 8.5/10。",
+   "adopt": [
+    "m185",
+    "m186",
+    "m187",
+    "m194",
+    "m193"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m199",
+   "title": "回国机票（2026 冬）",
+   "content": "用户订了 2026-12-19 东航 MU562 悉尼飞上海浦东，2027-01-12 乘 MU561 回悉尼，往返 A$1,368，含 2 件 23kg 托运，比去年同一条线贵了 $153。",
+   "tags": [
+    "机票"
+   ],
+   "occurred": "2026-10-22"
+  },
+  {
+   "op": "write",
+   "key": "m200",
+   "title": "",
+   "content": "订票时比较过：Qantas 往返 A$1,590、国航 A$1,430，东航最便宜，还是选了东航，因为去年也飞东航，托运规则熟悉。",
+   "tags": [
+    "机票"
+   ],
+   "occurred": "2026-10-23"
+  },
+  {
+   "op": "update",
+   "key": "m135",
+   "content": "CBA offer update (HR email, 2026-10-25): 'Your start date has moved forward to Monday 11 January 2027 (originally 18 January), 10 weeks, $1,580 per week before tax. Orientation is on the first day at 48 Martin Place.' Recruiter is Natalie.",
+   "occurred": "2026-10-25"
+  },
+  {
+   "op": "write",
+   "key": "m201",
+   "title": "",
+   "content": "CBA recruiter 说用户被分到 Digital Banking 团队，技术栈是 Kotlin 和 AWS，实习前建议先看一下 Kotlin 基础。",
+   "tags": [
+    "实习"
+   ],
+   "occurred": "2026-10-26"
+  },
+  {
+   "op": "summary",
+   "key": "s12",
+   "title": "回国与机票",
+   "content": "用户 2025 年冬回国：2025-12-16 去、2026-02-07 回，往返 A$1,215（东航）。2026 年冬计划 2026-12-19 东航 MU562 去，2027-01-12 MU561 回，往返 A$1,368；选 2 月/1 月回悉尼是为了避开春节涨价和配合开学、实习。",
+   "adopt": [
+    "m029",
+    "m030",
+    "m045",
+    "m199",
+    "m200"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m199",
+   "content": "用户 2026-12-19 乘东航 MU562 悉尼飞上海浦东；因为 CBA 实习提前到 1 月 11 日开始，回程由 2027-01-12 改签到 2027-01-09（MU561），改签费 $120；往返票价 A$1,368 加改签费，含 2 件 23kg 托运。",
+   "occurred": "2026-10-27",
+   "title": "回国机票（2026 冬）"
+  },
+  {
+   "op": "write",
+   "key": "m202",
+   "title": "",
+   "content": "10 月 28 日卧推做到 72.5kg×5，是新的 PR；体重 72 公斤出头，肌肉感觉比 6 月时明显。",
+   "tags": [
+    "健身"
+   ],
+   "occurred": "2026-10-28"
+  },
+  {
+   "op": "write",
+   "key": "m203",
+   "title": "",
+   "content": "9900 小组聚餐要注意：Priya 吃蛋奶素，Kenji 不吃辣，Ethan 乳糖不耐受，所以点菜选了不辣的素食套餐。",
+   "tags": [
+    "小组",
+    "饮食"
+   ],
+   "occurred": "2026-10-30"
+  },
+  {
+   "op": "write",
+   "key": "m204",
+   "title": "",
+   "content": "万圣节晚上 9900 小组在 Haymarket 吃了泰国菜，AA 制每人 $22，Priya 带了一盒糖。",
+   "tags": [],
+   "occurred": "2026-10-31"
+  },
+  {
+   "op": "write",
+   "key": "m205",
+   "title": "",
+   "content": "用户 11 月 2 日用 Wise 把 ¥10,000 换成 A$2,137，汇率 4.68，高于 4.55 的阈值，挺满意。",
+   "tags": [
+    "汇率"
+   ],
+   "occurred": "2026-11-02"
+  },
+  {
+   "op": "write",
+   "key": "m206",
+   "title": "10 月开销",
+   "content": "用户 10 月总支出 $2,684：房租 $1,473、吃饭 $560、交通 $98、手机 $22、健身 $65、机票订金和其他 $466，比预算略低。",
+   "tags": [
+    "省钱"
+   ],
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "write",
+   "key": "m207",
+   "title": "9900 Demo B",
+   "content": "COMP9900 Demo B 在 2026-11-27 下午 3 点，每队 15 分钟，用户负责演示部署流程和数据库迁移。",
+   "tags": [
+    "COMP9900"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m208",
+   "title": "",
+   "content": "小周 11 月拿到了墨尔本一家公司的 graduate offer，明年 3 月毕业后搬去墨尔本；他说走之前请大家吃一顿火锅。",
+   "tags": [
+    "室友"
+   ],
+   "occurred": "2026-11-06"
+  },
+  {
+   "op": "update",
+   "key": "m050",
+   "content": "用户目前体重 72.0kg（11 月 8 日称），比 2 月回悉尼时的 78.2kg 轻了 6.2kg，体脂约 16%，放宽后的目标 72kg 以内已达到。",
+   "occurred": "2026-11-08"
+  },
+  {
+   "op": "update",
+   "key": "m019",
+   "content": "用户的学生签证延期已于 11 月 9 日批准，新到期日 2027-09-15（原来是 2027-03-15），subclass 500，仍带 8105 工作条件：学期内每两周最多 48 小时。",
+   "occurred": "2026-11-09",
+   "title": "学生签证"
+  },
+  {
+   "op": "update",
+   "key": "m020",
+   "content": "用户的 OSHC 已续到 2027-09-30（Allianz Care），续保补了约 $1,010；看全科医生直接刷卡，门诊自付部分事后在 app 里报销，常规牙科不在保障内。",
+   "occurred": "2026-11-09"
+  },
+  {
+   "op": "update",
+   "key": "m189",
+   "content": "用户预计 2027 T2 毕业，结业日期 2027-08-27；学生签证延期已批准到 2027-09-15，不用再为签证操心，下一步是毕业后的 485 签证。",
+   "occurred": "2026-11-09"
+  },
+  {
+   "op": "write",
+   "key": "m209",
+   "title": "",
+   "content": "Hana 的生日是 12 月 3 日，用户打算在 Kinokuniya 给她买一本设计类的书，预算 $40 左右。",
+   "tags": [
+    "室友",
+    "生日"
+   ],
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "summary",
+   "key": "s08",
+   "title": "换汇与省钱",
+   "content": "用户换汇都走 Wise：2025-11 ¥10,000→A$2,155（4.64），2026-03 ¥15,000→A$3,191（4.70），2026-08 ¥12,000→A$2,655（4.52，例外），2026-11 ¥10,000→A$2,137（4.68）；阈值 4.55 以上才大额换。月预算约 $2,800，平时在 Aldi 买菜，每周 $55，鸡胸肉 $9.99/kg。",
+   "adopt": [
+    "m006",
+    "m083",
+    "m168",
+    "m205",
+    "m039",
+    "m120",
+    "m061",
+    "m093",
+    "m206"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m207",
+   "content": "COMP9900 Demo B 因为 tutor Daniel 调时间，从 11 月 27 日改到 2026-12-01 上午 10 点，每队 15 分钟，用户负责演示部署流程和数据库迁移。",
+   "occurred": "2026-11-12"
+  },
+  {
+   "op": "write",
+   "key": "m210",
+   "title": "回国前安排",
+   "content": "回国前的时间安排：12 月 1 日 9900 Demo B；12 月 4 日交 9900 最终报告；12 月 9 日 9517 期末；12 月 12 日是最后一个兼职班，已和王姐说好 12 月 19 日到 1 月 9 日休假；12 月 17 日收拾 Randwick 的房间，房租照付；12 月 18 日去 Chemist Warehouse 给妈妈买 Swisse 钙片、给爸爸买一瓶 Penfolds、给团子买进口冻干；12 月 19 日 22:30 起飞，Airport train 约 $22；笔记本电池打算回国换。",
+   "tags": [
+    "计划",
+    "机票"
+   ],
+   "occurred": "2026-11-13"
+  },
+  {
+   "op": "write",
+   "key": "m211",
+   "title": "",
+   "content": "回国礼物清单：妈妈 Swisse 钙片两瓶，爸爸一瓶 Penfolds Bin 28，表哥林宇一包 Tim Tam，团子一袋进口冻干，大约 $260 预算。",
+   "tags": [
+    "购物",
+    "家人"
+   ],
+   "occurred": "2026-11-14"
+  },
+  {
+   "op": "summary",
+   "key": "s13",
+   "title": "室友与身边的人",
+   "content": "用户身边的人：Kingsford 的小周（杭州人，不吃香菜、花生过敏，生日 3 月 9 日）、阿杰（爱吃辣、熬夜，生日 8 月 22 日，已搬走）、Leo（马来西亚，抽烟）；Randwick 的 Hana（大阪，二房东，10 点后要安静）和老陈（UTS，红烧肉、不吃羊肉）。表哥林宇在 Melbourne 读 PhD；妈妈对海鲜过敏，爸爸爱喝黄酒。",
+   "adopt": [
+    "m015",
+    "m016",
+    "m048",
+    "m105",
+    "m106",
+    "m074",
+    "m174",
+    "m038",
+    "m035"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s14",
+   "title": "旅行与爱好",
+   "content": "用户的业余生活：UNSW Badminton Society 每周四晚 8 点打球；4 月 Easter 去墨尔本找表哥，6 月 Perisher 滑雪（$480），9 月蓝山一日游；买了 Keychron K8 Pro 键盘和 AirPods Pro 2。",
+   "adopt": [
+    "m067",
+    "m095",
+    "m152",
+    "m181",
+    "m060",
+    "m034"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m212",
+   "title": "9517 期末规则",
+   "content": "COMP9517 期末 2026-12-09 上午 9 点，闭卷，只允许带一页 A4 单面手写笔记；重点是 CNN 结构和 object detection 的 IoU/mAP 计算。",
+   "tags": [
+    "COMP9517",
+    "考试"
+   ],
+   "occurred": "2026-11-15"
+  },
+  {
+   "op": "write",
+   "key": "m213",
+   "title": "",
+   "content": "11 月 16 日在 Randwick 洗牙加检查 $145，Allianz OSHC 不包括常规牙科，全部自付；牙医说有一颗智齿以后要拔。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "write",
+   "key": "m214",
+   "title": "",
+   "content": "Hana 说明年 4 月租约到期后她要回日本，不续租了，所以用户明年 4 月前要重新找房或者问房东能否转到自己名下。",
+   "tags": [
+    "租房",
+    "室友"
+   ],
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "write",
+   "key": "m215",
+   "title": "",
+   "content": "本周待办：补 9900 后端的 pytest 覆盖率到 80% 以上，给 Priya 的前端 PR 做 review，周六照常上班。",
+   "tags": [],
+   "occurred": "2026-11-18"
+  },
+  {
+   "op": "write",
+   "key": "m216",
+   "title": "",
+   "content": "悉尼周四热到 35 度，公交空调坏了，用户到学校时衬衫全湿了。",
+   "tags": [],
+   "occurred": "2026-11-19"
+  },
+  {
+   "op": "summary",
+   "key": "s15",
+   "title": "学业总览",
+   "content": "用户的课程：T3 2025 的 COMP9331（78）、COMP9444（83）；T1 的 COMP9417（69，CR）、COMP9321（88，HD）；T2 的 COMP9313（81，DN）；COMP6713 已退。T3 2026 在修 COMP9900（capstone，Demo A 8.5/10）和 COMP9517。预计 2027 T2 毕业。",
+   "adopt": [
+    "s03",
+    "s04",
+    "s10",
+    "s11"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s16",
+   "title": "住房、收入与开销",
+   "content": "用户先住 Kingsford（周租 $295，后涨到 $320，三人合租），4 月搬到 Randwick（周租 $340 含水电网）；兼职在鼎香麻辣烫，时薪 $27，另外辅导 9024；预算约 $2,800 每月，用 Wise 换汇；手机 Boost，银行 CommBank 和 ING。",
+   "adopt": [
+    "s01",
+    "s02",
+    "s05",
+    "s07",
+    "s08"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s17",
+   "title": "求职与回国",
+   "content": "用户拿到 CBA 暑期实习 offer（2027-01-18 开始，周薪 $1,580），其余公司基本被拒；回国机票 2026-12-19 去、2027-01-12 回，往返 A$1,368。",
+   "adopt": [
+    "s06",
+    "s12"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s18",
+   "title": "健康与生活圈",
+   "content": "用户体重从 76.5kg 到 73.6kg，每周去 gym 三次；室友、家人和朋友圈情况；业余爱好是羽毛球、旅行。",
+   "adopt": [
+    "s09",
+    "s13",
+    "s14"
+   ]
+  }
+ ],
+ "queries": [
+  {
+   "id": "q001",
+   "qs": [
+    "COMP9331 期末考试占总成绩多少",
+    "9331 评分构成 assignment quiz 比例"
+   ],
+   "type": "direct",
+   "gold": [
+    "m004"
+   ],
+   "stale": [],
+   "note": "基础事实：期末 50%、作业 30%、quiz 20%"
+  },
+  {
+   "id": "q002",
+   "qs": [
+    "COMP9321 assignment 3 什么时候截止",
+    "9321 数据管道作业 deadline"
+   ],
+   "type": "direct",
+   "gold": [
+    "m121"
+   ],
+   "stale": [],
+   "note": "2026-05-15 17:00"
+  },
+  {
+   "id": "q003",
+   "qs": [
+    "Randwick 新租约从哪天到哪天",
+    "Randwick 租期 12 个月 起止日期"
+   ],
+   "type": "direct",
+   "gold": [
+    "m077"
+   ],
+   "stale": [],
+   "note": "2026-04-12 到 2027-04-11"
+  },
+  {
+   "id": "q004",
+   "qs": [
+    "CBA 实习周薪是多少",
+    "Commonwealth Bank 暑期实习 每周 税前"
+   ],
+   "type": "direct",
+   "gold": [
+    "m135"
+   ],
+   "stale": [],
+   "note": "$1,580/周税前；memory 为英文"
+  },
+  {
+   "id": "q005",
+   "qs": [
+    "ING Savings Maximiser 拿 bonus 利率的条件",
+    "ING 储蓄账户 每月要存多少 刷卡几笔"
+   ],
+   "type": "direct",
+   "gold": [
+    "m063"
+   ],
+   "stale": [],
+   "note": "每月存入 ≥$1,000 且刷卡 5 笔"
+  },
+  {
+   "id": "q006",
+   "qs": [
+    "Perisher 滑雪这次一共花了多少钱",
+    "学联滑雪团 费用"
+   ],
+   "type": "direct",
+   "gold": [
+    "m152"
+   ],
+   "stale": [],
+   "note": "$480 含大巴雪票住宿，另租雪具 $85"
+  },
+  {
+   "id": "q007",
+   "qs": [
+    "COMP9444 第一个作业 NetConv 要多少准确率才满分",
+    "9444 KMNIST assignment 要求"
+   ],
+   "type": "direct",
+   "gold": [
+    "m009"
+   ],
+   "stale": [],
+   "note": "≥93%，用户跑到 96.1%"
+  },
+  {
+   "id": "q008",
+   "qs": [
+    "COMP9900 项目用的什么技术栈",
+    "capstone 前后端数据库框架"
+   ],
+   "type": "direct",
+   "gold": [
+    "m186"
+   ],
+   "stale": [],
+   "note": "FastAPI + PostgreSQL + Vue 3"
+  },
+  {
+   "id": "q009",
+   "qs": [
+    "家里宠物今年多大了",
+    "团子是什么品种"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m036"
+   ],
+   "stale": [],
+   "note": "记忆写柴犬团子 8 岁；问法不含'狗''柴犬'"
+  },
+  {
+   "id": "q010",
+   "qs": [
+    "为什么我要晚一个学期才能结业",
+    "退课导致毕业时间往后挪的原因"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m153"
+   ],
+   "stale": [],
+   "note": "退 COMP6713，毕业推迟到 2027 T2"
+  },
+  {
+   "id": "q011",
+   "qs": [
+    "以前合租的人里谁不能碰坚果",
+    "哪个室友饮食有忌口 要避开香料"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m015"
+   ],
+   "stale": [],
+   "note": "小周：不吃香菜、花生过敏"
+  },
+  {
+   "id": "q012",
+   "qs": [
+    "可靠传输作业里同一个包被反复发送的根因是什么",
+    "计时器没复位引起的死循环"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m010"
+   ],
+   "stale": [],
+   "note": "timer 收到 ACK 后没重置；不含 STP/timeout 等原词的首问"
+  },
+  {
+   "id": "q013",
+   "qs": [
+    "旧房子退租后最后实际拿回多少钱",
+    "清洁费被扣了多少"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m014"
+   ],
+   "stale": [],
+   "note": "押金退回 $1,030，扣 $150"
+  },
+  {
+   "id": "q014",
+   "qs": [
+    "深度学习那门课考试能带什么纸质资料",
+    "9444 final 带的资料规定"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m022"
+   ],
+   "stale": [],
+   "note": "一页 A4 单面打印笔记"
+  },
+  {
+   "id": "q015",
+   "qs": [
+    "在上海的同学对我找工作有什么建议",
+    "高中朋友做算法的说了什么"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m040"
+   ],
+   "stale": [],
+   "note": "阿凯：先拿悉尼实习经历"
+  },
+  {
+   "id": "q016",
+   "qs": [
+    "在国内买的无线耳机花了多少",
+    "降噪耳机价格 京东"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m034"
+   ],
+   "stale": [],
+   "note": "AirPods Pro 2，¥1,399"
+  },
+  {
+   "id": "q017",
+   "qs": [
+    "哪家公司的面试栽在多线程的追问上",
+    "被问到并发安全答得不好的那次"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m099",
+    "m119"
+   ],
+   "stale": [],
+   "note": "Atlassian 技术面，follow-up 线程安全"
+  },
+  {
+   "id": "q018",
+   "qs": [
+    "春节前后飞会更贵，所以我怎么安排回来的时间",
+    "为什么提前一周回悉尼"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m045"
+   ],
+   "stale": [],
+   "note": "2 月 7 日回，避开春节涨价"
+  },
+  {
+   "id": "q019",
+   "qs": [
+    "我近视多少度",
+    "新配眼镜的价格和度数"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m042"
+   ],
+   "stale": [],
+   "note": "左 -4.25 右 -4.00，¥860"
+  },
+  {
+   "id": "q020",
+   "qs": [
+    "住 Randwick 的二房东对噪音有什么要求",
+    "晚上几点以后要保持安静"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m105"
+   ],
+   "stale": [],
+   "note": "Hana 10 点后客厅不要有声音"
+  },
+  {
+   "id": "q021",
+   "qs": [
+    "上次那个一直提示数据库被锁的问题是怎么解决的",
+    "Flask 作业里写入就挂掉那个坑"
+   ],
+   "type": "vague",
+   "gold": [
+    "m087"
+   ],
+   "stale": [],
+   "note": "reloader 双进程；vague 不报错误原文"
+  },
+  {
+   "id": "q022",
+   "qs": [
+    "前后端联调浏览器里拒绝请求那件事后来怎么修的",
+    "跨域问题和 nginx"
+   ],
+   "type": "vague",
+   "gold": [
+    "m193"
+   ],
+   "stale": [],
+   "note": "CORS 预检被 nginx 拦掉"
+  },
+  {
+   "id": "q023",
+   "qs": [
+    "搬家那天实际花了多少钱",
+    "货车钱超没超"
+   ],
+   "type": "vague",
+   "gold": [
+    "m103"
+   ],
+   "stale": [],
+   "note": "实际付了 $200，原定 $180"
+  },
+  {
+   "id": "q024",
+   "qs": [
+    "有一门课我差一点点就拿到最高等级",
+    "哪门课只差两分"
+   ],
+   "type": "vague",
+   "gold": [
+    "m032"
+   ],
+   "stale": [],
+   "note": "COMP9444 83 分，差 HD 2 分"
+  },
+  {
+   "id": "q025",
+   "qs": [
+    "之前跑去外州找表哥玩那次怎么去的",
+    "复活节假期的行程"
+   ],
+   "type": "vague",
+   "gold": [
+    "m095"
+   ],
+   "stale": [],
+   "note": "Easter 去墨尔本"
+  },
+  {
+   "id": "q026",
+   "qs": [
+    "那次大数据作业跑到一半内存爆掉是怎么搞定的",
+    "数据倾斜怎么处理"
+   ],
+   "type": "vague",
+   "gold": [
+    "m162"
+   ],
+   "stale": [],
+   "note": "reduceByKey + salt"
+  },
+  {
+   "id": "q027",
+   "qs": [
+    "有几天特别难受，吃不下饭还跟家里人视频哭了",
+    "那周被拒又被组员放鸽子"
+   ],
+   "type": "vague",
+   "gold": [
+    "m137"
+   ],
+   "stale": [],
+   "note": "5 月 24–27 日情绪低落"
+  },
+  {
+   "id": "q028",
+   "qs": [
+    "mrjob",
+    "MapReduce 词共现 截止"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m156"
+   ],
+   "stale": [],
+   "note": "9313 project 1"
+  },
+  {
+   "id": "q029",
+   "qs": [
+    "MU562",
+    "东航 悉尼 上海 往返"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m029",
+    "m199"
+   ],
+   "stale": [],
+   "note": "两年的同一航班号都出现"
+  },
+  {
+   "id": "q030",
+   "qs": [
+    "Kotlin AWS 团队",
+    "Digital Banking"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m201"
+   ],
+   "stale": [],
+   "note": "CBA 实习分组"
+  },
+  {
+   "id": "q031",
+   "qs": [
+    "RandomizedSearchCV n_iter",
+    "GridSearchCV 3 小时"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m117"
+   ],
+   "stale": [],
+   "note": "9417 作业二调参"
+  },
+  {
+   "id": "q032",
+   "qs": [
+    "TVMaze",
+    "9321 作业一 数据源"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m085"
+   ],
+   "stale": [],
+   "note": "Flask-RESTx 对接 TVMaze"
+  },
+  {
+   "id": "q033",
+   "qs": [
+    "SHL",
+    "Macquarie online assessment"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m090"
+   ],
+   "stale": [],
+   "note": "SHL 数理未过"
+  },
+  {
+   "id": "q034",
+   "qs": [
+    "Keychron K8 Pro",
+    "机械键盘 茶轴"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m060"
+   ],
+   "stale": [],
+   "note": "$159"
+  },
+  {
+   "id": "q035",
+   "qs": [
+    "How much was the bond for the Kingsford flat and how much did I get back?",
+    "Kingsford bond refund amount"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m014"
+   ],
+   "stale": [],
+   "note": "英问中：$1,180，退回 $1,030"
+  },
+  {
+   "id": "q036",
+   "qs": [
+    "How many hours can I work per fortnight on my student visa?",
+    "8105 work limit"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m019"
+   ],
+   "stale": [],
+   "note": "英问中：48 小时"
+  },
+  {
+   "id": "q037",
+   "qs": [
+    "What SQLite error did I hit in the Flask assignment?",
+    "database is locked cause"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m087"
+   ],
+   "stale": [],
+   "note": "英问中"
+  },
+  {
+   "id": "q038",
+   "qs": [
+    "CBA 的 offer 邮件里说哪天开始，周薪多少，要在什么时候前回复",
+    "Commonwealth 暑期实习 offer 的条件"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m135"
+   ],
+   "stale": [],
+   "note": "中问英文记忆；原文 18 Jan 2027（后被 update 到 11 Jan）"
+  },
+  {
+   "id": "q039",
+   "qs": [
+    "COMP9900 各部分评分占比",
+    "capstone Demo A Demo B 比例"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m187"
+   ],
+   "stale": [],
+   "note": "中问英文记忆"
+  },
+  {
+   "id": "q040",
+   "qs": [
+    "Who is the TA for COMP9313 and when are the consultations?",
+    "Big Data Management TA"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m155"
+   ],
+   "stale": [],
+   "note": "英问中：王宇，周五下午 2 点"
+  },
+  {
+   "id": "q041",
+   "qs": [
+    "三月份做过哪些实习的在线测评",
+    "March online assessment 实习"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m080",
+    "m090"
+   ],
+   "stale": [],
+   "note": "3 月：Atlassian HackerRank（3/15）、Macquarie SHL（3/26-28）"
+  },
+  {
+   "id": "q042",
+   "qs": [
+    "四月初称体重是多少",
+    "复活节前后的体重"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m098"
+   ],
+   "stale": [],
+   "note": "4 月 8 日 75.9kg"
+  },
+  {
+   "id": "q043",
+   "qs": [
+    "去年十二月考试周各科的考试规则",
+    "12 月的期末考试时间和可带资料"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m021",
+    "m022"
+   ],
+   "stale": [],
+   "note": "2025 年 12 月的两门考试"
+  },
+  {
+   "id": "q044",
+   "qs": [
+    "七月份报税退了多少钱",
+    "退税到账是哪天"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m163"
+   ],
+   "stale": [],
+   "note": "$642，7 月 23 日"
+  },
+  {
+   "id": "q045",
+   "qs": [
+    "十月份 9900 第一次 demo 得了多少分",
+    "Demo A 评语"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m194"
+   ],
+   "stale": [],
+   "note": "8.5/10"
+  },
+  {
+   "id": "q046",
+   "qs": [
+    "六月下旬退掉的那门课是哪天退的",
+    "census date 前退课"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m153"
+   ],
+   "stale": [],
+   "note": "6 月 22 日"
+  },
+  {
+   "id": "q047",
+   "qs": [
+    "现在打工时薪多少",
+    "鼎香麻辣烫 每小时工资 最新"
+   ],
+   "type": "latest",
+   "gold": [
+    "m001"
+   ],
+   "stale": [],
+   "note": "7 月起 $29.5（update 改写）"
+  },
+  {
+   "id": "q048",
+   "qs": [
+    "我现在每周哪几天上班",
+    "兼职最新排班"
+   ],
+   "type": "latest",
+   "gold": [
+    "m144"
+   ],
+   "stale": [
+    "m002",
+    "m057"
+   ],
+   "note": "T2 起周六日间 + 周三晚；旧排班是追加式"
+  },
+  {
+   "id": "q049",
+   "qs": [
+    "现在用的手机套餐和月费",
+    "手机号换了哪家运营商"
+   ],
+   "type": "latest",
+   "gold": [
+    "m171"
+   ],
+   "stale": [
+    "m149"
+   ],
+   "note": "Amaysim $22；旧 Boost $30/$35"
+  },
+  {
+   "id": "q050",
+   "qs": [
+    "COMP9417 的 TA 现在是谁",
+    "9417 助教 consultation 时间"
+   ],
+   "type": "latest",
+   "gold": [
+    "m114"
+   ],
+   "stale": [
+    "m058"
+   ],
+   "note": "Chloe，周四 4 点；旧的是 Liam"
+  },
+  {
+   "id": "q051",
+   "qs": [
+    "CBA 暑期实习现在定的是哪天开始",
+    "实习 start date 最新"
+   ],
+   "type": "latest",
+   "gold": [
+    "m135"
+   ],
+   "stale": [],
+   "note": "update 为 2027-01-11"
+  },
+  {
+   "id": "q052",
+   "qs": [
+    "回程机票现在是哪天的",
+    "12 月回国往返的返程日期"
+   ],
+   "type": "latest",
+   "gold": [
+    "m199"
+   ],
+   "stale": [],
+   "note": "改签到 2027-01-09"
+  },
+  {
+   "id": "q053",
+   "qs": [
+    "学生签证现在到什么时候到期",
+    "签证延期批下来没有"
+   ],
+   "type": "latest",
+   "gold": [
+    "m019"
+   ],
+   "stale": [],
+   "note": "2027-09-15"
+  },
+  {
+   "id": "q054",
+   "qs": [
+    "ING 现在利率多少",
+    "储蓄账户最新 bonus 利率"
+   ],
+   "type": "latest",
+   "gold": [
+    "m063"
+   ],
+   "stale": [],
+   "note": "4.5%"
+  },
+  {
+   "id": "q055",
+   "qs": [
+    "现在去哪个健身房，多少钱一周",
+    "gym 会员最新"
+   ],
+   "type": "latest",
+   "gold": [
+    "m126"
+   ],
+   "stale": [
+    "m051"
+   ],
+   "note": "Anytime Fitness Randwick $14.95/周；旧的是 ActiveUNSW 卡"
+  },
+  {
+   "id": "q056",
+   "qs": [
+    "电脑电池现在还剩多少健康度",
+    "MacBook 要不要换电池"
+   ],
+   "type": "latest",
+   "gold": [
+    "m175"
+   ],
+   "stale": [
+    "m133"
+   ],
+   "note": "84%；旧的 89%"
+  },
+  {
+   "id": "q057",
+   "qs": [
+    "我现在多重",
+    "最近一次称体重的结果"
+   ],
+   "type": "latest",
+   "gold": [
+    "m050"
+   ],
+   "stale": [],
+   "note": "72.0kg（11/8）"
+  },
+  {
+   "id": "q058",
+   "qs": [
+    "CBA 一开始说的实习开始日期是哪天",
+    "最初 offer 邮件里的 start date"
+   ],
+   "type": "history",
+   "gold": [
+    "m135"
+   ],
+   "stale": [],
+   "note": "旧值：2027-01-18（后改为 01-11）"
+  },
+  {
+   "id": "q059",
+   "qs": [
+    "ING 的利率最初是多少",
+    "开户时 bonus 利率"
+   ],
+   "type": "history",
+   "gold": [
+    "m063"
+   ],
+   "stale": [],
+   "note": "旧值：4.9%"
+  },
+  {
+   "id": "q060",
+   "qs": [
+    "最初订的回程是哪天",
+    "改签之前的返程航班日期"
+   ],
+   "type": "history",
+   "gold": [
+    "m199"
+   ],
+   "stale": [],
+   "note": "旧值：2027-01-12"
+  },
+  {
+   "id": "q061",
+   "qs": [
+    "刚回悉尼那天称的体重是多少",
+    "2 月时的体重"
+   ],
+   "type": "history",
+   "gold": [
+    "m050"
+   ],
+   "stale": [],
+   "note": "旧值：78.2kg（2/10）；之后 73.6 再 72.0"
+  },
+  {
+   "id": "q062",
+   "qs": [
+    "Kingsford 涨价之前每周房租多少",
+    "涨价前的周租"
+   ],
+   "type": "history",
+   "gold": [
+    "m013"
+   ],
+   "stale": [],
+   "note": "旧值：$295/周"
+  },
+  {
+   "id": "q063",
+   "qs": [
+    "被拒掉的实习有哪几家",
+    "实习申请失败的公司和原因"
+   ],
+   "type": "overview",
+   "gold": [
+    "m119",
+    "m116",
+    "m115",
+    "m140"
+   ],
+   "stale": [],
+   "note": "汇总 s06 的子节点"
+  },
+  {
+   "id": "q064",
+   "qs": [
+    "从通知不续约到拿回押金，搬家这件事的整个过程",
+    "Kingsford 到 Randwick 搬家经过"
+   ],
+   "type": "overview",
+   "gold": [
+    "m073",
+    "m077",
+    "m091",
+    "m103",
+    "m014"
+   ],
+   "stale": [],
+   "note": "覆盖 s02"
+  },
+  {
+   "id": "q065",
+   "qs": [
+    "COMP9331 这门课的评分、助教、考试、成绩",
+    "9331 总体情况"
+   ],
+   "type": "overview",
+   "gold": [
+    "m004",
+    "m005",
+    "m021",
+    "m031"
+   ],
+   "stale": [],
+   "note": "覆盖 s03"
+  },
+  {
+   "id": "q066",
+   "qs": [
+    "我换过哪几个健身房、训练是怎么安排的",
+    "gym 会员和训练计划"
+   ],
+   "type": "overview",
+   "gold": [
+    "m023",
+    "m051",
+    "m126",
+    "m053"
+   ],
+   "stale": [],
+   "note": "gym 相关 4 条"
+  },
+  {
+   "id": "q067",
+   "qs": [
+    "这一年出去玩过哪些地方",
+    "旅行经历汇总"
+   ],
+   "type": "overview",
+   "gold": [
+    "m095",
+    "m152",
+    "m181"
+   ],
+   "stale": [],
+   "note": "墨尔本、Perisher、蓝山"
+  },
+  {
+   "id": "q068",
+   "qs": [
+    "CBA 实习开始前我最晚哪天要飞回悉尼",
+    "实习第一天和回程机票冲突吗"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m135",
+    "m199"
+   ],
+   "stale": [],
+   "note": "start 2027-01-11，返程改签到 01-09"
+  },
+  {
+   "id": "q069",
+   "qs": [
+    "Kingsford 和 Randwick 两处的 bond 差了多少",
+    "新旧两处房子押金哪个更高"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m014",
+    "m077"
+   ],
+   "stale": [],
+   "note": "$1,180 vs $1,360，差 $180"
+  },
+  {
+   "id": "q070",
+   "qs": [
+    "Hu 老师那门课期末占多少分，我实际期末拿了几分",
+    "9417 期末表现"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m052",
+    "m146"
+   ],
+   "stale": [],
+   "note": "期末占 50%，实得 27/50"
+  },
+  {
+   "id": "q071",
+   "qs": [
+    "T3 的学费里用了哪门退课的钱，那门课为什么退",
+    "6713 退款和 T3 学费"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m183",
+    "m153"
+   ],
+   "stale": [],
+   "note": "退 6713 的 $5,880 抵 T3，因 9313 作业重 + 兼职"
+  },
+  {
+   "id": "q072",
+   "qs": [
+    "Kingsford 的押金是多少",
+    "旧住处 bond 金额"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m014"
+   ],
+   "stale": [
+    "m077"
+   ],
+   "note": "易与 Randwick bond $1,360 混淆"
+  },
+  {
+   "id": "q073",
+   "qs": [
+    "小周有什么忌口",
+    "杭州室友不能吃什么"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m015"
+   ],
+   "stale": [
+    "m016"
+   ],
+   "note": "小周不吃香菜、花生过敏；阿杰爱吃辣"
+  },
+  {
+   "id": "q074",
+   "qs": [
+    "老陈生日是哪天",
+    "做红烧肉的室友生日"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m157"
+   ],
+   "stale": [
+    "m174",
+    "m209"
+   ],
+   "note": "7 月 4 日；其他室友生日易混"
+  },
+  {
+   "id": "q075",
+   "qs": [
+    "2025 年冬天回国的机票多少钱",
+    "第一次回国往返价格"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m029"
+   ],
+   "stale": [
+    "m199"
+   ],
+   "note": "$1,215；今年的是 $1,368"
+  },
+  {
+   "id": "q076",
+   "qs": [
+    "COMP9321 作业二的评分重点和截止",
+    "9321 assignment 2"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m112"
+   ],
+   "stale": [
+    "m085"
+   ],
+   "note": "Swagger 与错误码；截止 4 月 27 日"
+  },
+  {
+   "id": "q077",
+   "qs": [
+    "Atlassian 的在线测评是什么形式",
+    "Atlassian OA 题型"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m080"
+   ],
+   "stale": [
+    "m090",
+    "m097"
+   ],
+   "note": "HackerRank 90 分钟 2 题；Macquarie/Amazon 容易混"
+  },
+  {
+   "id": "q078",
+   "qs": [
+    "COMP9331 期末能带什么资料",
+    "9331 cheat sheet 规定"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m021"
+   ],
+   "stale": [
+    "m022"
+   ],
+   "note": "A4 双面手写；9444 是单面打印"
+  },
+  {
+   "id": "q079",
+   "qs": [
+    "12 月到 2 月那期电费每人摊多少",
+    "Kingsford 夏季电费"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m089"
+   ],
+   "stale": [
+    "m017"
+   ],
+   "note": "$119.40，用户实付 $95.40；9–11 月是 $137.53"
+  },
+  {
+   "id": "q080",
+   "qs": [
+    "T2 学费交了多少",
+    "2026 年 6 月交的学费"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m147"
+   ],
+   "stale": [
+    "m047",
+    "m183"
+   ],
+   "note": "$11,760（6 月 3 日）；T1/T3 金额相同日期不同"
+  },
+  {
+   "id": "q081",
+   "qs": [
+    "我的雅思成绩是多少",
+    "IELTS 总分"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "完全无关：从未存过"
+  },
+  {
+   "id": "q082",
+   "qs": [
+    "我养的那只猫叫什么",
+    "猫的品种"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关：家里只有狗，没有猫"
+  },
+  {
+   "id": "q083",
+   "qs": [
+    "上次去日本旅行订的酒店",
+    "东京行程"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关"
+  },
+  {
+   "id": "q084",
+   "qs": [
+    "我考驾照的预约时间",
+    "路考"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "无关"
+  },
+  {
+   "id": "q085",
+   "qs": [
+    "团子现在多重",
+    "家里狗的体重"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（狗团子）但无体重"
+  },
+  {
+   "id": "q086",
+   "qs": [
+    "COMP9331 的 Dr. Tran 邮箱是什么",
+    "Tran 教授联系方式"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（9331 教师）但没存邮箱"
+  },
+  {
+   "id": "q087",
+   "qs": [
+    "我现在的 WAM 是多少",
+    "平均分 加权成绩"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "库里只有各科成绩，没存 WAM 数值"
+  },
+  {
+   "id": "q088",
+   "qs": [
+    "我的护照号码是多少",
+    "护照有效期"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "已被 delete（passport）"
+  },
+  {
+   "id": "q089",
+   "qs": [
+    "Randwick 家的 Wi-Fi 密码",
+    "AlisonRd 网络密码"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "已被 delete（wifi）"
+  },
+  {
+   "id": "q090",
+   "qs": [
+    "CBA 实习的办公室在几楼",
+    "Martin Place 办公室楼层"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题在库（只存了地址和第一天报到）但没存楼层"
+  }
+ ]
+}

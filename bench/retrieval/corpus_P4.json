@@ -1,0 +1,3998 @@
+{
+ "persona": "31 岁自由职业 UI/品牌设计师，住成都，和国内外 7-8 个客户合作，中英混用，兼顾合伙摄影师、工作室租金、税务和母亲的健康与装修。",
+ "today": "2026-11-20",
+ "events": [
+  {
+   "op": "write",
+   "key": "m001",
+   "title": "我的执业状态",
+   "content": "用户是 31 岁的自由职业 UI/品牌设计师，常驻成都高新区。国内客户用中文沟通，海外客户用英文，2025 年主要靠站酷、朋友推荐和 Dribbble 接单。",
+   "tags": [
+    "个人"
+   ],
+   "occurred": "2025-11-21"
+  },
+  {
+   "op": "write",
+   "key": "m002",
+   "title": "青禾茶饮报价",
+   "content": "青禾茶饮（成都新茶饮连锁，12 家店）品牌升级 VI + 杯套包装，报价 ¥38,000，含 3 轮修改，超出每轮加收 ¥2,000。付款 3-4-3：签约 30%、初稿确认 40%、交付 30%。对接人是运营总监陈姐。",
+   "tags": [
+    "青禾",
+    "报价"
+   ],
+   "occurred": "2025-11-22"
+  },
+  {
+   "op": "write",
+   "key": "m003",
+   "title": "青禾审美偏好",
+   "content": "青禾茶饮陈姐的审美：国潮但不能土，主色低饱和青绿 + 米白，喜欢带手写感的字体。禁忌：不要红金配色，不要龙凤祥云纹样。",
+   "tags": [
+    "青禾",
+    "审美"
+   ],
+   "occurred": "2025-11-24"
+  },
+  {
+   "op": "write",
+   "key": "m004",
+   "title": "山屿咖啡报价",
+   "content": "山屿咖啡（精品烘焙品牌，老板小宋，阿泽介绍的）：VI + 4 款咖啡豆包装袋，报价 ¥42,000，含 2 轮修改，超出每轮 ¥3,000。付款 5-5，50% 预付，交付后付清余款。",
+   "tags": [
+    "山屿",
+    "报价"
+   ],
+   "occurred": "2025-11-26"
+  },
+  {
+   "op": "write",
+   "key": "m005",
+   "title": "山屿审美偏好",
+   "content": "山屿咖啡小宋要极简、大留白，黑白为主加一点橙色 #E8590C，无衬线字体。明确禁忌：不要插画、不要咖啡豆图标、不要手写体。",
+   "tags": [
+    "山屿",
+    "审美"
+   ],
+   "occurred": "2025-11-27"
+  },
+  {
+   "op": "write",
+   "key": "m006",
+   "title": "",
+   "content": "成都今天降到 6 度，联合办公的暖气几乎没用，穿着外套画了一下午。",
+   "tags": [],
+   "occurred": "2025-11-28"
+  },
+  {
+   "op": "write",
+   "key": "m007",
+   "title": "",
+   "content": "给自己买了西昊 Doro C300 人体工学椅 ¥1,599，放在家里，工作室那把还是联合办公自带的。",
+   "tags": [
+    "购物"
+   ],
+   "occurred": "2025-11-30"
+  },
+  {
+   "op": "write",
+   "key": "m008",
+   "title": "Nordlicht 项目",
+   "content": "Nordlicht GmbH (Berlin), contact Katrin: redesign of their B2B analytics dashboard UI. Fixed price €4,800, 2 revision rounds, net 30, paid into my Wise EUR account. She found me through Dribbble.",
+   "tags": [
+    "Nordlicht",
+    "报价"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m009",
+   "title": "Nordlicht 审美",
+   "content": "Nordlicht (Katrin) wants a strict 8pt grid, WCAG AA contrast, light theme only. She hates gradients and neon accents, and no emoji in UI copy.",
+   "tags": [
+    "Nordlicht",
+    "审美"
+   ],
+   "occurred": "2025-12-01"
+  },
+  {
+   "op": "write",
+   "key": "m010",
+   "title": "Brightpath 项目",
+   "content": "Brightpath Studio (Toronto), contact Marcus: K-8 learning app redesign, US$3,600 flat fee, 3 revision rounds, net 15. We started it through Upwork.",
+   "tags": [
+    "Brightpath",
+    "报价"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m011",
+   "title": "Brightpath 审美",
+   "content": "Brightpath likes a friendly rounded look with a bright palette and lots of illustration. Dislikes cool grey and anything serif.",
+   "tags": [
+    "Brightpath",
+    "审美"
+   ],
+   "occurred": "2025-12-02"
+  },
+  {
+   "op": "write",
+   "key": "m012",
+   "title": "Kestrel Labs 项目",
+   "content": "Kestrel Labs（新加坡 fintech）钱包 app UI + design system，对接人 Priya Nair，LinkedIn 上找来的。报价 SGD 7,500，按里程碑 30/40/30 付款，每个 sprint 含 2 轮反馈。",
+   "tags": [
+    "Kestrel",
+    "报价"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m013",
+   "title": "Kestrel 审美",
+   "content": "Kestrel 偏好 dark mode first，主色紫蓝，信息密度高。禁忌：不能用绿色当主色（会和竞品 Grab 撞），不要 3D 插图。",
+   "tags": [
+    "Kestrel",
+    "审美"
+   ],
+   "occurred": "2025-12-03"
+  },
+  {
+   "op": "write",
+   "key": "m014",
+   "title": "",
+   "content": "Kestrel 一期报价 SGD 5,700，三笔里程碑。",
+   "tags": [
+    "Kestrel",
+    "报价"
+   ],
+   "occurred": "2025-12-04"
+  },
+  {
+   "op": "write",
+   "key": "m015",
+   "title": "工作室租金",
+   "content": "在高新区天府三街的联合办公「木槿里」租了 2 个工位，和摄影师阿泽共用，两个工位合计月租 ¥2,800，押一付三。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2025-12-05"
+  },
+  {
+   "op": "write",
+   "key": "m016",
+   "title": "和阿泽的分成",
+   "content": "和摄影师阿泽（陈泽）约定：品牌拍摄 + 设计打包的项目，设计:摄影按 6:4 分；只是我介绍他去拍的单子不抽成。",
+   "tags": [
+    "阿泽",
+    "分成"
+   ],
+   "occurred": "2025-12-06"
+  },
+  {
+   "op": "write",
+   "key": "m017",
+   "title": "",
+   "content": "木槿里联合办公每月含 100 页免费打印，超出每页 ¥0.3；会议室一小时 ¥30，用之前要在小程序里预约。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m018",
+   "title": "",
+   "content": "我和阿泽的工位编号是 B-17 和 B-18，靠窗；24 小时门禁，卡丢了补办要 ¥50。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2025-12-07"
+  },
+  {
+   "op": "write",
+   "key": "m019",
+   "title": "Figma 订阅",
+   "content": "Figma Professional 年付，每个 seat $12/月，我只有一个 seat，12 月续费。",
+   "tags": [
+    "工具",
+    "订阅"
+   ],
+   "occurred": "2025-12-08"
+  },
+  {
+   "op": "write",
+   "key": "m020",
+   "title": "Adobe 订阅",
+   "content": "Adobe Creative Cloud 全家桶年付续费 ¥3,888，12 月 9 日扣款，发票抬头要开个体户名称。",
+   "tags": [
+    "工具",
+    "订阅"
+   ],
+   "occurred": "2025-12-09"
+  },
+  {
+   "op": "write",
+   "key": "m021",
+   "title": "",
+   "content": "青禾茶饮 VI 终稿交付日定在 2026-01-15。",
+   "tags": [
+    "青禾",
+    "交付"
+   ],
+   "occurred": "2025-12-10"
+  },
+  {
+   "op": "write",
+   "key": "m022",
+   "title": "",
+   "content": "报了 B 站的 After Effects 基础课 ¥199，目标是能给 logo 做简单的动效展示。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2025-12-11"
+  },
+  {
+   "op": "write",
+   "key": "m023",
+   "title": "青禾首款到账",
+   "content": "青禾首款 30%（¥11,400）12 月 11 日到账，正式开工。",
+   "tags": [
+    "青禾",
+    "付款"
+   ],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m024",
+   "title": "山屿预付到账",
+   "content": "山屿咖啡预付款 50%，¥21,000 已到账，开始做品牌 VI。",
+   "tags": [
+    "山屿",
+    "付款"
+   ],
+   "occurred": "2025-12-12"
+  },
+  {
+   "op": "write",
+   "key": "m025",
+   "title": "青禾字体授权",
+   "content": "青禾的 logo 主字用了方正的品牌字体，授权由客户自己买，单品牌永久授权 ¥2,400，合同里要写明字体授权方是客户。",
+   "tags": [
+    "字体",
+    "青禾"
+   ],
+   "occurred": "2025-12-15"
+  },
+  {
+   "op": "write",
+   "key": "m026",
+   "title": "腱鞘炎与鼠标",
+   "content": "腱鞘炎又犯了，医生让少用触控板。入手了 Logitech MX Vertical 垂直鼠标 ¥649，用了两天手腕舒服不少。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2025-12-16"
+  },
+  {
+   "op": "write",
+   "key": "m027",
+   "title": "母亲的高血压",
+   "content": "母亲今年 60 岁，退休小学老师，住在双流华阳的老房子。有高血压，目前吃缬沙坦 80mg，每天一次，早上服。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2025-12-18"
+  },
+  {
+   "op": "write",
+   "key": "m028",
+   "title": "个体户与增值税",
+   "content": "我是个体工商户、小规模纳税人，季度销售额不超过 30 万免征增值税，每个季度结束后次月 15 号前要申报。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2025-12-19"
+  },
+  {
+   "op": "write",
+   "key": "m029",
+   "title": "Wise 账户",
+   "content": "Wise 开了 EUR / USD / SGD 三个币种账户，海外客户都打到这里，再按需要结汇成人民币。",
+   "tags": [
+    "收款"
+   ],
+   "occurred": "2025-12-20"
+  },
+  {
+   "op": "write",
+   "key": "m030",
+   "title": "",
+   "content": "今天被一个客户连发三条 60 秒语音，心情很差，下班去吃了火锅才缓过来。",
+   "tags": [],
+   "occurred": "2025-12-22"
+  },
+  {
+   "op": "write",
+   "key": "m031",
+   "title": "接单渠道",
+   "content": "目前的接单渠道：Dribbble 带来 Nordlicht，LinkedIn 带来 Kestrel，Upwork 带来 Brightpath，站酷带来青禾，山屿是阿泽朋友介绍。",
+   "tags": [
+    "接单"
+   ],
+   "occurred": "2025-12-23"
+  },
+  {
+   "op": "write",
+   "key": "m032",
+   "title": "",
+   "content": "平安夜工作室只剩我一个人，点了份外卖，把青禾的第二版 logo 描完才走。",
+   "tags": [],
+   "occurred": "2025-12-24"
+  },
+  {
+   "op": "write",
+   "key": "m033",
+   "title": "青禾初稿反馈",
+   "content": "青禾初稿给了 A/B 两个方向，陈姐选了 B（青绿色 + 手写感 logo），要求 slogan 字号再放大一点。",
+   "tags": [
+    "青禾",
+    "修改"
+   ],
+   "occurred": "2025-12-26"
+  },
+  {
+   "op": "write",
+   "key": "m034",
+   "title": "Tokens Studio",
+   "content": "Tokens Studio Pro 年付 $130，主要给 Kestrel 的 design system 管 tokens，同步到 GitHub 仓库。",
+   "tags": [
+    "工具",
+    "插件"
+   ],
+   "occurred": "2025-12-29"
+  },
+  {
+   "op": "write",
+   "key": "m035",
+   "title": "Brightpath 首款",
+   "content": "Brightpath 第一笔 US$1,200 通过 Upwork 到账，平台抽 10%，实收 $1,080。",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-01-04"
+  },
+  {
+   "op": "write",
+   "key": "m036",
+   "title": "Nordlicht 时差",
+   "content": "Nordlicht 项目 kickoff call 定在北京时间 21:00，也就是柏林 14:00。冬令时柏林比成都晚 7 小时，夏令时变成晚 6 小时。",
+   "tags": [
+    "Nordlicht"
+   ],
+   "occurred": "2026-01-06"
+  },
+  {
+   "op": "write",
+   "key": "m037",
+   "title": "Kestrel 首款",
+   "content": "Kestrel 第一笔里程碑 30%，SGD 2,250 到了 Wise 的新币账户。",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-01-08"
+  },
+  {
+   "op": "delete",
+   "key": "m014"
+  },
+  {
+   "op": "write",
+   "key": "m038",
+   "title": "山屿第一轮反馈",
+   "content": "山屿第一轮反馈：小宋觉得橙色太亮，要改成 #D9480F；豆袋正面底部要留出 30% 的空白。",
+   "tags": [
+    "山屿",
+    "修改"
+   ],
+   "occurred": "2026-01-10"
+  },
+  {
+   "op": "write",
+   "key": "m039",
+   "title": "个人网站",
+   "content": "个人品牌网站 pixelmoon.studio 现在用 Framer，Basic 套餐 $15/月，域名在 Namecheap，年费 $32。",
+   "tags": [
+    "网站"
+   ],
+   "occurred": "2026-01-12"
+  },
+  {
+   "op": "update",
+   "key": "m021",
+   "content": "青禾茶饮 VI 终稿交付日改为 2026-02-10（原定 01-15）。原因是陈姐那边临时要换 slogan，重新走了一轮内部确认。",
+   "occurred": "2026-01-14"
+  },
+  {
+   "op": "write",
+   "key": "m040",
+   "title": "我的住处租金",
+   "content": "我自己住高新区的两居室，月租 ¥3,600，房东张姐，押一付三，每月 1 号转账。",
+   "tags": [
+    "生活",
+    "租金"
+   ],
+   "occurred": "2026-01-15"
+  },
+  {
+   "op": "write",
+   "key": "m041",
+   "title": "小宋咖啡偏好",
+   "content": "山屿小宋只喝不加奶的手冲，讨厌美式，请他喝咖啡别点拿铁。",
+   "tags": [
+    "山屿",
+    "饮食"
+   ],
+   "occurred": "2026-01-16"
+  },
+  {
+   "op": "write",
+   "key": "m042",
+   "title": "陈姐沟通方式",
+   "content": "青禾陈姐喜欢打电话沟通，白天 10-12 点最合适，她基本不回微信语音，重要决定一定要让她用文字回复确认。",
+   "tags": [
+    "青禾",
+    "沟通"
+   ],
+   "occurred": "2026-01-18"
+  },
+  {
+   "op": "write",
+   "key": "m043",
+   "title": "小宋沟通方式",
+   "content": "山屿小宋只用微信，爱发语音，晚上 10 点以后才回消息，白天基本找不到人。",
+   "tags": [
+    "山屿",
+    "沟通"
+   ],
+   "occurred": "2026-01-18"
+  },
+  {
+   "op": "write",
+   "key": "m044",
+   "title": "Katrin 沟通方式",
+   "content": "Katrin at Nordlicht only checks email, mostly Tuesday to Thursday; Slack pings go unanswered. I send a status update every Thursday.",
+   "tags": [
+    "Nordlicht",
+    "沟通"
+   ],
+   "occurred": "2026-01-19"
+  },
+  {
+   "op": "write",
+   "key": "m045",
+   "title": "Priya 沟通方式",
+   "content": "Priya at Kestrel lives on Slack and expects a reply within 24 hours. Sprint review is every Wednesday 10:00 SGT, which is also 10:00 Beijing time.",
+   "tags": [
+    "Kestrel",
+    "沟通"
+   ],
+   "occurred": "2026-01-19"
+  },
+  {
+   "op": "write",
+   "key": "m046",
+   "title": "学德语",
+   "content": "开始学德语 A1，因为 Katrin 每次都用德语打招呼。Duolingo 每天打卡，加每周一次网课，¥120/节。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-01-20"
+  },
+  {
+   "op": "write",
+   "key": "m047",
+   "title": "猫：团子",
+   "content": "家里养了一只英短蓝猫，名字叫团子，2 岁，公猫，已绝育。吃渴望（Orijen）猫粮。",
+   "tags": [
+    "宠物"
+   ],
+   "occurred": "2026-01-22"
+  },
+  {
+   "op": "write",
+   "key": "m048",
+   "title": "山屿字体",
+   "content": "山屿的无衬线字体选了 Söhne，Buch + Halbfett 两个字重，桌面授权约 €160，由客户支付。",
+   "tags": [
+    "字体",
+    "山屿"
+   ],
+   "occurred": "2026-01-25"
+  },
+  {
+   "op": "write",
+   "key": "m049",
+   "title": "",
+   "content": "春节前的小礼物：给青禾陈姐一盒茶 ¥280，给阿泽一个 ¥600 的红包，没给山屿送，因为余款还没谈妥。",
+   "tags": [
+    "人情"
+   ],
+   "occurred": "2026-01-26"
+  },
+  {
+   "op": "write",
+   "key": "m050",
+   "title": "阿泽过敏",
+   "content": "阿泽对花生严重过敏，一起吃饭别点宫保鸡丁、别用花生油的炒菜。",
+   "tags": [
+    "阿泽",
+    "饮食"
+   ],
+   "occurred": "2026-01-27"
+  },
+  {
+   "op": "write",
+   "key": "m051",
+   "title": "设计周报名计划",
+   "content": "想报名 2026 成都设计周的小展位，和阿泽联合展出，报名截止 3 月 31 日。",
+   "tags": [
+    "展会"
+   ],
+   "occurred": "2026-01-30"
+  },
+  {
+   "op": "write",
+   "key": "m052",
+   "title": "",
+   "content": "今天在工作室喝了三杯手冲，Ethiopia Guji，酸得有点上头。",
+   "tags": [],
+   "occurred": "2026-01-31"
+  },
+  {
+   "op": "write",
+   "key": "m053",
+   "title": "青禾第二轮",
+   "content": "青禾第二轮：slogan 定为「一口青山」，杯套刀版按 90mm 口径的 700ml 大杯做，陈姐要求杯套上不要出现门店地址。",
+   "tags": [
+    "青禾",
+    "修改"
+   ],
+   "occurred": "2026-02-02"
+  },
+  {
+   "op": "write",
+   "key": "m054",
+   "title": "手冲装备",
+   "content": "买了 Comandante C40 手摇磨豆机 ¥2,150，配 Hario V60 02，早上固定手冲一杯。",
+   "tags": [
+    "爱好",
+    "购物"
+   ],
+   "occurred": "2026-02-03"
+  },
+  {
+   "op": "write",
+   "key": "m055",
+   "title": "Nordlicht 反馈",
+   "content": "Nordlicht hi-fi v1 delivered on Feb 4. Katrin's feedback (Feb 9): replace the donut charts with horizontal bars because the labels are easier to read, and bump table row height from 40px to 48px.",
+   "tags": [
+    "Nordlicht",
+    "修改"
+   ],
+   "occurred": "2026-02-04"
+  },
+  {
+   "op": "write",
+   "key": "m056",
+   "title": "发票规则",
+   "content": "发票编号规则：海外 invoice 用 Notion 模板，格式 INV-2026-001 递增；国内客户走电子税务局开数电发票，抬头和税号一定要让客户先发书面确认。",
+   "tags": [
+    "税务",
+    "发票"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m057",
+   "title": "超轮次计费",
+   "content": "超出约定修改轮次后的计费：国内按每轮加收（青禾 ¥2,000、山屿 ¥3,000），海外按小时，US$60/h；加急单收 30% 加急费。",
+   "tags": [
+    "报价",
+    "规则"
+   ],
+   "occurred": "2026-02-06"
+  },
+  {
+   "op": "write",
+   "key": "m058",
+   "title": "母亲春节体检",
+   "content": "母亲春节前去社区医院体检，空腹血糖 6.4 mmol/L，偏高，医生建议去大医院做 OGTT 复查。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-02-08"
+  },
+  {
+   "op": "write",
+   "key": "m059",
+   "title": "PDF 字体缺失排查",
+   "content": "给青禾印刷厂的 PDF 被退回，报错 Missing font: FZ...，原因是方正字体没转曲线。在 Illustrator 里全选后 Type > Create Outlines，再导出 PDF/X-4 就过了。",
+   "tags": [
+    "故障",
+    "印刷"
+   ],
+   "occurred": "2026-02-09"
+  },
+  {
+   "op": "write",
+   "key": "m060",
+   "title": "青禾终稿交付",
+   "content": "青禾 VI 终稿 2 月 10 日按时（改期后的日期）交付，包含 logo 工程文件、杯套刀版、色彩规范 PDF。",
+   "tags": [
+    "青禾",
+    "交付"
+   ],
+   "occurred": "2026-02-10"
+  },
+  {
+   "op": "write",
+   "key": "m061",
+   "title": "发票抬头出错",
+   "content": "青禾发票抬头少写了「有限公司」，作废重开，浪费了两天，以后抬头税号一律让客户发营业执照照片确认。",
+   "tags": [
+    "发票",
+    "青禾"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m062",
+   "title": "",
+   "content": "招行信用卡尾号 8841，额度 ¥50,000，每月 18 号还款。",
+   "tags": [
+    "账号"
+   ],
+   "occurred": "2026-02-12"
+  },
+  {
+   "op": "write",
+   "key": "m063",
+   "title": "Kestrel 第二笔",
+   "content": "Kestrel wireframes 通过，第二笔里程碑 40%，SGD 3,000 在 2 月 14 日到 Wise 新币账户。",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-02-14"
+  },
+  {
+   "op": "write",
+   "key": "m064",
+   "title": "iPad 设备",
+   "content": "iPad Pro 11 寸 M4 配 Apple Pencil Pro，用 Procreate 画草图和手绘素材，是去年买的。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-02-15"
+  },
+  {
+   "op": "write",
+   "key": "m065",
+   "title": "主力电脑",
+   "content": "主力机是 MacBook Pro 14 寸 M3 Pro，18GB 内存，2024 年买的，打算用到 2027 年再换。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-02-15"
+  },
+  {
+   "op": "write",
+   "key": "m066",
+   "title": "",
+   "content": "春节在母亲家过了三天，连吃了三顿腊肉，回成都称了一下胖了两斤。",
+   "tags": [],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m067",
+   "title": "Figma 命名规则",
+   "content": "每个客户一个 Figma 项目文件夹，文件命名 YYMM_客户_项目_v01，交付时复制一份只读的 final 文件给客户，源文件等尾款结清后再给。",
+   "tags": [
+    "工具",
+    "规则"
+   ],
+   "occurred": "2026-02-18"
+  },
+  {
+   "op": "write",
+   "key": "m068",
+   "title": "云岫线索来源",
+   "content": "云岫民宿（青城山脚下，老板娘李姐）通过小红书私信找来，想做 logo、品牌 VI 和一个官网。",
+   "tags": [
+    "云岫",
+    "接单"
+   ],
+   "occurred": "2026-02-20"
+  },
+  {
+   "op": "write",
+   "key": "m069",
+   "title": "",
+   "content": "眼睛干涩得厉害，配了防蓝光镜片 ¥780，并且设了每 20 分钟看远处的提醒。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-02-22"
+  },
+  {
+   "op": "write",
+   "key": "m070",
+   "title": "云岫民宿报价",
+   "content": "云岫民宿：品牌 VI + 4 页官网，报价 ¥29,800，含 2 轮修改，付款 4-6（签约 40%，上线 60%）。官网计划 6 月 30 日上线。",
+   "tags": [
+    "云岫",
+    "报价"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m071",
+   "title": "云岫审美偏好",
+   "content": "云岫李姐喜欢暖木色和手绘山水，字体想要宋体类衬线（用思源宋体）。禁忌：不要蓝色，不要老掉牙的莲花禅意图案。",
+   "tags": [
+    "云岫",
+    "审美"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m072",
+   "title": "青禾付款进度",
+   "content": "青禾 38,000 的款已经全部结清：初稿确认 40% ¥15,200（1 月 20 日）、终稿 30% ¥11,400（2 月 24 日），加上首款 ¥11,400。",
+   "tags": [
+    "青禾",
+    "付款"
+   ],
+   "occurred": "2026-02-24"
+  },
+  {
+   "op": "write",
+   "key": "m073",
+   "title": "云岫摄影分成",
+   "content": "云岫需要拍房间和环境，我找阿泽合作。这单是特例，设计和摄影五五分，因为拍摄工作量比设计大。",
+   "tags": [
+    "云岫",
+    "阿泽",
+    "分成"
+   ],
+   "occurred": "2026-02-26"
+  },
+  {
+   "op": "write",
+   "key": "m074",
+   "title": "合同版权条款",
+   "content": "合同版权条款：尾款结清后设计成果著作权转让给客户，我保留作品集展示权（除非签了 NDA）；字体和素材的授权不随转让，由客户自己持有。",
+   "tags": [
+    "版权",
+    "规则"
+   ],
+   "occurred": "2026-02-26"
+  },
+  {
+   "op": "write",
+   "key": "m075",
+   "title": "Nordlicht 终稿",
+   "content": "Nordlicht final files delivered Feb 27 and invoice INV-2026-003 (€4,800) sent the same day. Net 30 means it is due on March 29.",
+   "tags": [
+    "Nordlicht",
+    "付款"
+   ],
+   "occurred": "2026-02-27"
+  },
+  {
+   "op": "write",
+   "key": "m076",
+   "title": "",
+   "content": "下雨天地铁 1 号线挤得不行，到工作室湿了半条裤腿。",
+   "tags": [],
+   "occurred": "2026-02-27"
+  },
+  {
+   "op": "write",
+   "key": "m077",
+   "title": "拾光书店报价",
+   "content": "拾光书店（玉林的独立书店，老板老何，邻居介绍）：VI + 4 张活动海报，报价 ¥18,000，含 2 轮修改，付款 3-7。喜欢复古印刷感、双色印刷（藏青 + 土黄），不要渐变，不要太多英文。",
+   "tags": [
+    "拾光",
+    "报价"
+   ],
+   "occurred": "2026-02-28"
+  },
+  {
+   "op": "write",
+   "key": "m078",
+   "title": "",
+   "content": "团子年度体检花了 ¥480，兽医说有轻度牙结石，建议每周刷牙，下次体检定在明年 2 月。",
+   "tags": [
+    "宠物",
+    "健康"
+   ],
+   "occurred": "2026-02-28"
+  },
+  {
+   "op": "summary",
+   "key": "s01",
+   "title": "青禾茶饮项目",
+   "content": "青禾茶饮品牌升级整体已完结：报价 ¥38,000 含 3 轮修改，3-4-3 付款已全部结清；终稿因换 slogan（一口青山）从 1 月 15 日推到 2 月 10 日交付。审美是国潮不土、青绿 + 米白，禁红金和龙凤；logo 字体用方正，授权 ¥2,400 由客户购买。",
+   "adopt": [
+    "m002",
+    "m003",
+    "m021",
+    "m023",
+    "m025",
+    "m033",
+    "m053",
+    "m060",
+    "m072"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s07",
+   "title": "工具链与订阅",
+   "content": "当前订阅：Figma Professional 单 seat $12/月年付，Adobe CC 全家桶年付 ¥3,888，Tokens Studio Pro 年付 $130（给 Kestrel 管 design tokens）。Wise 三币种账户用于海外收款。",
+   "adopt": [
+    "m019",
+    "m020",
+    "m034",
+    "m029"
+   ]
+  },
+  {
+   "op": "delete",
+   "key": "m062"
+  },
+  {
+   "op": "write",
+   "key": "m079",
+   "title": "Brightpath 终稿",
+   "content": "Brightpath app 终稿 3 月 2 日交付，最后一笔 US$1,200 开了 invoice，按 net 15 应在 3 月 17 日前付。",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-03-02"
+  },
+  {
+   "op": "update",
+   "key": "m019",
+   "content": "Figma 通知 Professional 涨价：从 4 月续费起每个 seat 由 $12/月涨到 $15/月（年付）。我还是只有一个 seat，决定先不降级。",
+   "occurred": "2026-03-03"
+  },
+  {
+   "op": "write",
+   "key": "m080",
+   "title": "李医生门诊",
+   "content": "母亲的心内科李医生在市二院，周二上午门诊，专家号 ¥25。",
+   "tags": [
+    "母亲",
+    "医院"
+   ],
+   "occurred": "2026-03-04"
+  },
+  {
+   "op": "update",
+   "key": "m015",
+   "content": "高新区天府三街「木槿里」联合办公，2 个工位和阿泽共用。房东 3 月通知 4 月 1 日起涨租，两个工位合计月租从 ¥2,800 涨到 ¥3,200，押一付三不变。",
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m081",
+   "title": "老何沟通方式",
+   "content": "拾光老何不爱线上沟通，每周五下午在书店喝茶当面聊进度，他爱喝普洱，不喝咖啡。",
+   "tags": [
+    "拾光",
+    "沟通"
+   ],
+   "occurred": "2026-03-05"
+  },
+  {
+   "op": "write",
+   "key": "m082",
+   "title": "阿泽日拍价",
+   "content": "阿泽的日拍报价 ¥2,500/天，含精修 30 张；超出每张精修加 ¥60。云岫那次是特价。",
+   "tags": [
+    "阿泽",
+    "报价"
+   ],
+   "occurred": "2026-03-08"
+  },
+  {
+   "op": "write",
+   "key": "m083",
+   "title": "Figma 变量丢连线",
+   "content": "Nordlicht 的原型里切换 variables 的 mode（Light/Compact）后 prototype 连线全部消失，提示 Connection removed。原因是变量绑在了 section 上而不是 page 的 frame，把 mode 重新绑到根 frame 后连线恢复。",
+   "tags": [
+    "故障",
+    "Nordlicht"
+   ],
+   "occurred": "2026-03-09"
+  },
+  {
+   "op": "write",
+   "key": "m084",
+   "title": "母亲 OGTT 预约",
+   "content": "母亲的 OGTT 复查约了华西医院内分泌科王医生，周四门诊，3 月 12 日早上空腹去，我陪同。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-03-10"
+  },
+  {
+   "op": "write",
+   "key": "m085",
+   "title": "母亲 OGTT 结果",
+   "content": "OGTT 结果：空腹 6.6，服糖后 2 小时 9.1 mmol/L，属于糖耐量受损（糖尿病前期）。王医生建议控制主食和糖，每天走 6000 步，3 个月后复查。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m086",
+   "title": "王医生门诊",
+   "content": "母亲的内分泌科王医生在华西，周四上午门诊，专家号 ¥35。",
+   "tags": [
+    "母亲",
+    "医院"
+   ],
+   "occurred": "2026-03-12"
+  },
+  {
+   "op": "write",
+   "key": "m087",
+   "title": "云岫拍摄",
+   "content": "云岫拍摄 3 月 14、15 日两天，共 6 间客房加院子，第二天下雨，阿泽的机身没事，雨景反而更有氛围。",
+   "tags": [
+    "云岫",
+    "阿泽"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "write",
+   "key": "m088",
+   "title": "李姐忌口",
+   "content": "云岫李姐长期吃素，约饭要订素菜馆，初一十五她不碰葱蒜。",
+   "tags": [
+    "云岫",
+    "饮食"
+   ],
+   "occurred": "2026-03-14"
+  },
+  {
+   "op": "update",
+   "key": "m027",
+   "content": "母亲 60 岁，退休小学老师，住双流华阳老房子。高血压，原来只吃缬沙坦 80mg；3 月 18 日因早上血压 148/92，市二院心内科李医生（周二门诊）加了氨氯地平 5mg，两种都每天早上服。",
+   "occurred": "2026-03-18"
+  },
+  {
+   "op": "update",
+   "key": "m051",
+   "content": "想报名 2026 成都设计周的小展位，和阿泽联合展出。主办方 3 月 20 日通知报名截止从 3 月 31 日延长到 4 月 10 日。",
+   "occurred": "2026-03-20"
+  },
+  {
+   "op": "write",
+   "key": "m089",
+   "title": "",
+   "content": "3 月 19 到 22 日去上海看 Design Shanghai，往返机票 ¥880，住静安 ¥520/晚。主要看了字体和包装展区，带回来几本印刷小册子。",
+   "tags": [
+    "旅行",
+    "展会"
+   ],
+   "occurred": "2026-03-22"
+  },
+  {
+   "op": "write",
+   "key": "m090",
+   "title": "",
+   "content": "剪了头发 ¥98，理发师说我发际线在后退，无语。",
+   "tags": [],
+   "occurred": "2026-03-24"
+  },
+  {
+   "op": "write",
+   "key": "m091",
+   "title": "2025 年汇算",
+   "content": "2025 年经营所得汇算已完成：全年开票收入 ¥216,400，核定征收，应缴个税 ¥1,860，3 月 25 日在个税 APP 缴清。汇算截止日是 3 月 31 日。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2026-03-25"
+  },
+  {
+   "op": "write",
+   "key": "m092",
+   "title": "成都设计周报名",
+   "content": "成都设计周 2026 年 9 月 18-21 日，在东郊记忆。报名了 3m×3m 小展位，展位费 ¥5,800，3 月 27 日提交，和阿泽联合展出。",
+   "tags": [
+    "展会"
+   ],
+   "occurred": "2026-03-27"
+  },
+  {
+   "op": "write",
+   "key": "m093",
+   "title": "山屿交付日",
+   "content": "山屿前 4 款包装的交付日定为 4 月 10 日。",
+   "tags": [
+    "山屿",
+    "交付"
+   ],
+   "occurred": "2026-03-30"
+  },
+  {
+   "op": "summary",
+   "key": "s02",
+   "title": "山屿咖啡项目",
+   "content": "山屿咖啡 VI + 豆袋包装：报价 ¥42,000，含 2 轮修改，超出每轮 ¥3,000，付款 5-5，预付 ¥21,000 已到账。审美是极简大留白，黑白 + 橙色（改为 #D9480F），禁插画、咖啡豆图标和手写体；字体用 Söhne，授权由客户付。4 月 10 日交付 4 款。",
+   "adopt": [
+    "m004",
+    "m005",
+    "m024",
+    "m038",
+    "m048",
+    "m093"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m094",
+   "title": "交付 buffer",
+   "content": "交付习惯：对外交付日前至少留 2 天 buffer，周五不交付，因为客户周末不看，问题会拖到下周。",
+   "tags": [
+    "规则"
+   ],
+   "occurred": "2026-03-31"
+  },
+  {
+   "op": "write",
+   "key": "m095",
+   "title": "母亲饮食",
+   "content": "母亲的饮食规则：主食每顿半碗，不吃甜，爱喝荞麦茶，晚饭后散步 40 分钟。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-04-02"
+  },
+  {
+   "op": "update",
+   "key": "m004",
+   "content": "山屿咖啡（精品烘焙，老板小宋）：VI + 包装袋，4 月 3 日加了 2 款豆袋，一共 6 款，总价从 ¥42,000 涨到 ¥48,000，仍含 2 轮修改、超出每轮 ¥3,000。已付预付款 ¥21,000，余款 ¥27,000。",
+   "occurred": "2026-04-03"
+  },
+  {
+   "op": "write",
+   "key": "m096",
+   "title": "山屿橙色色差",
+   "content": "山屿豆袋打样，橙色从 RGB 转 CMYK 后偏灰，改用专色 Pantone 1665 C 就对了，印刷厂要求袋底留 3mm 出血。",
+   "tags": [
+    "山屿",
+    "印刷",
+    "故障"
+   ],
+   "occurred": "2026-04-06"
+  },
+  {
+   "op": "write",
+   "key": "m097",
+   "title": "Kestrel 第三轮",
+   "content": "Kestrel sprint 3 反馈：钱包首页的卡片圆角从 16 改成 12，减少阴影层数，余额数字字重要用 Semibold。",
+   "tags": [
+    "Kestrel",
+    "修改"
+   ],
+   "occurred": "2026-04-07"
+  },
+  {
+   "op": "write",
+   "key": "m098",
+   "title": "山屿交付账单",
+   "content": "山屿 4 款包装终稿 4 月 10 日交付，余款 ¥27,000 的账单同天发给了小宋，他说月底前付。",
+   "tags": [
+    "山屿",
+    "付款"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m099",
+   "title": "山屿 NDA",
+   "content": "山屿合同里有 NDA，作品不能公开展示，网站和作品集都不能放。",
+   "tags": [
+    "山屿",
+    "版权"
+   ],
+   "occurred": "2026-04-10"
+  },
+  {
+   "op": "write",
+   "key": "m100",
+   "title": "Nordlicht 一期到账",
+   "content": "Nordlicht paid the €4,800 on April 11, 13 days after the due date. Katrin apologised, saying their finance team was changing banks.",
+   "tags": [
+    "Nordlicht",
+    "付款"
+   ],
+   "occurred": "2026-04-11"
+  },
+  {
+   "op": "write",
+   "key": "m101",
+   "title": "跨境服务免税备案",
+   "content": "4 月 12 日去电子税务局做了跨境应税服务免征增值税备案，之后给 Nordlicht、Brightpath、Kestrel 开的海外服务收入都按免税申报。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m102",
+   "title": "Nordlicht 结汇",
+   "content": "Nordlicht 的 €4,800 在 4 月 12 日通过 Wise 结汇，到手约 ¥38,350，汇率约 7.99。",
+   "tags": [
+    "收款",
+    "Nordlicht"
+   ],
+   "occurred": "2026-04-12"
+  },
+  {
+   "op": "write",
+   "key": "m103",
+   "title": "一季度申报",
+   "content": "一季度销售额约 ¥71,000，免征增值税，4 月 14 日申报完。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2026-04-14"
+  },
+  {
+   "op": "write",
+   "key": "m104",
+   "title": "Brightpath 逾期",
+   "content": "Brightpath 最后一笔 $1,200 已逾期 29 天，Marcus 一直说在走流程。合同里有逾期每月 1.5% 滞纳金条款，我已发了正式 reminder。",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-04-15"
+  },
+  {
+   "op": "write",
+   "key": "m105",
+   "title": "",
+   "content": "在读《Grid Systems in Graphic Design》，准备把网格理论用在栖木的画册排版上。",
+   "tags": [
+    "学习"
+   ],
+   "occurred": "2026-04-16"
+  },
+  {
+   "op": "write",
+   "key": "m106",
+   "title": "拾光首款",
+   "content": "拾光书店签约，老何付了 30% 首款 ¥5,400，开工。第一版 logo 要在 4 月底出。",
+   "tags": [
+    "拾光",
+    "付款"
+   ],
+   "occurred": "2026-04-18"
+  },
+  {
+   "op": "write",
+   "key": "m107",
+   "title": "",
+   "content": "周末打了一晚上塞尔达，什么都没画，一点都不内疚。",
+   "tags": [],
+   "occurred": "2026-04-19"
+  },
+  {
+   "op": "write",
+   "key": "m108",
+   "title": "",
+   "content": "手腕又不舒服，去华西康复科做了一次理疗 ¥180，医生说主要是鼠标姿势和每天连续画图超过 4 小时。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-04-20"
+  },
+  {
+   "op": "write",
+   "key": "m109",
+   "title": "显示器计划",
+   "content": "计划买一台 BenQ PD2706U 做校色，价格 ¥4,299，等 618 看有没有优惠。",
+   "tags": [
+    "设备",
+    "购物"
+   ],
+   "occurred": "2026-04-22"
+  },
+  {
+   "op": "write",
+   "key": "m110",
+   "title": "大理五一行程",
+   "content": "五一去大理 5 天（5 月 1-5 日），喜洲古镇住 4 晚民宿共 ¥2,160，带上 iPad 随手画草图。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-04-26"
+  },
+  {
+   "op": "write",
+   "key": "m111",
+   "title": "",
+   "content": "刷到同行晒年入百万，有点焦虑，关掉手机去楼下转了一圈。",
+   "tags": [],
+   "occurred": "2026-04-28"
+  },
+  {
+   "op": "write",
+   "key": "m112",
+   "title": "2026 收入目标",
+   "content": "2026 年的收入目标定为 ¥30 万，其中海外客户占 40% 左右，也就是约 ¥12 万。",
+   "tags": [
+    "目标"
+   ],
+   "occurred": "2026-04-30"
+  },
+  {
+   "op": "write",
+   "key": "m113",
+   "title": "",
+   "content": "在大理一家扎染工坊看到牛皮纸加单色印的包装很好看，想作为拾光书店周边的参考。",
+   "tags": [
+    "旅行",
+    "灵感"
+   ],
+   "occurred": "2026-05-02"
+  },
+  {
+   "op": "write",
+   "key": "m114",
+   "title": "",
+   "content": "大理洱海边骑行，风太大，拍的照片一半糊了。在喜洲吃了破酥粑粑，一般。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-05-03"
+  },
+  {
+   "op": "write",
+   "key": "m115",
+   "title": "",
+   "content": "Brightpath finally paid the last $1,200 on May 6, about 50 days late, plus an $18 late fee (one month at 1.5%). Total received $1,218.",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-05-06"
+  },
+  {
+   "op": "write",
+   "key": "m116",
+   "title": "Brightpath 新对接人",
+   "content": "Marcus left Brightpath in May. My new contact there is Dana Whitfield, the product lead.",
+   "tags": [
+    "Brightpath"
+   ],
+   "occurred": "2026-05-08",
+   "supersedes": "m010"
+  },
+  {
+   "op": "write",
+   "key": "m117",
+   "title": "Brightpath 二期条款",
+   "content": "Brightpath phase 2 (parent-facing app): US$2,400, 50% upfront, net 7, 2 revision rounds. No more Upwork, they pay directly into my Wise USD account. Learned my lesson from the late payment on phase 1.",
+   "tags": [
+    "Brightpath",
+    "报价"
+   ],
+   "occurred": "2026-05-08",
+   "supersedes": "m010"
+  },
+  {
+   "op": "write",
+   "key": "m118",
+   "title": "拾光 logo 反馈",
+   "content": "拾光 logo 第一版老何选了「书脊 + 灯」方案，反馈把土黄换成偏橙的 #D98C2B。字体用站酷庆科黄油体（免费商用）。",
+   "tags": [
+    "拾光",
+    "修改"
+   ],
+   "occurred": "2026-05-10"
+  },
+  {
+   "op": "write",
+   "key": "m119",
+   "title": "山屿第一次催款",
+   "content": "山屿余款 ¥27,000 一个多月没动静，5 月 12 日第一次催，小宋说资金周转，月底前给。",
+   "tags": [
+    "山屿",
+    "付款"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m120",
+   "title": "",
+   "content": "小宋私下说他合伙人挪用了公司的钱，供应商都在催款。",
+   "tags": [
+    "山屿"
+   ],
+   "occurred": "2026-05-12"
+  },
+  {
+   "op": "write",
+   "key": "m121",
+   "title": "低价单与底价",
+   "content": "蓝鲸科技想用 ¥8,000 做一整套 VI，加一个小程序，被我拒了。我的底价：单个 logo 不低于 ¥8,000，整套 VI 不低于 ¥25,000。",
+   "tags": [
+    "接单",
+    "报价"
+   ],
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m122",
+   "title": "",
+   "content": "阿泽买镜头向我借了 ¥20,000，说年底前还。",
+   "tags": [
+    "阿泽",
+    "金额"
+   ],
+   "occurred": "2026-05-14"
+  },
+  {
+   "op": "write",
+   "key": "m123",
+   "title": "Envato 素材订阅",
+   "content": "素材主要用 Envato Elements 年付 $198，样机和纹理为主。注意授权是每个最终项目要单独注册一次，不能混用给不同客户。",
+   "tags": [
+    "素材",
+    "版权",
+    "订阅"
+   ],
+   "occurred": "2026-05-16"
+  },
+  {
+   "op": "write",
+   "key": "m124",
+   "title": "",
+   "content": "5 月 20 日京东 618 预售以 ¥3,899 入手了 BenQ PD2706U，比计划的 ¥4,299 便宜 ¥400。",
+   "tags": [
+    "设备",
+    "购物"
+   ],
+   "occurred": "2026-05-18",
+   "supersedes": "m109"
+  },
+  {
+   "op": "write",
+   "key": "m125",
+   "title": "备份方案",
+   "content": "备份方案：Synology DS224+ 装两块 4TB 做 RAID1，每晚自动同步到 Backblaze B2，约 $6/TB/月。",
+   "tags": [
+    "设备",
+    "备份"
+   ],
+   "occurred": "2026-05-19"
+  },
+  {
+   "op": "write",
+   "key": "m126",
+   "title": "Kestrel 交付复盘",
+   "content": "Kestrel design system 5 月 20 日交付：Figma 库共 118 个组件，tokens 通过 Tokens Studio 同步到 GitHub 的 kestrel-design-tokens 仓库，开发用 React Native。踩坑：variables 的 mode 名一个叫 dark、一个叫 Dark，Style Dictionary 构建报 Cannot read properties of undefined (reading 'value')，统一成小写后解决。另外 shadow token 必须拆成 4 个独立值（x/y/blur/color），否则 RN 端读不出来。Priya 说这是他们第一次一次过构建，很满意。",
+   "tags": [
+    "Kestrel",
+    "复盘"
+   ],
+   "occurred": "2026-05-20"
+  },
+  {
+   "op": "write",
+   "key": "m127",
+   "title": "Kestrel 终稿",
+   "content": "Kestrel 终稿 5 月 22 日交付，最后一笔 30%（SGD 2,250）的 invoice 已发，30 天内付。",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-05-22"
+  },
+  {
+   "op": "write",
+   "key": "m128",
+   "title": "Figma 大文件卡顿",
+   "content": "Kestrel 的 design system 文件超过 500MB 后打开很卡，把页面拆成 Foundations / Components / Screens 三个文件，用 library 引用，打开时间从 40 秒降到 8 秒。",
+   "tags": [
+    "故障",
+    "Kestrel"
+   ],
+   "occurred": "2026-05-24"
+  },
+  {
+   "op": "write",
+   "key": "m129",
+   "title": "",
+   "content": "青禾陈姐介绍朋友的川菜馆「椒房」来询价，logo + 菜单约 ¥15,000，我档期排满婉拒了，但给了陈姐朋友一个推荐的同行。",
+   "tags": [
+    "接单",
+    "青禾"
+   ],
+   "occurred": "2026-05-26"
+  },
+  {
+   "op": "write",
+   "key": "m130",
+   "title": "母亲每日步数",
+   "content": "母亲每天坚持走 5000-7000 步，微信步数每晚发给我看，晚饭主食减到半碗。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-05-28"
+  },
+  {
+   "op": "write",
+   "key": "m131",
+   "title": "山屿第三次催款",
+   "content": "6 月 3 日第三次催山屿余款，微信加电话，小宋说 6 月底一定付。我决定在他付清前暂停后面 2 个 SKU 的修改。",
+   "tags": [
+    "山屿",
+    "付款"
+   ],
+   "occurred": "2026-06-03"
+  },
+  {
+   "op": "write",
+   "key": "m132",
+   "title": "Kestrel 结清",
+   "content": "Kestrel 最后一笔 SGD 2,250 在 6 月 5 日到账，一共 7,500 全部结清，比约定早了三周。",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-06-05"
+  },
+  {
+   "op": "write",
+   "key": "m133",
+   "title": "作品集规格",
+   "content": "作品集做两份：海外版英文 15 页、国内版中文，PDF 控制在 15MB 以内，方便邮件发送。",
+   "tags": [
+    "作品集"
+   ],
+   "occurred": "2026-06-06"
+  },
+  {
+   "op": "update",
+   "key": "m016",
+   "content": "和摄影师阿泽的分成：品牌拍摄 + 设计打包项目，6 月 10 日改成设计:摄影 = 55:45（原来是 6:4），因为最近几单拍摄时间明显变长。只是我介绍他去拍的单子不抽成；云岫那单是五五分的特例。",
+   "occurred": "2026-06-10"
+  },
+  {
+   "op": "update",
+   "key": "m039",
+   "content": "个人品牌网站 pixelmoon.studio 6 月 12 日从 Framer 迁到 Astro + Cloudflare Pages，省掉 Framer 的 $15/月；域名也转到 Cloudflare Registrar，年费约 $10（之前 Namecheap $32）。",
+   "occurred": "2026-06-12"
+  },
+  {
+   "op": "write",
+   "key": "m134",
+   "title": "",
+   "content": "Dribbble Pro 年费 $108 到期后不续，一年里 Pro 带来的有效询价几乎为零，Nordlicht 是自然流量来的。",
+   "tags": [
+    "接单",
+    "订阅"
+   ],
+   "occurred": "2026-06-14"
+  },
+  {
+   "op": "write",
+   "key": "m135",
+   "title": "母亲 3 个月复查",
+   "content": "母亲 6 月 16 日复查：糖化血红蛋白 5.9%，空腹血糖 6.1，比 3 月有改善。王医生说继续饮食控制和走路，暂时不用药，下次 9 月复查。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-06-16"
+  },
+  {
+   "op": "write",
+   "key": "m136",
+   "title": "",
+   "content": "最近每周三晚上去玉林的球馆打羽毛球，一次 ¥35，是为了缓解颈椎和手腕。",
+   "tags": [
+    "爱好",
+    "健康"
+   ],
+   "occurred": "2026-06-18"
+  },
+  {
+   "op": "write",
+   "key": "m137",
+   "title": "云岫官网推迟",
+   "content": "云岫官网上线从 6 月 30 日推迟到 8 月 15 日，因为李姐迟迟不给房型文案和价格表。合同里写了文案延迟顺延工期，不算我违约。",
+   "tags": [
+    "云岫",
+    "交付"
+   ],
+   "occurred": "2026-06-20",
+   "supersedes": "m070"
+  },
+  {
+   "op": "write",
+   "key": "m138",
+   "title": "云岫第一轮",
+   "content": "云岫第一轮反馈：李姐想把 logo 里的山线条加粗，招牌主色定为木色 #A9743B。",
+   "tags": [
+    "云岫",
+    "修改"
+   ],
+   "occurred": "2026-06-22"
+  },
+  {
+   "op": "write",
+   "key": "m139",
+   "title": "拾光海报印刷",
+   "content": "拾光第一张活动海报 A2（420×594mm）双色专色印刷，找成华的墨点印刷厂，起印 100 张 ¥560。",
+   "tags": [
+    "拾光",
+    "印刷"
+   ],
+   "occurred": "2026-06-24"
+  },
+  {
+   "op": "write",
+   "key": "m140",
+   "title": "拾光夜读活动",
+   "content": "拾光第一场夜读活动定在 7 月 26 日，海报要在活动前 10 天上架到店里。",
+   "tags": [
+    "拾光",
+    "交付"
+   ],
+   "occurred": "2026-06-25"
+  },
+  {
+   "op": "write",
+   "key": "m141",
+   "title": "",
+   "content": "青禾的作品被站酷推荐到首页，带来 14 条私信，只有 2 条预算合理，其余都是想要免费或超低价。",
+   "tags": [
+    "接单"
+   ],
+   "occurred": "2026-06-27"
+  },
+  {
+   "op": "write",
+   "key": "m142",
+   "title": "",
+   "content": "试了 Figma 的 AI 功能出界面，对品牌类项目帮助不大，结论是只拿来出灰稿和填假数据，视觉还是手搭。",
+   "tags": [
+    "工具"
+   ],
+   "occurred": "2026-06-28"
+  },
+  {
+   "op": "write",
+   "key": "m143",
+   "title": "上半年复盘",
+   "content": "上半年复盘：实际收款约 ¥14.2 万，大概是全年 ¥30 万目标的 47%。海外占比只有 35%，低于 40% 的目标，主要因为 Brightpath 和 Nordlicht 都拖了款。最大的坑是山屿余款拖了三个月，还有 Brightpath 逾期近两个月。下半年对策：国内新单提高预付，海外新单默认 50% 预付；多接 Kestrel 这种按里程碑付款的。另外要把时间留给展会，别再被零碎小单切碎。另外给自己定一个规则：每月 25 号对一次账，把已开票未收款的单子列出来逐个跟进。",
+   "tags": [
+    "复盘",
+    "目标"
+   ],
+   "occurred": "2026-06-30"
+  },
+  {
+   "op": "write",
+   "key": "m144",
+   "title": "应急金",
+   "content": "应急金目标是 6 个月的开销，约 ¥60,000，目前存了 ¥38,000。",
+   "tags": [
+    "金额",
+    "目标"
+   ],
+   "occurred": "2026-06-30"
+  },
+  {
+   "op": "summary",
+   "key": "s10",
+   "title": "工作室与租金",
+   "content": "工作室在高新区木槿里联合办公，两个工位和阿泽共用，月租 ¥3,200（4 月起从 ¥2,800 涨价），押一付三；每月含 100 页免费打印，24 小时门禁，工位编号 B-17。",
+   "adopt": [
+    "m015",
+    "m017",
+    "m018"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m145",
+   "title": "母亲药盒",
+   "content": "母亲的药盒一周 7 格，缬沙坦和氨氯地平都是早饭后吃，我每周日帮她分药。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-07-02"
+  },
+  {
+   "op": "write",
+   "key": "m146",
+   "title": "母亲家装修方案",
+   "content": "母亲双流老房子的适老化装修：卫生间防滑改造加淋浴区扶手，卧室换复合木地板。装修队是熟人老刘，7 月 6 日开工，预计工期 45 天，8 月 20 日完工。",
+   "tags": [
+    "装修",
+    "母亲"
+   ],
+   "occurred": "2026-07-04"
+  },
+  {
+   "op": "write",
+   "key": "m147",
+   "title": "装修预算",
+   "content": "母亲家装修预算 ¥48,000：卫生间 ¥21,000，卧室 ¥17,000，其他 ¥10,000。",
+   "tags": [
+    "装修",
+    "金额"
+   ],
+   "occurred": "2026-07-05"
+  },
+  {
+   "op": "write",
+   "key": "m148",
+   "title": "装修开工",
+   "content": "装修开工，母亲暂时搬来我在高新区租的两居室住，她睡次卧，每天早上还是要量血压。",
+   "tags": [
+    "装修",
+    "母亲"
+   ],
+   "occurred": "2026-07-06"
+  },
+  {
+   "op": "write",
+   "key": "m149",
+   "title": "二季度申报",
+   "content": "二季度（4-6 月）销售额约 ¥82,000，没超过 30 万的季度免税额度，增值税免征，7 月 10 日前已申报。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2026-07-08"
+  },
+  {
+   "op": "write",
+   "key": "m150",
+   "title": "",
+   "content": "给新工作室预订了一盆龟背竹 ¥68，希望猫不要啃。",
+   "tags": [],
+   "occurred": "2026-07-08"
+  },
+  {
+   "op": "write",
+   "key": "m151",
+   "title": "装修选材",
+   "content": "卫生间选了哑光防滑砖 600×600，约 6 ㎡，¥98/㎡；卧室选大自然复合地板，约 14 ㎡，¥220/㎡。",
+   "tags": [
+    "装修"
+   ],
+   "occurred": "2026-07-10"
+  },
+  {
+   "op": "write",
+   "key": "m152",
+   "title": "淋浴扶手",
+   "content": "淋浴区和马桶旁各装一个 L 形不锈钢扶手，安装高度 80cm，是母亲将来防滑倒的重点。",
+   "tags": [
+    "装修",
+    "母亲"
+   ],
+   "occurred": "2026-07-12"
+  },
+  {
+   "op": "write",
+   "key": "m153",
+   "title": "Nordlicht 二期",
+   "content": "Nordlicht phase 2: mobile companion app for the dashboard. €3,200, 30% upfront, 2 revision rounds, net 30. Katrin signed on July 14, kickoff in August.",
+   "tags": [
+    "Nordlicht",
+    "报价"
+   ],
+   "occurred": "2026-07-14"
+  },
+  {
+   "op": "write",
+   "key": "m154",
+   "title": "拾光活动推迟",
+   "content": "拾光夜读活动因为嘉宾档期推迟到 8 月 9 日，海报日期要重新改，印好的 100 张也只能重印日期那一栏。",
+   "tags": [
+    "拾光",
+    "交付"
+   ],
+   "occurred": "2026-07-15",
+   "supersedes": "m140"
+  },
+  {
+   "op": "write",
+   "key": "m155",
+   "title": "Kestrel 二期",
+   "content": "Kestrel phase 2（转账 & 账单模块）：SGD 4,200，付款 40/60，预算收紧，每个 sprint 只含 1 轮反馈（一期是 2 轮）。",
+   "tags": [
+    "Kestrel",
+    "报价"
+   ],
+   "occurred": "2026-07-16"
+  },
+  {
+   "op": "summary",
+   "key": "s03",
+   "title": "Nordlicht 项目",
+   "content": "Nordlicht（柏林 B2B 看板）一期 €4,800 已结清，晚付 13 天；Katrin 要 8pt 网格、WCAG AA、只做浅色，不要渐变霓虹和 emoji。二期 mobile app €3,200 已签，30% 预付，net 30。",
+   "adopt": [
+    "m008",
+    "m009",
+    "m036",
+    "m055",
+    "m075",
+    "m100",
+    "m153"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s04",
+   "title": "Brightpath 项目",
+   "content": "Brightpath（多伦多 K-8 学习 app）一期 US$3,600，最后一笔拖了约 50 天才付，另收 $18 滞纳金。对接人已从 Marcus 换成 Dana。二期 US$2,400，50% 预付、net 7、不再走 Upwork。偏好明亮圆角和插画，不要冷灰和衬线。",
+   "adopt": [
+    "m010",
+    "m011",
+    "m035",
+    "m079",
+    "m104",
+    "m115",
+    "m116",
+    "m117"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s05",
+   "title": "Kestrel 项目",
+   "content": "Kestrel（新加坡 fintech 钱包）一期 SGD 7,500 三笔里程碑 30/40/30 全部结清，比约定早；design system 共 118 个组件，tokens 经 Tokens Studio 同步 GitHub。二期 SGD 4,200（40/60），每 sprint 1 轮反馈。偏好 dark mode、紫蓝主色，禁绿色主色和 3D 插图。",
+   "adopt": [
+    "m012",
+    "m013",
+    "m037",
+    "m063",
+    "m097",
+    "m126",
+    "m127",
+    "m132",
+    "m155"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s08",
+   "title": "税务发票与收款",
+   "content": "个体户小规模纳税人，季度销售额 30 万内免增值税，次月 15 号前申报；海外服务收入已做跨境免税备案；2025 年汇算个税 ¥1,860 已缴。海外收款统一走 Wise 的 EUR/USD/SGD 账户，海外 invoice 编号 INV-2026-xxx，国内走数电发票。",
+   "adopt": [
+    "m028",
+    "m056",
+    "m029",
+    "m101",
+    "m091",
+    "m149"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m156",
+   "title": "山屿余款到账",
+   "content": "山屿余款 ¥27,000 终于在 7 月 18 日到账，从 4 月 10 日交付算起拖了 99 天。",
+   "tags": [
+    "山屿",
+    "付款"
+   ],
+   "occurred": "2026-07-18"
+  },
+  {
+   "op": "write",
+   "key": "m157",
+   "title": "山屿尾款复盘",
+   "content": "山屿尾款复盘：4 月 10 日发账单，小宋说月底付；5 月 12 日第一次催，说资金周转；5 月底第二次催，没回；6 月 3 日第三次催，电话里答应 6 月底，我暂停了后面 2 个 SKU 的修改；6 月底又没付，7 月 10 日发了律师函风格的正式函件，7 月 18 日 ¥27,000 才到账。教训：国内新单预付提到 70%，源文件在尾款到账后才发，合同里加逾期违约金每天万分之五。这次之后我把 70% 预付写进了报价模板，并在合同里列明余款到账前不提供源文件和高清导出。",
+   "tags": [
+    "山屿",
+    "复盘",
+    "付款"
+   ],
+   "occurred": "2026-07-18"
+  },
+  {
+   "op": "write",
+   "key": "m158",
+   "title": "国内新单付款规则",
+   "content": "从 7 月起所有国内新项目：预付 70%，余款交付时付；源文件在尾款到账后才发；逾期按每天万分之五计违约金。",
+   "tags": [
+    "付款",
+    "规则"
+   ],
+   "occurred": "2026-07-19",
+   "supersedes": "m004"
+  },
+  {
+   "op": "delete",
+   "key": "m120"
+  },
+  {
+   "op": "write",
+   "key": "m159",
+   "title": "",
+   "content": "MacBook 电池健康度 88%，循环 412 次，暂时不用换。",
+   "tags": [
+    "设备"
+   ],
+   "occurred": "2026-07-20"
+  },
+  {
+   "op": "write",
+   "key": "m160",
+   "title": "",
+   "content": "成都连续高温 38 度，联合办公的空调坏了，改在家画图，猫一直趴在键盘旁边。",
+   "tags": [],
+   "occurred": "2026-07-22"
+  },
+  {
+   "op": "write",
+   "key": "m161",
+   "title": "",
+   "content": "手机屏幕摔碎了，换屏 ¥480，花了一个下午。",
+   "tags": [],
+   "occurred": "2026-07-24"
+  },
+  {
+   "op": "write",
+   "key": "m162",
+   "title": "",
+   "content": "阿泽提议设计周展位做一面摄影加设计的联名海报墙，选 6 张图，我负责版式。",
+   "tags": [
+    "展会",
+    "阿泽"
+   ],
+   "occurred": "2026-07-26"
+  },
+  {
+   "op": "write",
+   "key": "m163",
+   "title": "社保与医保",
+   "content": "灵活就业参保，养老加医疗每月合计约 ¥1,280，每月 5 号银行代扣。",
+   "tags": [
+    "税务",
+    "社保"
+   ],
+   "occurred": "2026-07-28"
+  },
+  {
+   "op": "write",
+   "key": "m164",
+   "title": "Nordlicht 二期预付",
+   "content": "Nordlicht phase 2 deposit (30%, €960) landed in my Wise EUR account on Aug 2. Katrin wants iOS first, Android later.",
+   "tags": [
+    "Nordlicht",
+    "付款"
+   ],
+   "occurred": "2026-08-02"
+  },
+  {
+   "op": "write",
+   "key": "m165",
+   "title": "Brightpath 二期预付",
+   "content": "Brightpath phase 2 deposit of $1,200 (50%) arrived directly in Wise USD on Aug 3, no Upwork fee this time.",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-08-03"
+  },
+  {
+   "op": "write",
+   "key": "m166",
+   "title": "广州设计周",
+   "content": "广州设计周 12 月举办，展位费大约 ¥7,500，还在犹豫要不要报名。",
+   "tags": [
+    "展会"
+   ],
+   "occurred": "2026-08-05"
+  },
+  {
+   "op": "write",
+   "key": "m167",
+   "title": "",
+   "content": "母亲住我这儿期间每天早上量血压，最近一周都在 130/84 上下，比 3 月份稳定很多。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-08-06"
+  },
+  {
+   "op": "write",
+   "key": "m168",
+   "title": "各项目字体授权",
+   "content": "字体授权对照：Brightpath 用 Nunito + Fredoka、Nordlicht 用 IBM Plex Sans、云岫用思源宋体、Kestrel 用 Inter，这些都是 SIL OFL 可免费商用。收费的只有青禾的方正（客户买）和山屿的 Söhne（客户买）。",
+   "tags": [
+    "字体",
+    "版权"
+   ],
+   "occurred": "2026-08-08"
+  },
+  {
+   "op": "delete",
+   "key": "m122"
+  },
+  {
+   "op": "write",
+   "key": "m169",
+   "title": "装修延期",
+   "content": "母亲家装修延期：卫生间做闭水试验漏水，防水层返工，完工日期从 8 月 20 日推到 9 月 5 日。老刘答应返工费自己出。",
+   "tags": [
+    "装修",
+    "母亲"
+   ],
+   "occurred": "2026-08-12",
+   "supersedes": "m146"
+  },
+  {
+   "op": "write",
+   "key": "m170",
+   "title": "云岫官网上线",
+   "content": "云岫官网 8 月 15 日上线，用 Framer 搭的，托管账号和 $15/月的订阅在李姐名下，由她付费。尾款 60%（¥17,880）她说下周付。",
+   "tags": [
+    "云岫",
+    "交付"
+   ],
+   "occurred": "2026-08-15"
+  },
+  {
+   "op": "write",
+   "key": "m171",
+   "title": "",
+   "content": "洗衣机坏了，手洗了一周的衣服，修理师傅说要等配件。",
+   "tags": [],
+   "occurred": "2026-08-17"
+  },
+  {
+   "op": "write",
+   "key": "m172",
+   "title": "工作室搬迁",
+   "content": "木槿里的合同 9 月 30 日到期，决定搬到玉林一个 38 ㎡ 带独立门的小开间，月租 ¥4,200，押二付三，和阿泽对半分摊，各 ¥2,100。",
+   "tags": [
+    "工作室",
+    "租金"
+   ],
+   "occurred": "2026-08-18",
+   "supersedes": "m015"
+  },
+  {
+   "op": "update",
+   "key": "m047",
+   "content": "家里养了一只英短蓝猫，叫团子，2 岁，公猫，已绝育。8 月起猫粮从渴望（Orijen）换成爱肯拿（Acana），因为渴望涨价了。",
+   "occurred": "2026-08-20"
+  },
+  {
+   "op": "write",
+   "key": "m173",
+   "title": "云岫尾款到账",
+   "content": "云岫尾款 ¥17,880 在 8 月 22 日到账，整单 ¥29,800 结清。",
+   "tags": [
+    "云岫",
+    "付款"
+   ],
+   "occurred": "2026-08-22"
+  },
+  {
+   "op": "write",
+   "key": "m174",
+   "title": "",
+   "content": "阿泽生日是 8 月 23 日，送了他一本荒木经惟的摄影集 ¥260。",
+   "tags": [
+    "阿泽",
+    "人情"
+   ],
+   "occurred": "2026-08-23"
+  },
+  {
+   "op": "write",
+   "key": "m175",
+   "title": "",
+   "content": "去洗牙 ¥280，牙医说智齿要观察，暂不拔。",
+   "tags": [
+    "健康"
+   ],
+   "occurred": "2026-08-24"
+  },
+  {
+   "op": "write",
+   "key": "m176",
+   "title": "Kestrel 二期预付",
+   "content": "Kestrel phase 2 的 40% 预付 SGD 1,680 在 8 月 26 日到账。",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-08-26"
+  },
+  {
+   "op": "write",
+   "key": "m177",
+   "title": "拾光终稿交付",
+   "content": "拾光终稿 8 月 28 日交付，尾款 70%（¥12,600）老何说下周付，他喜欢印刷出来的海报质感。",
+   "tags": [
+    "拾光",
+    "交付"
+   ],
+   "occurred": "2026-08-28"
+  },
+  {
+   "op": "update",
+   "key": "m034",
+   "content": "Tokens Studio Pro 年付 $130，8 月 30 日决定到期不再续：Figma variables 加 Dev Mode 已经够用，Kestrel 二期改直接用变量导出，不再走 Tokens Studio 同步。",
+   "occurred": "2026-08-30"
+  },
+  {
+   "op": "summary",
+   "key": "s14",
+   "title": "字体素材与版权",
+   "content": "字体授权：收费字体只有青禾的方正（¥2,400，客户买）和山屿的 Söhne（约 €160，客户买），其他项目字体都是 OFL 免费商用；素材订阅是 Envato Elements 年付 $198，每个最终项目要单独注册授权。",
+   "adopt": [
+    "m025",
+    "m048",
+    "m168",
+    "m123"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m178",
+   "title": "阿泽涨价",
+   "content": "阿泽通知日拍价从 ¥2,500/天涨到 ¥3,000/天，精修仍含 30 张，9 月 1 日起生效。",
+   "tags": [
+    "阿泽",
+    "报价"
+   ],
+   "occurred": "2026-09-01",
+   "supersedes": "m082"
+  },
+  {
+   "op": "write",
+   "key": "m179",
+   "title": "拾光结清",
+   "content": "拾光尾款 ¥12,600 在 9 月 2 日到账，整单 ¥18,000 结清。",
+   "tags": [
+    "拾光",
+    "付款"
+   ],
+   "occurred": "2026-09-02"
+  },
+  {
+   "op": "summary",
+   "key": "s06",
+   "title": "云岫与拾光项目",
+   "content": "云岫民宿（暖木色、手绘山水、思源宋体，禁蓝色和莲花）¥29,800 已结清，官网从 6/30 推到 8/15 上线，客户付 Framer 订阅。拾光书店（复古双色印刷，藏青 + 土黄，禁渐变）¥18,000 已结清，3-7 付款。",
+   "adopt": [
+    "m070",
+    "m071",
+    "m073",
+    "m087",
+    "m138",
+    "m137",
+    "m170",
+    "m173",
+    "m077",
+    "m106",
+    "m118",
+    "m139",
+    "m177",
+    "m179"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m180",
+   "title": "新工作室押金",
+   "content": "玉林新工作室签约，押二付三，一次性付 ¥21,000（押 ¥8,400 + 三个月房租 ¥12,600），我和阿泽各出一半。",
+   "tags": [
+    "工作室",
+    "租金"
+   ],
+   "occurred": "2026-09-04"
+  },
+  {
+   "op": "write",
+   "key": "m181",
+   "title": "装修结算",
+   "content": "装修最终结算 ¥56,000，比预算 ¥48,000 超了 ¥8,000，主要是防水返工后加了一层涂膜、扶手加装和卧室多做了踢脚线。",
+   "tags": [
+    "装修",
+    "金额"
+   ],
+   "occurred": "2026-09-05",
+   "supersedes": "m147"
+  },
+  {
+   "op": "update",
+   "key": "m086",
+   "content": "母亲的内分泌科王医生在华西，9 月起门诊从周四上午改到周五下午，专家号 ¥35。",
+   "occurred": "2026-09-05"
+  },
+  {
+   "op": "write",
+   "key": "m182",
+   "title": "",
+   "content": "搬家日定在 9 月 27 日周日，找货拉拉面包车，预估 ¥260，显示器和 iPad 自己抱着走。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2026-09-06"
+  },
+  {
+   "op": "update",
+   "key": "m092",
+   "content": "成都设计周 2026 年 9 月 18-21 日，在东郊记忆。3m×3m 小展位，展位费原本 ¥5,800，9 月 8 日主办方通知要另付电费和灯光 ¥1,000，总共 ¥6,800，和阿泽联合展出，费用对半。",
+   "occurred": "2026-09-08"
+  },
+  {
+   "op": "write",
+   "key": "m183",
+   "title": "",
+   "content": "展位海报墙 6 张 A1 哑面相纸裱 KT 板，在玉林的打印店做的，一共 ¥1,380。",
+   "tags": [
+    "展会",
+    "印刷"
+   ],
+   "occurred": "2026-09-10"
+  },
+  {
+   "op": "update",
+   "key": "m020",
+   "content": "Adobe Creative Cloud 全家桶年付：去年续费 ¥3,888，9 月 12 日收到通知，12 月起续费涨到 ¥4,488（涨了 ¥600）。",
+   "occurred": "2026-09-12"
+  },
+  {
+   "op": "write",
+   "key": "m184",
+   "title": "Affinity 购买",
+   "content": "买了 Affinity Publisher 2 买断版 ¥398，准备顶替 InDesign 排版栖木画册。",
+   "tags": [
+    "工具",
+    "购物"
+   ],
+   "occurred": "2026-09-13"
+  },
+  {
+   "op": "write",
+   "key": "m185",
+   "title": "母亲 9 月复查",
+   "content": "母亲 9 月 15 日复查：糖化 5.8%，空腹 5.9，基本回到正常上限。王医生说可以半年后再查，继续控制饮食。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-09-15"
+  },
+  {
+   "op": "write",
+   "key": "m186",
+   "title": "",
+   "content": "Nordlicht phase 2 hi-fi delivered on Sep 16. Katrin asked for iOS Dynamic Type support, so every text style needs a scaling rule.",
+   "tags": [
+    "Nordlicht",
+    "修改"
+   ],
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "update",
+   "key": "m130",
+   "content": "母亲每天坚持走路，6 月起目标是 5000-7000 步，9 月复查好转后医生建议提到 8000 步，微信步数每晚发给我看，晚饭主食还是半碗。",
+   "occurred": "2026-09-16"
+  },
+  {
+   "op": "write",
+   "key": "m187",
+   "title": "设计周布展复盘",
+   "content": "设计周布展复盘：9 月 17 日下午进场，展位只有 3m×3m，6 张 A1 海报墙用 KT 板加魔术贴挂，第一天就掉了两张，后来改成双面胶加夹子。灯光主办方只给一个 20W 射灯，太暗，我们自带了两个 USB 小灯条。名片放的位置太靠里，第二天挪到桌边后拿走的人明显变多。阿泽的样片屏用 iPad 轮播很吸睛。下次要多备胶带、延长线，还要带一个明确的报价区间展板。回来后把这些整理成了布展清单放进 Notion 模板，下次直接勾选。",
+   "tags": [
+    "展会",
+    "复盘"
+   ],
+   "occurred": "2026-09-17"
+  },
+  {
+   "op": "write",
+   "key": "m188",
+   "title": "搬家清单",
+   "content": "搬工作室清单：宽带电信 500M 预约 9 月 25 日迁装；个体户经营地址要去税务变更，要提前 10 个工作日；更新快递地址和发票抬头里的地址；还回木槿里门禁卡 ×2；NAS（Synology DS224+）抱着走，不放货拉拉；设计周的海报先暂存玉林新工作室，别带回木槿里。最后一项是搬完后一周内核对所有客户合同上的乙方地址，必要时发补充函。",
+   "tags": [
+    "工作室",
+    "计划"
+   ],
+   "occurred": "2026-09-20"
+  },
+  {
+   "op": "write",
+   "key": "m189",
+   "title": "设计周总结",
+   "content": "设计周 4 天共收到约 37 张名片，2 个正式询价，当场没成交。展位 + 海报合计 ¥8,180，我和阿泽各摊一半 ¥4,090。结论：流量很泛，下次要放更清楚的案例和报价区间。",
+   "tags": [
+    "展会",
+    "复盘"
+   ],
+   "occurred": "2026-09-21"
+  },
+  {
+   "op": "write",
+   "key": "m190",
+   "title": "",
+   "content": "设计周带来的询价：栖木家居（成都实木家具品牌，周总）想做品牌 VI + 画册，预算 5 万上下；另一家广告公司想找人外包 UI，日结，我没接。",
+   "tags": [
+    "展会",
+    "接单"
+   ],
+   "occurred": "2026-09-22"
+  },
+  {
+   "op": "summary",
+   "key": "s11",
+   "title": "阿泽合作与展会",
+   "content": "与摄影师阿泽的打包项目分成按 55:45（设计:摄影），云岫为 5:5 特例；日拍 ¥2,500 含精修 30 张。成都设计周 9 月 18-21 日参展，展位含电费共 ¥6,800，设计周共收约 37 张名片、2 个询价，没有当场成交。",
+   "adopt": [
+    "m016",
+    "m082",
+    "m162",
+    "m092",
+    "m183",
+    "m189",
+    "m190"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m191",
+   "title": "青禾二期报价",
+   "content": "青禾茶饮二期（门店 SI：门头、菜单、小程序界面）报价 ¥26,000，含 2 轮修改（一期是 3 轮），预付 70%、交付付 30%。",
+   "tags": [
+    "青禾",
+    "报价"
+   ],
+   "occurred": "2026-09-24"
+  },
+  {
+   "op": "write",
+   "key": "m192",
+   "title": "工作室宽带",
+   "content": "玉林新工作室装了电信 500M 宽带，年付 ¥1,080，9 月 25 日上门安装。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2026-09-25"
+  },
+  {
+   "op": "write",
+   "key": "m193",
+   "title": "",
+   "content": "9 月 27 日搬进玉林新工作室，窗外是银杏树，离拾光书店走路 5 分钟。",
+   "tags": [
+    "工作室"
+   ],
+   "occurred": "2026-09-27"
+  },
+  {
+   "op": "write",
+   "key": "m194",
+   "title": "青禾二期预付",
+   "content": "青禾二期预付 70%（¥18,200）9 月 30 日到账。",
+   "tags": [
+    "青禾",
+    "付款"
+   ],
+   "occurred": "2026-09-30"
+  },
+  {
+   "op": "write",
+   "key": "m195",
+   "title": "",
+   "content": "10 月 1 日去重庆参加大学同学婚礼，随礼 ¥800，来回高铁 ¥196。",
+   "tags": [
+    "社交"
+   ],
+   "occurred": "2026-10-01"
+  },
+  {
+   "op": "write",
+   "key": "m196",
+   "title": "Adobe 订阅改订",
+   "content": "10 月 2 日决定把 Adobe 全家桶改成只订 Photoshop + Illustrator 两个 App，年付 ¥2,666，不再续全家桶。InDesign 用 Affinity Publisher 顶替。",
+   "tags": [
+    "工具",
+    "订阅"
+   ],
+   "occurred": "2026-10-02",
+   "supersedes": "m020"
+  },
+  {
+   "op": "write",
+   "key": "m197",
+   "title": "栖木家居报价",
+   "content": "栖木家居（周总）品牌 VI + 28 页画册，报价 ¥52,000，含 3 轮修改，预付 70%。画册尺寸 210×285mm。",
+   "tags": [
+    "栖木",
+    "报价"
+   ],
+   "occurred": "2026-10-04"
+  },
+  {
+   "op": "write",
+   "key": "m198",
+   "title": "栖木交付日",
+   "content": "栖木 VI 初稿 11 月 20 日交，画册终稿 12 月 20 日交。",
+   "tags": [
+    "栖木",
+    "交付"
+   ],
+   "occurred": "2026-10-04"
+  },
+  {
+   "op": "write",
+   "key": "m199",
+   "title": "Kestrel 三期意向",
+   "content": "Priya 对 Kestrel 二期很满意，说年底前可能做三期（钱包里的理财模块），预计 2027 年 Q1 启动。",
+   "tags": [
+    "Kestrel"
+   ],
+   "occurred": "2026-10-05"
+  },
+  {
+   "op": "write",
+   "key": "m200",
+   "title": "栖木审美偏好",
+   "content": "栖木周总偏好日式侘寂、原木色、大量留白，禁忌：不要绿色，不要英文装饰字。",
+   "tags": [
+    "栖木",
+    "审美"
+   ],
+   "occurred": "2026-10-06"
+  },
+  {
+   "op": "write",
+   "key": "m201",
+   "title": "Kestrel 二期结清",
+   "content": "Kestrel phase 2 delivered Sep 30; the final 60% (SGD 2,520) was paid on Oct 8.",
+   "tags": [
+    "Kestrel",
+    "付款"
+   ],
+   "occurred": "2026-10-08"
+  },
+  {
+   "op": "write",
+   "key": "m202",
+   "title": "",
+   "content": "昨晚失眠，三点才睡着，早上咖啡喝了两杯还是困。",
+   "tags": [],
+   "occurred": "2026-10-09"
+  },
+  {
+   "op": "write",
+   "key": "m203",
+   "title": "木槿里退押金",
+   "content": "木槿里的押金 ¥3,200 在 10 月 10 日退回，一分没扣。",
+   "tags": [
+    "工作室",
+    "租金"
+   ],
+   "occurred": "2026-10-10"
+  },
+  {
+   "op": "update",
+   "key": "m191",
+   "content": "青禾二期（门店 SI：门头、菜单、小程序界面）原报价 ¥26,000，10 月 10 日陈姐加了一块门头灯箱设计，总价变为 ¥28,000，仍含 2 轮修改。已付预付 ¥18,200，余款 ¥9,800。",
+   "occurred": "2026-10-10"
+  },
+  {
+   "op": "write",
+   "key": "m204",
+   "title": "三季度申报",
+   "content": "三季度销售额约 ¥118,000，仍在 30 万免税线内，10 月 14 日申报完。",
+   "tags": [
+    "税务"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "write",
+   "key": "m205",
+   "title": "经营地址变更",
+   "content": "个体户经营地址变更 10 月 12 日在税务办完，新地址是玉林这边的工作室，营业执照换了新的。",
+   "tags": [
+    "税务",
+    "工作室"
+   ],
+   "occurred": "2026-10-12"
+  },
+  {
+   "op": "update",
+   "key": "m163",
+   "content": "灵活就业参保，养老加医疗合计，10 月 15 日起缴费基数上调，每月约 ¥1,350（之前 ¥1,280），每月 5 号银行代扣。",
+   "occurred": "2026-10-15"
+  },
+  {
+   "op": "write",
+   "key": "m206",
+   "title": "青禾二期要求",
+   "content": "青禾二期陈姐的要求：门头灯箱夜间要有青绿色发光效果，菜单价格数字用手写感，禁忌：价签不要用红色。",
+   "tags": [
+    "青禾",
+    "审美"
+   ],
+   "occurred": "2026-10-17"
+  },
+  {
+   "op": "write",
+   "key": "m207",
+   "title": "",
+   "content": "抢东京回程的早班机票没抢到，只能订下午的。",
+   "tags": [],
+   "occurred": "2026-10-18"
+  },
+  {
+   "op": "write",
+   "key": "m208",
+   "title": "",
+   "content": "11 月 8-13 日去东京看展，成都往返机票 ¥2,890，浅草的酒店 ¥540/晚住 5 晚。",
+   "tags": [
+    "旅行"
+   ],
+   "occurred": "2026-10-19"
+  },
+  {
+   "op": "update",
+   "key": "m123",
+   "content": "素材主要用 Envato Elements，年付原来 $198，10 月 20 日收到续费通知涨到 $228。样机和纹理为主，每个最终项目要单独注册授权，不能混用给不同客户。",
+   "occurred": "2026-10-20"
+  },
+  {
+   "op": "update",
+   "key": "m026",
+   "content": "腱鞘炎反复。去年 12 月入手 Logitech MX Vertical（¥649），用了大半年后觉得拇指仍累，9 月换成轨迹球 Logitech MX Ergo S（¥799），医生建议每画 45 分钟起身活动。",
+   "occurred": "2026-10-21"
+  },
+  {
+   "op": "write",
+   "key": "m209",
+   "title": "Brightpath 二期交付",
+   "content": "Brightpath phase 2 delivered Oct 22. Dana paid the remaining $1,200 on Oct 28, exactly within net 7. Much better than phase 1.",
+   "tags": [
+    "Brightpath",
+    "付款"
+   ],
+   "occurred": "2026-10-22"
+  },
+  {
+   "op": "write",
+   "key": "m210",
+   "title": "",
+   "content": "玉林新工作室墙角返潮，买了台除湿机 ¥329，开了两天好多了。",
+   "tags": [],
+   "occurred": "2026-10-24"
+  },
+  {
+   "op": "write",
+   "key": "m211",
+   "title": "栖木预付到账",
+   "content": "栖木预付 70%，¥36,400 在 10 月 26 日到账，开始做 VI。",
+   "tags": [
+    "栖木",
+    "付款"
+   ],
+   "occurred": "2026-10-26"
+  },
+  {
+   "op": "write",
+   "key": "m212",
+   "title": "",
+   "content": "团子软便两天，去宠物医院 ¥260，医生开了益生菌，说可能是换粮引起的。",
+   "tags": [
+    "宠物",
+    "健康"
+   ],
+   "occurred": "2026-10-27"
+  },
+  {
+   "op": "write",
+   "key": "m213",
+   "title": "Nordlicht 二期尾款",
+   "content": "Nordlicht phase 2 final files delivered Oct 30; invoice for the remaining 70% (€2,240) is due Nov 29.",
+   "tags": [
+    "Nordlicht",
+    "付款"
+   ],
+   "occurred": "2026-10-30"
+  },
+  {
+   "op": "update",
+   "key": "m208",
+   "content": "11 月 8-13 日去东京看展，成都往返机票 ¥2,890。原来订的浅草酒店 11 月 1 日被取消，改订上野的酒店 ¥610/晚，住 5 晚。",
+   "occurred": "2026-11-01"
+  },
+  {
+   "op": "update",
+   "key": "m046",
+   "content": "在学德语，已经到 A1 后半段，因为 Katrin 总是用德语打招呼。11 月起从每周一次加到每周两次网课，课时费也涨到 ¥150/节（原来 ¥120）。",
+   "occurred": "2026-11-02"
+  },
+  {
+   "op": "write",
+   "key": "m214",
+   "title": "母亲白内障",
+   "content": "母亲眼科检查：右眼早期白内障，医生说先观察半年，不用急着手术，建议少看手机。",
+   "tags": [
+    "母亲",
+    "健康"
+   ],
+   "occurred": "2026-11-03"
+  },
+  {
+   "op": "summary",
+   "key": "s12",
+   "title": "母亲健康",
+   "content": "母亲 60 岁，高血压，现在每天早上吃缬沙坦 80mg + 氨氯地平 5mg；今年 3 月 OGTT 显示糖尿病前期，靠饮食和走路控制，6 月、9 月复查好转，暂不用药。右眼早期白内障观察中。",
+   "adopt": [
+    "m027",
+    "m058",
+    "m084",
+    "m085",
+    "m130",
+    "m135",
+    "m185",
+    "m167",
+    "m214"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m215",
+   "title": "母亲生日",
+   "content": "母亲 11 月 3 日 61 岁生日，在双流家里煮长寿面，是装修完后第一次用新卫生间。",
+   "tags": [
+    "母亲"
+   ],
+   "occurred": "2026-11-04"
+  },
+  {
+   "op": "write",
+   "key": "m216",
+   "title": "栖木第一轮",
+   "content": "栖木第一轮反馈：周总想减少 logo 里的木纹线条，画册内页留白再加多一些。",
+   "tags": [
+    "栖木",
+    "修改"
+   ],
+   "occurred": "2026-11-05"
+  },
+  {
+   "op": "write",
+   "key": "m217",
+   "title": "网站案例授权",
+   "content": "个人网站新增案例页：青禾和云岫已拿到书面授权可以展示；山屿小宋明确说不要放出来，拾光还没问。",
+   "tags": [
+    "网站",
+    "版权"
+   ],
+   "occurred": "2026-11-06"
+  },
+  {
+   "op": "summary",
+   "key": "s09",
+   "title": "接单渠道与定价",
+   "content": "接单渠道：Dribbble 带来 Nordlicht，LinkedIn 带来 Kestrel，Upwork 带来 Brightpath，站酷带来青禾，小红书带来云岫，设计周带来栖木。定价规律：国内按项目 ¥18,000 到 ¥52,000，海外 US$/€/SGD 报价；国内新单预付 70%，海外新单 50% 预付。",
+   "adopt": [
+    "m031",
+    "m190",
+    "m068",
+    "m158",
+    "m117",
+    "m197",
+    "m143"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s15",
+   "title": "个人网站",
+   "content": "个人网站 pixelmoon.studio，原来用 Framer，6 月迁到 Astro + Cloudflare Pages，域名转到 Cloudflare；11 月新增案例页，青禾和云岫已授权，山屿拒绝公开。",
+   "adopt": [
+    "m039",
+    "m217"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m197",
+   "content": "栖木家居（周总）品牌 VI + 画册，11 月 8 日周总要求把画册从 28 页加到 36 页，总价从 ¥52,000 涨到 ¥56,000，含 3 轮修改，尺寸 210×285mm。已付预付 ¥36,400。",
+   "occurred": "2026-11-08"
+  },
+  {
+   "op": "write",
+   "key": "m218",
+   "title": "东京看展",
+   "content": "东京逛了 Ginza Graphic Gallery 和竹尾的纸展，买了 3 本字体书约 ¥1,200，印象最深的是日本包装的纸张选择。",
+   "tags": [
+    "旅行",
+    "展会"
+   ],
+   "occurred": "2026-11-10"
+  },
+  {
+   "op": "write",
+   "key": "m219",
+   "title": "应急金更新",
+   "content": "应急金存到了 ¥52,000，离 6 个月开销 ¥60,000 的目标差不多了。",
+   "tags": [
+    "金额",
+    "目标"
+   ],
+   "occurred": "2026-11-10",
+   "supersedes": "m144"
+  },
+  {
+   "op": "write",
+   "key": "m220",
+   "title": "买打印机",
+   "content": "双十一入了 Epson L8058 照片打印机 ¥2,299，用来打样和做客户的实物小样。",
+   "tags": [
+    "购物",
+    "设备"
+   ],
+   "occurred": "2026-11-11"
+  },
+  {
+   "op": "write",
+   "key": "m221",
+   "title": "栖木交付日提前",
+   "content": "栖木周总要赶年底的展销会，把画册终稿提前到 12 月 10 日，VI 初稿仍是 11 月 20 日。",
+   "tags": [
+    "栖木",
+    "交付"
+   ],
+   "occurred": "2026-11-12",
+   "supersedes": "m198"
+  },
+  {
+   "op": "write",
+   "key": "m222",
+   "title": "",
+   "content": "回程航班延误了 2 小时，在羽田吃了一碗很咸的拉面。",
+   "tags": [],
+   "occurred": "2026-11-13"
+  },
+  {
+   "op": "write",
+   "key": "m223",
+   "title": "装修质保金",
+   "content": "装修质保 1 年，留了 10% 质保金 ¥5,600 给老刘，明年 9 月无问题再付。",
+   "tags": [
+    "装修",
+    "金额"
+   ],
+   "occurred": "2026-11-15"
+  },
+  {
+   "op": "summary",
+   "key": "s13",
+   "title": "母亲家装修",
+   "content": "母亲双流老房适老化装修：卫生间防滑砖 + 两个 80cm 高 L 形扶手，卧室复合地板；7 月 6 日开工，因防水返工延期到 9 月 5 日完工，结算 ¥56,000，质保金 ¥5,600 留到明年 9 月。",
+   "adopt": [
+    "m146",
+    "m148",
+    "m151",
+    "m152",
+    "m169",
+    "m181",
+    "m223"
+   ]
+  },
+  {
+   "op": "write",
+   "key": "m224",
+   "title": "2027 年计划",
+   "content": "2027 计划：收入目标 ¥38 万，海外占 40%，全年接 5-6 个核心客户，不再接低于 ¥15,000 的单子；考虑请一个兼职助手（预算 ¥3,000/月）处理切图和标注；年初更新作品集，把栖木、青禾二期放进去；12 月想去报名明年的广州设计周。还想把 Kestrel 三期和 Nordlicht 的维护合同谈成长期订阅型收入，目标是每月固定收入至少覆盖工作室租金和社保。",
+   "tags": [
+    "计划",
+    "目标"
+   ],
+   "occurred": "2026-11-16"
+  },
+  {
+   "op": "summary",
+   "key": "s20",
+   "title": "国内客户总览",
+   "content": "国内客户共 5 家：青禾（一期 ¥38,000，二期 ¥28,000）、山屿（¥48,000，尾款拖 99 天）、云岫（¥29,800）、拾光（¥18,000）、栖木（¥56,000，进行中）。国内新单预付 70%。",
+   "adopt": [
+    "s01",
+    "s02",
+    "s06",
+    "m191",
+    "m197",
+    "m157"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s21",
+   "title": "海外客户总览",
+   "content": "海外客户 3 家：Nordlicht（柏林，€，一期二期）、Brightpath（多伦多，US$，一期拖款，二期预付 50% 准时）、Kestrel（新加坡，SGD，里程碑付款，最稳）。收款都走 Wise。",
+   "adopt": [
+    "s03",
+    "s04",
+    "s05"
+   ]
+  },
+  {
+   "op": "summary",
+   "key": "s22",
+   "title": "母亲的一切",
+   "content": "母亲的健康（高血压、糖尿病前期、早期白内障）与老房子适老化装修。",
+   "adopt": [
+    "s12",
+    "s13"
+   ]
+  },
+  {
+   "op": "update",
+   "key": "m112",
+   "content": "2026 年的收入目标原来是 ¥30 万；11 月 17 日累计收款约 ¥29 万，已经接近，年底前争取上调并做到 ¥33 万，其中海外约 40%。",
+   "occurred": "2026-11-17"
+  },
+  {
+   "op": "write",
+   "key": "m225",
+   "title": "放弃广州设计周",
+   "content": "决定先不报广州设计周，展位 ¥7,500 太贵，也没有明确的客户目标，等明年再看。",
+   "tags": [
+    "展会"
+   ],
+   "occurred": "2026-11-18",
+   "supersedes": "m166"
+  },
+  {
+   "op": "write",
+   "key": "m226",
+   "title": "",
+   "content": "这周连续熬夜到凌晨两点，决定这个周末不碰工作。",
+   "tags": [],
+   "occurred": "2026-11-19"
+  }
+ ],
+ "queries": [
+  {
+   "id": "q001",
+   "qs": [
+    "青禾茶饮品牌升级的报价是多少，含几轮修改？",
+    "青禾 报价 付款节点 3-4-3"
+   ],
+   "type": "direct",
+   "gold": [
+    "m002"
+   ],
+   "stale": [],
+   "note": "基础事实：¥38,000，3 轮，3-4-3"
+  },
+  {
+   "id": "q002",
+   "qs": [
+    "Nordlicht dashboard redesign fixed price and payment terms",
+    "Nordlicht 报价 付款期限"
+   ],
+   "type": "direct",
+   "gold": [
+    "m008"
+   ],
+   "stale": [],
+   "note": "€4,800，2 轮，net 30"
+  },
+  {
+   "id": "q003",
+   "qs": [
+    "Kestrel Labs 一期怎么付款，总价多少？",
+    "Kestrel 里程碑 30/40/30"
+   ],
+   "type": "direct",
+   "gold": [
+    "m012"
+   ],
+   "stale": [],
+   "note": "SGD 7,500，30/40/30"
+  },
+  {
+   "id": "q004",
+   "qs": [
+    "Wise 账户开了哪几个币种？",
+    "海外客户收款用什么账户"
+   ],
+   "type": "direct",
+   "gold": [
+    "m029"
+   ],
+   "stale": [],
+   "note": "EUR/USD/SGD"
+  },
+  {
+   "id": "q005",
+   "qs": [
+    "个体户增值税季度免税额度是多少？申报截止是哪天？",
+    "小规模纳税人 季度 30 万 免征"
+   ],
+   "type": "direct",
+   "gold": [
+    "m028"
+   ],
+   "stale": [],
+   "note": "30 万，次月 15 号前"
+  },
+  {
+   "id": "q006",
+   "qs": [
+    "青禾 logo 用的字体授权多少钱，谁买单？",
+    "方正字体 授权 ¥2,400"
+   ],
+   "type": "direct",
+   "gold": [
+    "m025"
+   ],
+   "stale": [],
+   "note": "¥2,400，客户购买"
+  },
+  {
+   "id": "q007",
+   "qs": [
+    "母亲 OGTT 复查结果是什么？",
+    "OGTT 服糖后两小时血糖 糖耐量受损"
+   ],
+   "type": "direct",
+   "gold": [
+    "m085"
+   ],
+   "stale": [],
+   "note": "空腹 6.6，2h 9.1，糖尿病前期"
+  },
+  {
+   "id": "q008",
+   "qs": [
+    "合同里设计成果的版权怎么约定？",
+    "尾款结清后著作权转让 作品集展示权"
+   ],
+   "type": "direct",
+   "gold": [
+    "m074"
+   ],
+   "stale": [],
+   "note": "尾款后转让，保留作品集展示权，字体素材不随转让"
+  },
+  {
+   "id": "q009",
+   "qs": [
+    "跟德国那边约视频会议要怎么错开时间？",
+    "柏林和成都差几个小时",
+    "Berlin Chengdu time difference"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m036"
+   ],
+   "stale": [],
+   "note": "冬令时差 7 小时，夏令时 6 小时"
+  },
+  {
+   "id": "q010",
+   "qs": [
+    "做咖啡包装的那位老板最反感哪些视觉元素？",
+    "咖啡品牌客户的视觉禁忌"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m005"
+   ],
+   "stale": [
+    "m003"
+   ],
+   "note": "不要插画、咖啡豆图标、手写体；注意别混青禾"
+  },
+  {
+   "id": "q011",
+   "qs": [
+    "新加坡那边的款项都收齐了吗？",
+    "Kestrel 最后一笔到账日期"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m132"
+   ],
+   "stale": [],
+   "note": "6 月 5 日 SGD 2,250 到账，7,500 结清"
+  },
+  {
+   "id": "q012",
+   "qs": [
+    "跟拍照搭档的项目利润怎么分？",
+    "摄影搭档分账比例"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m016"
+   ],
+   "stale": [],
+   "note": "最新 55:45（原 6:4）"
+  },
+  {
+   "id": "q013",
+   "qs": [
+    "家里猫咪体检做过哪些检查，花了多少钱？",
+    "宠物体检 牙结石"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m078"
+   ],
+   "stale": [],
+   "note": "¥480，轻度牙结石"
+  },
+  {
+   "id": "q014",
+   "qs": [
+    "印刷厂把我的 PDF 打回来说缺字，怎么解决？",
+    "导出 PDF 字体丢失 转曲线"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m059"
+   ],
+   "stale": [],
+   "note": "未转曲线；Create Outlines + PDF/X-4"
+  },
+  {
+   "id": "q015",
+   "qs": [
+    "遇到想压价的潜在客户，我的价格底线是多少？",
+    "最低接单价格 拒绝低价"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m121"
+   ],
+   "stale": [],
+   "note": "logo ≥ ¥8,000，整套 VI ≥ ¥25,000"
+  },
+  {
+   "id": "q016",
+   "qs": [
+    "母亲三个月后血糖复查情况怎么样？",
+    "糖化血红蛋白 5.9"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m135"
+   ],
+   "stale": [
+    "m185"
+   ],
+   "note": "6 月 16 日复查，非 9 月那次"
+  },
+  {
+   "id": "q017",
+   "qs": [
+    "手腕不舒服之后换了什么输入设备？",
+    "为什么用垂直鼠标 轨迹球"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m026"
+   ],
+   "stale": [],
+   "note": "MX Vertical 后改 MX Ergo S"
+  },
+  {
+   "id": "q018",
+   "qs": [
+    "山脚那家住宿客户拍摄那两天遇到什么状况？",
+    "拍房间当天下雨怎么办"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m087"
+   ],
+   "stale": [],
+   "note": "云岫 3 月 14/15 日拍摄，第二天下雨"
+  },
+  {
+   "id": "q019",
+   "qs": [
+    "参加设计周的投入产出怎么样？",
+    "展会 名片 询价 没有成交"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m189"
+   ],
+   "stale": [],
+   "note": "37 张名片，2 个询价，合计 ¥8,180"
+  },
+  {
+   "id": "q020",
+   "qs": [
+    "去年一整年的个人所得税交了多少？",
+    "经营所得 汇算清缴 核定征收"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m091"
+   ],
+   "stale": [],
+   "note": "¥1,860"
+  },
+  {
+   "id": "q021",
+   "qs": [
+    "校色用的屏幕买了没，实际花了多少钱？",
+    "BenQ 显示器 价格"
+   ],
+   "type": "paraphrase",
+   "gold": [
+    "m124"
+   ],
+   "stale": [
+    "m109"
+   ],
+   "note": "实际 ¥3,899，计划价 ¥4,299 已过期"
+  },
+  {
+   "id": "q022",
+   "qs": [
+    "上次那个一直拖着不给钱的客户，最后还是付了吗？",
+    "国内那个催了好几次才结的款"
+   ],
+   "type": "vague",
+   "gold": [
+    "m156",
+    "m157"
+   ],
+   "stale": [
+    "m115"
+   ],
+   "note": "山屿余款 ¥27,000 拖 99 天；别和 Brightpath 混"
+  },
+  {
+   "id": "q023",
+   "qs": [
+    "之前那个文件打开特别卡的问题怎么搞定的？",
+    "Figma 大文件 拆分"
+   ],
+   "type": "vague",
+   "gold": [
+    "m128"
+   ],
+   "stale": [],
+   "note": "拆成三个文件用 library 引用"
+  },
+  {
+   "id": "q024",
+   "qs": [
+    "上回打样出来颜色不对的那个问题",
+    "印刷 橙色 偏灰 怎么改"
+   ],
+   "type": "vague",
+   "gold": [
+    "m096"
+   ],
+   "stale": [],
+   "note": "改用 Pantone 1665 C 专色"
+  },
+  {
+   "id": "q025",
+   "qs": [
+    "展会布置的时候有哪些没想到的坑？",
+    "第一天海报掉下来"
+   ],
+   "type": "vague",
+   "gold": [
+    "m187"
+   ],
+   "stale": [],
+   "note": "设计周布展复盘"
+  },
+  {
+   "id": "q026",
+   "qs": [
+    "之前列过搬地方要办哪些手续来着？",
+    "搬家 地址变更 宽带"
+   ],
+   "type": "vague",
+   "gold": [
+    "m188"
+   ],
+   "stale": [],
+   "note": "搬工作室清单"
+  },
+  {
+   "id": "q027",
+   "qs": [
+    "那个原型里连线全没了的毛病是怎么回事？",
+    "variables mode 切换之后 prototype"
+   ],
+   "type": "vague",
+   "gold": [
+    "m083"
+   ],
+   "stale": [],
+   "note": "变量绑在 section 而非根 frame"
+  },
+  {
+   "id": "q028",
+   "qs": [
+    "上半年做完总结，主要教训是什么？",
+    "半年复盘 对策"
+   ],
+   "type": "vague",
+   "gold": [
+    "m143"
+   ],
+   "stale": [],
+   "note": "拖款教训；提高预付"
+  },
+  {
+   "id": "q029",
+   "qs": [
+    "Pantone 1665 C"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m096"
+   ],
+   "stale": [],
+   "note": "专色号"
+  },
+  {
+   "id": "q030",
+   "qs": [
+    "Söhne 授权"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m048"
+   ],
+   "stale": [],
+   "note": "山屿的字体"
+  },
+  {
+   "id": "q031",
+   "qs": [
+    "DS224+ RAID1"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m125"
+   ],
+   "stale": [
+    "m188"
+   ],
+   "note": "备份方案；搬家清单也提到 NAS 但不是答案"
+  },
+  {
+   "id": "q032",
+   "qs": [
+    "INV-2026"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m056",
+    "m075"
+   ],
+   "stale": [],
+   "note": "发票编号规则及一个实例"
+  },
+  {
+   "id": "q033",
+   "qs": [
+    "Missing font"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m059"
+   ],
+   "stale": [],
+   "note": "PDF 缺字体"
+  },
+  {
+   "id": "q034",
+   "qs": [
+    "Cannot read properties of undefined (reading 'value')"
+   ],
+   "type": "keyword",
+   "gold": [
+    "m126"
+   ],
+   "stale": [],
+   "note": "Style Dictionary 构建报错"
+  },
+  {
+   "id": "q035",
+   "qs": [
+    "What colours does the Qinghe tea client dislike?",
+    "Qinghe tea brand palette taboo"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m003"
+   ],
+   "stale": [
+    "m005"
+   ],
+   "note": "英文问中文记忆：不要红金，不要龙凤"
+  },
+  {
+   "id": "q036",
+   "qs": [
+    "How late was the Shanyu coffee final payment?",
+    "Shanyu balance overdue days"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m156"
+   ],
+   "stale": [
+    "m115"
+   ],
+   "note": "99 天；别混 Brightpath"
+  },
+  {
+   "id": "q037",
+   "qs": [
+    "柏林客户一期付款晚了几天？",
+    "德国客户 逾期 付款 原因"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m100"
+   ],
+   "stale": [],
+   "note": "晚 13 天，换银行"
+  },
+  {
+   "id": "q038",
+   "qs": [
+    "多伦多客户二期的付款条件是什么？",
+    "加拿大客户 预付 net 7"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m117"
+   ],
+   "stale": [
+    "m010"
+   ],
+   "note": "50% 预付、net 7、直付 Wise"
+  },
+  {
+   "id": "q039",
+   "qs": [
+    "新加坡客户每周 sprint review 是星期几几点？",
+    "Kestrel 例会时间"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m045"
+   ],
+   "stale": [],
+   "note": "Wednesday 10:00 SGT"
+  },
+  {
+   "id": "q040",
+   "qs": [
+    "What blood pressure medicines does my mother take?",
+    "mother hypertension valsartan amlodipine"
+   ],
+   "type": "crosslang",
+   "gold": [
+    "m027"
+   ],
+   "stale": [],
+   "note": "缬沙坦 80mg + 氨氯地平 5mg"
+  },
+  {
+   "id": "q041",
+   "qs": [
+    "三月份去上海看的是什么展？",
+    "三月 上海 出差 机票"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m089"
+   ],
+   "stale": [],
+   "note": "3 月 19-22 日 Design Shanghai"
+  },
+  {
+   "id": "q042",
+   "qs": [
+    "去年十二月买的那个鼠标是什么型号？",
+    "去年冬天 手腕 垂直鼠标"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m026"
+   ],
+   "stale": [],
+   "note": "2025-12-16 MX Vertical"
+  },
+  {
+   "id": "q043",
+   "qs": [
+    "五月份 Kestrel 交付的时候踩了什么坑？",
+    "五月 design system 交付 报错"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m126"
+   ],
+   "stale": [],
+   "note": "5 月 20 日交付复盘"
+  },
+  {
+   "id": "q044",
+   "qs": [
+    "七月母亲家开工那阵，母亲住哪里？",
+    "七月 装修 开工 母亲暂住"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m148"
+   ],
+   "stale": [],
+   "note": "暂住我高新区两居室"
+  },
+  {
+   "id": "q045",
+   "qs": [
+    "四月中旬 Brightpath 的账是什么状况？",
+    "四月 逾期 滞纳金"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m104"
+   ],
+   "stale": [],
+   "note": "逾期 29 天，1.5%/月滞纳金"
+  },
+  {
+   "id": "q046",
+   "qs": [
+    "九月份母亲复查结果怎么样？",
+    "九月 糖化 复查"
+   ],
+   "type": "temporal",
+   "gold": [
+    "m185"
+   ],
+   "stale": [
+    "m135"
+   ],
+   "note": "9 月 15 日：5.8%/5.9；别拿 6 月那次"
+  },
+  {
+   "id": "q047",
+   "qs": [
+    "Figma 现在每个 seat 多少钱一个月？",
+    "目前 Figma 订阅价格"
+   ],
+   "type": "latest",
+   "gold": [
+    "m019"
+   ],
+   "stale": [],
+   "note": "update 后：$15/月（原 $12）"
+  },
+  {
+   "id": "q048",
+   "qs": [
+    "工作室现在在哪，月租多少？",
+    "目前租的工作室"
+   ],
+   "type": "latest",
+   "gold": [
+    "m172"
+   ],
+   "stale": [
+    "m015"
+   ],
+   "note": "玉林 38㎡ ¥4,200，对半；旧的是木槿里"
+  },
+  {
+   "id": "q049",
+   "qs": [
+    "Adobe 现在订的什么，年费多少？",
+    "最新 Adobe 订阅决定"
+   ],
+   "type": "latest",
+   "gold": [
+    "m196"
+   ],
+   "stale": [
+    "m020"
+   ],
+   "note": "PS + AI 两个 App，¥2,666/年"
+  },
+  {
+   "id": "q050",
+   "qs": [
+    "栖木画册现在定的什么时候交稿？",
+    "栖木 最终交付日期"
+   ],
+   "type": "latest",
+   "gold": [
+    "m221"
+   ],
+   "stale": [
+    "m198"
+   ],
+   "note": "12 月 10 日（原 12 月 20 日）"
+  },
+  {
+   "id": "q051",
+   "qs": [
+    "Brightpath 现在跟谁对接？",
+    "Brightpath 当前联系人"
+   ],
+   "type": "latest",
+   "gold": [
+    "m116"
+   ],
+   "stale": [
+    "m010"
+   ],
+   "note": "Dana Whitfield（Marcus 已离职）"
+  },
+  {
+   "id": "q052",
+   "qs": [
+    "母亲现在每天吃哪些降压药？",
+    "最近母亲的药 有什么调整"
+   ],
+   "type": "latest",
+   "gold": [
+    "m027"
+   ],
+   "stale": [],
+   "note": "update 后：缬沙坦 + 氨氯地平"
+  },
+  {
+   "id": "q053",
+   "qs": [
+    "应急金现在存了多少？",
+    "目前存款 离目标还差多少"
+   ],
+   "type": "latest",
+   "gold": [
+    "m219"
+   ],
+   "stale": [
+    "m144"
+   ],
+   "note": "¥52,000（旧 ¥38,000）"
+  },
+  {
+   "id": "q054",
+   "qs": [
+    "拾光夜读活动现在定在几号？",
+    "拾光 活动海报 日期"
+   ],
+   "type": "latest",
+   "gold": [
+    "m154"
+   ],
+   "stale": [
+    "m140"
+   ],
+   "note": "8 月 9 日（原 7 月 26 日）"
+  },
+  {
+   "id": "q055",
+   "qs": [
+    "阿泽现在的日拍价是多少？",
+    "摄影师最新报价"
+   ],
+   "type": "latest",
+   "gold": [
+    "m178"
+   ],
+   "stale": [
+    "m082"
+   ],
+   "note": "¥3,000/天（原 ¥2,500）"
+  },
+  {
+   "id": "q056",
+   "qs": [
+    "母亲家装修最终什么时候完工的？",
+    "装修 完工日期 延期"
+   ],
+   "type": "latest",
+   "gold": [
+    "m169"
+   ],
+   "stale": [
+    "m146"
+   ],
+   "note": "9 月 5 日（原 8 月 20 日）"
+  },
+  {
+   "id": "q057",
+   "qs": [
+    "Figma 以前每个 seat 是多少钱？",
+    "涨价之前的 Figma 订阅价"
+   ],
+   "type": "history",
+   "gold": [
+    "m019"
+   ],
+   "stale": [],
+   "note": "旧值 $12/月"
+  },
+  {
+   "id": "q058",
+   "qs": [
+    "青禾终稿最开始定的是哪天交付？",
+    "青禾 原定交付日"
+   ],
+   "type": "history",
+   "gold": [
+    "m021"
+   ],
+   "stale": [],
+   "note": "旧值 2026-01-15，后改 02-10"
+  },
+  {
+   "id": "q059",
+   "qs": [
+    "木槿里最开始的工位租金是多少？",
+    "涨租之前联合办公月租"
+   ],
+   "type": "history",
+   "gold": [
+    "m015"
+   ],
+   "stale": [],
+   "note": "旧值 ¥2,800（两个工位）"
+  },
+  {
+   "id": "q060",
+   "qs": [
+    "山屿最开始的报价是多少，几款包装？",
+    "山屿 加款之前的总价"
+   ],
+   "type": "history",
+   "gold": [
+    "m004"
+   ],
+   "stale": [],
+   "note": "旧值 ¥42,000，4 款"
+  },
+  {
+   "id": "q061",
+   "qs": [
+    "我在字体和素材授权上做过哪些决定？",
+    "字体版权 授权 汇总"
+   ],
+   "type": "overview",
+   "gold": [
+    "m025",
+    "m048",
+    "m168",
+    "m123"
+   ],
+   "stale": [],
+   "note": "覆盖字体授权汇总 s14"
+  },
+  {
+   "id": "q062",
+   "qs": [
+    "母亲这一年的健康检查和复查经过",
+    "母亲 血糖 血压 眼睛 历程"
+   ],
+   "type": "overview",
+   "gold": [
+    "m058",
+    "m085",
+    "m135",
+    "m185",
+    "m214"
+   ],
+   "stale": [],
+   "note": "覆盖母亲健康汇总 s12"
+  },
+  {
+   "id": "q063",
+   "qs": [
+    "母亲家装修都定了哪些事？",
+    "装修 选材 延期 结算"
+   ],
+   "type": "overview",
+   "gold": [
+    "m146",
+    "m151",
+    "m169",
+    "m181",
+    "m223"
+   ],
+   "stale": [],
+   "note": "覆盖装修汇总 s13"
+  },
+  {
+   "id": "q064",
+   "qs": [
+    "几个海外客户各自的审美偏好和禁忌",
+    "海外客户 设计风格 不要什么"
+   ],
+   "type": "overview",
+   "gold": [
+    "m009",
+    "m011",
+    "m013"
+   ],
+   "stale": [],
+   "note": "三个海外客户审美"
+  },
+  {
+   "id": "q065",
+   "qs": [
+    "山屿尾款是怎么一路拖下来的？",
+    "山屿 催款 经过"
+   ],
+   "type": "overview",
+   "gold": [
+    "m119",
+    "m131",
+    "m156",
+    "m157"
+   ],
+   "stale": [],
+   "note": "山屿拖欠完整经过"
+  },
+  {
+   "id": "q066",
+   "qs": [
+    "设计周参展从报名到收尾的整个过程",
+    "设计周 展位 海报 复盘"
+   ],
+   "type": "overview",
+   "gold": [
+    "m092",
+    "m183",
+    "m187",
+    "m189"
+   ],
+   "stale": [],
+   "note": "参展汇总"
+  },
+  {
+   "id": "q067",
+   "qs": [
+    "Nordlicht 一期晚付了多少天，结汇到手多少人民币？",
+    "Nordlicht 一期 逾期 结汇"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m100",
+    "m102"
+   ],
+   "stale": [],
+   "note": "晚 13 天；约 ¥38,350"
+  },
+  {
+   "id": "q068",
+   "qs": [
+    "新工作室一次付了多少，我出多少，旧工作室押金退了多少？",
+    "玉林押金房租 木槿里退押金"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m180",
+    "m203"
+   ],
+   "stale": [],
+   "note": "¥21,000，我出一半 ¥10,500；旧押金 ¥3,200 退回"
+  },
+  {
+   "id": "q069",
+   "qs": [
+    "山屿的橙色最后改成什么色号，印刷时用哪个专色？",
+    "山屿 橙色 专色"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m038",
+    "m096"
+   ],
+   "stale": [],
+   "note": "#D9480F；Pantone 1665 C"
+  },
+  {
+   "id": "q070",
+   "qs": [
+    "栖木已付的预付款占现在总价的几成？",
+    "栖木 预付 总价 比例"
+   ],
+   "type": "multihop",
+   "gold": [
+    "m211",
+    "m197"
+   ],
+   "stale": [],
+   "note": "¥36,400 / ¥56,000 ≈ 65%"
+  },
+  {
+   "id": "q071",
+   "qs": [
+    "山屿的报价和超轮次怎么收费？",
+    "山屿咖啡 合同 修改轮次"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m004"
+   ],
+   "stale": [
+    "m002"
+   ],
+   "note": "别混青禾：山屿超轮每轮 ¥3,000，青禾 ¥2,000"
+  },
+  {
+   "id": "q072",
+   "qs": [
+    "青禾陈姐的颜色禁忌是什么？",
+    "青禾 不要什么配色"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m003"
+   ],
+   "stale": [
+    "m005"
+   ],
+   "note": "红金、龙凤"
+  },
+  {
+   "id": "q073",
+   "qs": [
+    "Nordlicht 的设计有什么禁忌？",
+    "Katrin 不喜欢什么"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m009"
+   ],
+   "stale": [
+    "m011"
+   ],
+   "note": "渐变、霓虹、emoji"
+  },
+  {
+   "id": "q074",
+   "qs": [
+    "云岫李姐吃饭有什么忌口？",
+    "请云岫老板娘吃饭注意什么"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m088"
+   ],
+   "stale": [
+    "m050"
+   ],
+   "note": "长期吃素；阿泽是花生过敏"
+  },
+  {
+   "id": "q075",
+   "qs": [
+    "青禾陈姐怎么联系最有效？",
+    "陈姐 沟通方式"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m042"
+   ],
+   "stale": [
+    "m043"
+   ],
+   "note": "打电话白天 10-12 点；小宋是晚上微信"
+  },
+  {
+   "id": "q076",
+   "qs": [
+    "母亲的心内科医生哪天门诊？",
+    "市二院 李医生 门诊时间"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m080"
+   ],
+   "stale": [
+    "m086"
+   ],
+   "note": "周二上午；内分泌王医生另一个"
+  },
+  {
+   "id": "q077",
+   "qs": [
+    "三季度的销售额是多少？",
+    "7-9 月 增值税 申报"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m204"
+   ],
+   "stale": [
+    "m149",
+    "m103"
+   ],
+   "note": "¥118,000"
+  },
+  {
+   "id": "q078",
+   "qs": [
+    "Kestrel 的付款方式和 Brightpath 一样吗，Kestrel 具体怎么付？",
+    "Kestrel 付款条款"
+   ],
+   "type": "neardup",
+   "gold": [
+    "m012"
+   ],
+   "stale": [
+    "m010"
+   ],
+   "note": "30/40/30 里程碑；Brightpath net 15"
+  },
+  {
+   "id": "q079",
+   "qs": [
+    "团子现在多重，体重多少公斤？",
+    "猫 体重"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "话题有猫，但体重从未存过"
+  },
+  {
+   "id": "q080",
+   "qs": [
+    "Kestrel 合同里逾期违约金怎么约定的？",
+    "Kestrel 滞纳金条款"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "只有国内规则和 Brightpath 滞纳金；Kestrel 没存"
+  },
+  {
+   "id": "q081",
+   "qs": [
+    "Katrin 的手机号码是多少？",
+    "Nordlicht 联系方式 电话"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "从未存过"
+  },
+  {
+   "id": "q082",
+   "qs": [
+    "红烧肉怎么做才不柴？",
+    "家常菜 红烧"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "完全无关"
+  },
+  {
+   "id": "q083",
+   "qs": [
+    "Redis 连接超时的根因是什么？",
+    "redis timeout 排查"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "完全无关"
+  },
+  {
+   "id": "q084",
+   "qs": [
+    "阿泽向我借了多少钱，什么时候还？",
+    "阿泽 借款"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "已 delete 的隐私内容"
+  },
+  {
+   "id": "q085",
+   "qs": [
+    "我那张信用卡额度多少，哪天还款？",
+    "信用卡 尾号"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "已 delete"
+  },
+  {
+   "id": "q086",
+   "qs": [
+    "母亲的白内障手术约在哪天？",
+    "白内障 手术 日期"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "只存了观察，没有手术安排"
+  },
+  {
+   "id": "q087",
+   "qs": [
+    "山屿合伙人的财务问题是怎么回事？",
+    "山屿 供应商 催款 合伙人"
+   ],
+   "type": "absent",
+   "gold": [],
+   "stale": [],
+   "note": "已 delete 的客户八卦"
+  }
+ ]
+}
