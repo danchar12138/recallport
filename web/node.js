@@ -19,8 +19,7 @@
     svg.append(use);
     return svg;
   };
-  const firstLine = text => (text.split('\n').find(line => line.trim()) || '').trim().slice(0, 100);
-  const layerBadge = layer => {
+    const layerBadge = layer => {
     const badge = make('span', 'layer', `第 ${layer} 层`);
     badge.dataset.layer = String(Math.min(layer, 5));
     return badge;
@@ -45,7 +44,7 @@
         row.setAttribute('role', 'option');
         const btn = make('button', 'pick');
         btn.type = 'button';
-        const text = firstLine(hit.content);
+        const text = hit.title;
         btn.append(layerBadge(hit.layer), make('span', 'node-text', text));
         btn.addEventListener('click', () => { close(); input.value = ''; onPick({id: hit.id, text, layer: hit.layer}); });
         row.append(btn);
@@ -123,7 +122,7 @@
   const grow = () => { content.style.height = 'auto'; content.style.height = `${content.scrollHeight + 2}px`; };
   const count = () => {
     const n = [...content.value].length;
-    counter.textContent = `${n} / 4000`;
+    counter.textContent = `${n} / 16000`;
     counter.classList.toggle('is-near', n > 3600 && n <= 4000);
     counter.classList.toggle('is-over', n > 4000);
   };

@@ -197,10 +197,11 @@ fn describe(m: &MaintenanceView) -> String {
         .gaps
         .as_ref()
         .map_or(0, |g| g.groups.len() + g.extend.len());
-    let todo = if batches > 0 || !m.stale.is_empty() {
+    let todo = if batches > 0 || !m.stale.is_empty() || !m.untitled.is_empty() {
         format!(
-            "To tidy: {batches} batches wait for a summary, {} summaries are stale; call `maintain` when you have a quiet moment.",
-            m.stale.len()
+            "To tidy: {batches} batches wait for a summary, {} summaries are stale, {} summaries have no title; call `maintain` when you have a quiet moment.",
+            m.stale.len(),
+            m.untitled.len()
         )
     } else {
         "Nothing waits for a summary.".to_owned()
@@ -294,6 +295,9 @@ impl From<AttachmentArg> for AttachInput {
 
 #[derive(Deserialize, JsonSchema)]
 struct WriteArgs {
+    /// A short name for the node: a noun phrase of 16 characters or fewer, not a sentence (40 is the limit). REQUIRED when you give `adopt` (a summary); optional for a plain memory.
+    #[serde(default)]
+    title: Option<String>,
     /// One self-contained experience or one summary: what happened, why, the outcome, in the user's language, so a reader with no context understands it.
     content: String,
     /// The node this one sits under.
@@ -321,6 +325,9 @@ struct WriteArgs {
 
 #[derive(Deserialize, JsonSchema)]
 struct UpdateArgs {
+    /// The new title (16 characters or fewer, a name, not a sentence). A summary always keeps one.
+    #[serde(default)]
+    title: Option<String>,
     /// The node id.
     id: String,
     /// The version you read with `get`; the update is refused when somebody changed the node since.
@@ -475,6 +482,7 @@ fn hit_json(h: &crate::service::HitView) -> Value {
     json!({
         "id": h.id,
         "layer": h.layer,
+        "title": h.title,
         "content": h.content,
         "truncated": h.truncated,
         "match": h.matched,
@@ -515,6 +523,7 @@ fn related_to(service: &Service, node: &NodeView, adopted: &[String]) -> Vec<Val
             json!({
                 "id": h.id,
                 "layer": h.layer,
+                "title": h.title,
                 "relevance": h.relevance,
                 "exact": h.exact,
                 "text": h.content.chars().take(160).collect::<String>(),
@@ -524,7 +533,8 @@ fn related_to(service: &Service, node: &NodeView, adopted: &[String]) -> Vec<Val
 }
 
 const FIX: &str = "\
-Work bottom-up, one layer at a time. For each batch in `gaps.groups`: `get` a few of its nodes, then `write` ONE summary (a title plus the conclusion, not a list) with `adopt` = the ids of the batch. \
+Work bottom-up, one layer at a time. For each batch in `gaps.groups`: `get` a few of its nodes, then `write` ONE summary with `adopt` = the ids of the batch: a `title` (a name of 16 characters or fewer) and as `content` the conclusion (not a list). \
+For each entry in `untitled`: `update` its `title`. \
 For each entry in `gaps.extend`: `move` its `nodes` under that existing summary (`move` with `to` = the summary id). \
 For each stale summary: `get` it and its newer children; if the story changed, `update` its content, and if it is still right, `update` with `touch: true`. \
 Call `maintain` again after each layer: the work for the layer above appears once this one is covered. The tree is finished when at most 8 roots remain and nothing is listed. \
@@ -543,7 +553,7 @@ impl Mcp {
     }
 
     #[tool(
-        description = "Read one node in full: text, tags, where it sits (`path` from the top, `children`), cross-links in both directions (`refs`, `referenced_by`), sources, attachments with their local file `path`, and its `version` (needed by `update` and `delete`). With `history` it also returns every earlier version, newest first. Use it on the best candidates from `search`, and on the nodes under a summary when the details matter.",
+        description = "Read one node in full: title, text, tags, where it sits (`path` from the top, `children`), cross-links in both directions (`refs`, `referenced_by`), sources, attachments with their local file `path`, and its `version` (needed by `update` and `delete`). With `history` it also returns every earlier version, newest first. Use it on the best candidates from `search`, and on the nodes under a summary when the details matter.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn get(&self, Parameters(args): Parameters<GetArgs>) -> CallToolResult {
@@ -551,7 +561,7 @@ impl Mcp {
     }
 
     #[tool(
-        description = "Save a durable experience to the long-term memory: a decision with its reasons, a root cause, a fix that worked, a failed approach and why, a preference or constraint, a change of situation. Call it proactively right after such a moment. One self-contained experience per node, in the user's language; accounts, passwords, keys and other private details are kept verbatim when they help later work (do not redact them). To write a SUMMARY of existing nodes, give their ids in `adopt`: they become its children (a title plus the conclusion, not a list). Search first: if a node already says it, `update` that node instead. The result is the new node plus `related` (live nodes that say something similar, to update or cross-link) and `hints`.",
+        description = "Save a durable experience to the long-term memory: a decision with its reasons, a root cause, a fix that worked, a failed approach and why, a preference or constraint, a change of situation. Call it proactively right after such a moment. One self-contained experience per node, in the user's language; accounts, passwords, keys and other private details are kept verbatim when they help later work (do not redact them). To write a SUMMARY of existing nodes, give their ids in `adopt`: they become its children; give it a `title` (a name of 16 characters or fewer) and as `content` the conclusion, not a list. Search first: if a node already says it, `update` that node instead. The result is the new node plus `related` (live nodes that say something similar, to update or cross-link) and `hints`.",
         annotations(destructive_hint = false, open_world_hint = false)
     )]
     async fn write(
@@ -742,6 +752,7 @@ impl Mcp {
 
     async fn do_write(&self, args: WriteArgs, actor: &str) -> Result<Value> {
         let input = WriteInput {
+            title: args.title.unwrap_or_default(),
             content: args.content,
             tags: args.tags,
             parent: given(args.parent),
@@ -776,7 +787,7 @@ impl Mcp {
         }
         if view.layer > 0 {
             hints.push(format!(
-                "Written as a summary at layer {} over {} nodes. It is only an index: keep it a title plus the conclusion.",
+                "Written as a summary at layer {} over {} nodes. It is only an index: keep the title a short name and the content the conclusion.",
                 view.layer,
                 view.children.len()
             ));
@@ -797,6 +808,7 @@ impl Mcp {
             UpdateInput::default()
         } else {
             UpdateInput {
+                title: args.title,
                 content: args.content,
                 tags: args.tags,
                 occurred: args
@@ -871,7 +883,7 @@ impl Mcp {
         let items: Vec<Value> = all
             .into_iter()
             .take(limit)
-            .map(|b| json!({"id": b.id, "text": b.text, "updated": b.updated, "tags": b.tags}))
+            .map(|b| json!({"id": b.id, "title": b.title, "updated": b.updated, "tags": b.tags}))
             .collect();
         Ok(json!({ "trash": items, "total": total }))
     }
@@ -879,14 +891,15 @@ impl Mcp {
     async fn do_maintain(&self) -> Result<Value> {
         let m = self.service.run(|s| s.maintenance()).await?;
         let (nodes, roots) = totals(&m);
-        let idle = m.gaps.is_none() && m.stale.is_empty();
+        let idle = m.gaps.is_none() && m.stale.is_empty() && m.untitled.is_empty();
         Ok(json!({
             "nodes": nodes,
             "roots": roots,
             "layers": m.layers,
             "stale": m.stale,
+            "untitled": m.untitled,
             "gaps": m.gaps,
-            "fix": if idle { "Nothing to do: nothing is missing a summary and no summary is stale." } else { FIX },
+            "fix": if idle { "Nothing to do: nothing is missing a summary, no summary is stale and every summary has a title." } else { FIX },
         }))
     }
 }
@@ -911,7 +924,7 @@ THINGS CHANGE
 
 THE TREE
 - Layer 0 is what you extract from conversations. A summary is a node you `write` with `adopt` = the ids of the nodes it sums up (aim for 3 to 12, at most 64); it sits one layer above its tallest child, and summaries of summaries make the next layer, as many layers as the library needs.
-- A summary is a title plus the conclusion, not a list. It is only an index: when the details matter, `get` the nodes under it. `move` puts a node under another one; `refs` cross-link nodes that belong together without being parent and child; tags are free labels.
+- A summary has a `title` (a name of 16 characters or fewer, not a sentence; required) and as `content` the conclusion, not a list. A plain memory may have a title too, but does not need one. A summary is only an index: when the details matter, `get` the nodes under it. `move` puts a node under another one; `refs` cross-link nodes that belong together without being parent and child; tags are free labels.
 
 KEEPING IT HEALTHY
 - Call `maintain` now and then. It reports where summaries are missing (lowest layer first) and which summaries have gone stale, and says how to fix them; you do the writing, moving and updating. The user gave you standing permission over the whole library: do not ask for approval. That includes `delete` for exact duplicates and wrong nodes: nothing is lost, the node goes to the recycle bin for 30 days (`trash` lists it, `restore` brings it back).
@@ -1136,7 +1149,7 @@ mod tests {
         let b = write(&m, "beta cache evicts after one hour").await;
         let summary: WriteArgs = serde_json::from_value(json!({
             "content": "zeta caching strategy conclusion",
-            "adopt": [id(&a), id(&b)],
+            "title": "汇总", "adopt": [id(&a), id(&b)],
             "tags": ["cache"],
         }))
         .unwrap();
@@ -1253,7 +1266,7 @@ mod tests {
         let a = write(&m, "child one").await;
         let b = write(&m, "child two").await;
         let top: WriteArgs = serde_json::from_value(json!({
-            "content": "parent summary", "adopt": [id(&a), id(&b)]
+            "content": "parent summary", "title": "汇总", "adopt": [id(&a), id(&b)]
         }))
         .unwrap();
         let top = m.do_write(top, "tester").await.unwrap();
@@ -1364,9 +1377,10 @@ mod tests {
             .iter()
             .map(|b| b["id"].as_str().unwrap().to_owned())
             .collect();
-        let summary: WriteArgs =
-            serde_json::from_value(json!({"content": "redis cache notes", "adopt": batch}))
-                .unwrap();
+        let summary: WriteArgs = serde_json::from_value(
+            json!({"content": "redis cache notes", "title": "Redis 缓存", "adopt": batch}),
+        )
+        .unwrap();
         m.do_write(summary, "tester").await.unwrap();
         let after = m.do_maintain().await.unwrap();
         assert_eq!(after["nodes"], 31);

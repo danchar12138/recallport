@@ -55,6 +55,7 @@ fn a_summary_adopts_nodes_and_layers_follow_from_the_shape() {
         .write(
             Draft {
                 content: "备份策略的结论".into(),
+                title: "汇总".into(),
                 adopt: vec![a.id.clone(), b.id.clone()],
                 ..Default::default()
             },
@@ -65,6 +66,7 @@ fn a_summary_adopts_nodes_and_layers_follow_from_the_shape() {
         .write(
             Draft {
                 content: "整个服务器的总结".into(),
+                title: "汇总".into(),
                 adopt: vec![sum.id.clone()],
                 ..Default::default()
             },
@@ -93,6 +95,7 @@ fn a_summary_adopts_nodes_and_layers_follow_from_the_shape() {
             Draft {
                 content: "绕回来".into(),
                 parent: Some(a.id.clone()),
+                title: "汇总".into(),
                 adopt: vec![top.id.clone()],
                 ..Default::default()
             },
@@ -152,6 +155,7 @@ fn delete_is_soft_children_move_up_and_everything_survives_a_restart() {
             .write(
                 Draft {
                     content: "家里网络的小结".into(),
+                    title: "汇总".into(),
                     adopt: vec![a.id.clone()],
                     ..Default::default()
                 },
@@ -162,6 +166,7 @@ fn delete_is_soft_children_move_up_and_everything_survives_a_restart() {
             .write(
                 Draft {
                     content: "家里设备总览".into(),
+                    title: "汇总".into(),
                     adopt: vec![mid.id.clone()],
                     ..Default::default()
                 },
@@ -240,6 +245,7 @@ fn a_summary_hit_brings_its_best_children_and_the_chain_above() {
         .write(
             Draft {
                 content: "订阅与评论的结论".into(),
+                title: "汇总".into(),
                 adopt: kids.iter().map(|k| k.id.clone()).collect(),
                 ..Default::default()
             },
@@ -249,6 +255,7 @@ fn a_summary_hit_brings_its_best_children_and_the_chain_above() {
     t.write(
         Draft {
             content: "个人网站总结".into(),
+            title: "汇总".into(),
             adopt: vec![sum.id.clone()],
             ..Default::default()
         },
@@ -269,7 +276,7 @@ fn a_summary_hit_brings_its_best_children_and_the_chain_above() {
     assert_eq!(top.layer, 1);
     assert_eq!(top.expanded.len(), 2);
     assert!(
-        top.expanded.iter().any(|(_, c)| c.contains("Giscus")),
+        top.expanded.iter().any(|(_, _, c)| c.contains("Giscus")),
         "{:?}",
         top.expanded
     );
@@ -337,6 +344,7 @@ fn maintenance_reports_missing_layers_and_summaries_that_fell_behind() {
             t.write(
                 Draft {
                     content: "十条的汇总".into(),
+                    title: "汇总".into(),
                     adopt: c.iter().map(|n| n.id.clone()).collect(),
                     ..Default::default()
                 },
@@ -386,6 +394,7 @@ fn scale_twenty_thousand_nodes() {
             reason: String::new(),
             node: Node {
                 id: format!("{i:032x}"),
+                title: String::new(),
                 content: format!(
                     "第 {i} 条经历：服务 {} 的端口、备份和故障 {} 的处理记录，结论 {}",
                     i % 97,
@@ -430,4 +439,100 @@ fn scale_twenty_thousand_nodes() {
 
 fn now_for_tests() -> String {
     model::now()
+}
+
+#[test]
+fn a_summary_needs_a_short_title_and_a_memory_may_have_none() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    let a = leaf(&mut t, "备份每天凌晨三点跑。保留七份。", "2025-01-01");
+    // no title: the label is the first clause
+    assert_eq!(a.label(), "备份每天凌晨三点跑");
+    let summary = |title: &str| Draft {
+        title: title.into(),
+        content: "结论：备份够用".into(),
+        adopt: vec![a.id.clone()],
+        ..Default::default()
+    };
+    let error = t.write(summary(""), "t").unwrap_err().to_string();
+    assert!(error.contains("汇总必须有标题"), "{error}");
+    let long = "很长".repeat(30);
+    assert!(
+        t.write(summary(&long), "t")
+            .unwrap_err()
+            .to_string()
+            .contains("标题最多")
+    );
+    let sum = t.write(summary("  备份\n策略 "), "t").unwrap();
+    // whitespace and line breaks are squeezed out of a title
+    assert_eq!(
+        (sum.title.as_str(), sum.label().as_str()),
+        ("备份 策略", "备份 策略")
+    );
+    // a summary cannot lose its title, a memory can have one added and removed
+    let error = t
+        .update(
+            &sum.id,
+            1,
+            Patch {
+                title: Some(String::new()),
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("不能清空"), "{error}");
+    let a = t
+        .update(
+            &a.id,
+            2,
+            Patch {
+                title: Some("备份时间".into()),
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    assert_eq!(a.label(), "备份时间");
+    // the title is searched, and counts for more than the same word in the text
+    let hits = find(&t, "备份时间");
+    assert_eq!(hits[0].id, a.id);
+    assert_eq!(hits[0].title, "备份时间");
+}
+
+#[test]
+fn summaries_without_a_title_are_reported_for_the_ai_to_name() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut t = open(dir.path());
+    let a = leaf(&mut t, "端口改成 8080", "2025-01-01");
+    let b = leaf(&mut t, "端口冲突已解决", "2025-01-02");
+    let titled = t
+        .write(
+            Draft {
+                title: "端口".into(),
+                content: "端口的结论".into(),
+                adopt: vec![a.id.clone()],
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    // moving a node under a memory that has no title makes that memory a summary without one
+    t.reparent(std::slice::from_ref(&b.id), Some(&a.id), "t")
+        .unwrap();
+    let untitled = t.maintenance().untitled;
+    assert_eq!(untitled, vec![a.id.clone()]);
+    assert!(!untitled.contains(&titled.id));
+    t.update(
+        &a.id,
+        2,
+        Patch {
+            title: Some("端口改动".into()),
+            ..Default::default()
+        },
+        "t",
+    )
+    .unwrap();
+    assert!(t.maintenance().untitled.is_empty());
 }

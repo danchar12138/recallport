@@ -7,7 +7,9 @@ mod model;
 mod search;
 
 pub use maintain::Maintenance;
-pub use model::{Attachment, Draft, Event, MAX_CONTENT, Node, Patch, Status, Storage, now};
+pub use model::{
+    Attachment, Draft, Event, MAX_CONTENT, MAX_TITLE, Node, Patch, Status, Storage, now,
+};
 pub use search::{Hit, STRONG, SearchOpts, no_strong_match};
 
 use crate::{embedding::Embed, vectors};
@@ -39,9 +41,19 @@ pub struct Tree {
     vlog: vectors::Log,
 }
 
-/// What the text of a node is searched by: the content and its tags.
+/// What the text of a node is searched by: the title (twice, so a word in it counts for more), the content and
+/// the tags.
 fn index_text(n: &Node) -> String {
-    format!("{}\n{}", n.content, n.tags.join(" "))
+    format!("{0}\n{0}\n{1}\n{2}", n.title, n.content, n.tags.join(" "))
+}
+
+fn clean_title(title: &str) -> Result<String> {
+    let title = title.split_whitespace().collect::<Vec<_>>().join(" ");
+    ensure!(
+        title.chars().count() <= MAX_TITLE,
+        "标题最多 {MAX_TITLE} 个字，一般 16 个字以内：写成名称，不要写成句子"
+    );
+    Ok(title)
 }
 
 fn clean_list(list: &[String], max: usize, what: &str) -> Result<Vec<String>> {
@@ -162,7 +174,7 @@ impl Tree {
         for n in &live {
             self.lex.add(&n.id, &index_text(n));
             match known.get(&n.id) {
-                Some((key, v)) if *key == vectors::key(&n.content) => {
+                Some((key, v)) if *key == vectors::key(&n.embed_text()) => {
                     self.vectors.insert(n.id.clone(), v.clone());
                 }
                 _ => missing.push(n.id.clone()),
@@ -175,13 +187,10 @@ impl Tree {
             }
         }
         for batch in missing.chunks(12) {
-            let texts: Vec<String> = batch
-                .iter()
-                .map(|id| self.nodes[id].content.clone())
-                .collect();
+            let texts: Vec<String> = batch.iter().map(|id| self.nodes[id].embed_text()).collect();
             for (id, v) in batch.iter().zip(self.embed.encode_many(&texts)?) {
                 self.vlog
-                    .append(id, vectors::key(&self.nodes[id].content), &v)?;
+                    .append(id, vectors::key(&self.nodes[id].embed_text()), &v)?;
                 self.vectors.insert(id.clone(), v);
             }
         }
@@ -200,7 +209,13 @@ impl Tree {
         let keep: Vec<(String, u64, Vec<f32>)> = self
             .vectors
             .iter()
-            .map(|(id, v)| (id.clone(), vectors::key(&self.nodes[id].content), v.clone()))
+            .map(|(id, v)| {
+                (
+                    id.clone(),
+                    vectors::key(&self.nodes[id].embed_text()),
+                    v.clone(),
+                )
+            })
             .collect();
         self.vlog.compact(keep.into_iter())
     }
@@ -226,7 +241,7 @@ impl Tree {
         let mut known: HashMap<String, (u64, Vec<f32>)> = extra.clone();
         for (id, v) in &self.vectors {
             if let Some(n) = self.nodes.get(id) {
-                known.insert(id.clone(), (vectors::key(&n.content), v.clone()));
+                known.insert(id.clone(), (vectors::key(&n.embed_text()), v.clone()));
             }
         }
         self.nodes.clear();
@@ -462,7 +477,8 @@ impl Tree {
         if node.status == Status::Live {
             self.lex.add(&id, &index_text(&node));
             if let Some(v) = vector {
-                self.vlog.append(&id, vectors::key(&node.content), &v)?;
+                self.vlog
+                    .append(&id, vectors::key(&node.embed_text()), &v)?;
                 self.vectors.insert(id.clone(), v);
             }
             if let Some(parent) = &node.parent {
@@ -489,6 +505,7 @@ impl Tree {
     /// Write a node. Naming `adopt` makes it the parent of those nodes, which is how a summary is written.
     pub fn write(&mut self, draft: Draft, actor: &str) -> Result<Node> {
         let content = clean_content(&draft.content)?;
+        let title = clean_title(&draft.title)?;
         let tags = clean_list(&draft.tags, MAX_TAGS, "标签")?;
         let refs = clean_list(&draft.refs, MAX_LINKS, "引用")?;
         let sources = clean_list(&draft.sources, MAX_SOURCES, "来源")?;
@@ -507,10 +524,14 @@ impl Tree {
         for a in &adopt {
             self.must_live(a)?;
         }
-        let vector = self.embed.encode(&content)?;
+        ensure!(
+            adopt.is_empty() || !title.is_empty(),
+            "汇总必须有标题（`title`，16 个字以内的名称）"
+        );
         let stamp = now();
         let node = Node {
             id: uuid::Uuid::new_v4().simple().to_string(),
+            title,
             content,
             tags,
             parent: draft.parent,
@@ -523,6 +544,7 @@ impl Tree {
             updated: stamp,
             status: Status::Live,
         };
+        let vector = self.embed.encode(&node.embed_text())?;
         self.put(node.clone(), Some(vector), "write", actor, "")?;
         for a in adopt {
             let mut moved = self.nodes[&a].clone();
@@ -538,11 +560,19 @@ impl Tree {
     pub fn update(&mut self, id: &str, expect: u32, patch: Patch, actor: &str) -> Result<Node> {
         let mut node = self.must_live(id)?.clone();
         Self::check_version(&node, expect)?;
-        let mut vector = None;
+        if let Some(title) = &patch.title {
+            node.title = clean_title(title)?;
+            ensure!(
+                !node.title.is_empty() || self.children(id).is_empty(),
+                "汇总必须有标题，不能清空"
+            );
+        }
         if let Some(content) = &patch.content {
             node.content = clean_content(content)?;
-            vector = Some(self.embed.encode(&node.content)?);
         }
+        let vector = (patch.title.is_some() || patch.content.is_some())
+            .then(|| self.embed.encode(&node.embed_text()))
+            .transpose()?;
         if let Some(tags) = &patch.tags {
             node.tags = clean_list(tags, MAX_TAGS, "标签")?;
         }
@@ -642,7 +672,7 @@ impl Tree {
         {
             node.parent = None;
         }
-        let vector = self.embed.encode(&node.content)?;
+        let vector = self.embed.encode(&node.embed_text())?;
         node.status = Status::Live;
         node.version += 1;
         node.updated = now();
@@ -758,7 +788,9 @@ fn settle(mut events: Vec<Event>) -> Result<Vec<Event>> {
             e.node.id
         );
         ensure!(
-            !e.node.content.trim().is_empty() && e.node.content.chars().count() <= MAX_CONTENT,
+            !e.node.content.trim().is_empty()
+                && e.node.content.chars().count() <= MAX_CONTENT
+                && e.node.title.chars().count() <= MAX_TITLE,
             "备份里有内容无效的节点：{}",
             e.node.id
         );

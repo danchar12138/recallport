@@ -299,6 +299,7 @@ impl Archive {
                     },
                     node: Node {
                         id: id.clone(),
+                        title: String::new(),
                         content,
                         tags: tags.clone(),
                         parent: parent.get(&id).cloned(),

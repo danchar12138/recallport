@@ -82,19 +82,6 @@ fn actor_label(actor: &str) -> String {
     }
 }
 
-fn first_line(text: &str) -> String {
-    let line = text
-        .lines()
-        .find(|l| !l.trim().is_empty())
-        .unwrap_or("")
-        .trim();
-    let mut out: String = line.chars().take(100).collect();
-    if line.chars().count() > 100 {
-        out.push('…');
-    }
-    out
-}
-
 /// Tags typed in a plain text field. Commas (also the Chinese ones) separate them; with no comma at all,
 /// spaces do. A single tag that contains a space is written with a trailing comma.
 fn parse_tags(text: &str) -> Vec<String> {
@@ -426,7 +413,12 @@ async fn overview(State(w): State<Web>) -> Response {
         "Layers": layer_rows(&stats),
         "Gaps": gaps_value(&maintenance),
         "Stale": stale_value(&maintenance),
-        "Whole": maintenance.gaps.is_none() && maintenance.stale.is_empty(),
+        "Untitled": json!({
+            "total": maintenance.untitled.len(),
+            "items": maintenance.untitled.iter().take(8).map(brief_value).collect::<Vec<_>>(),
+            "more": maintenance.untitled.len().saturating_sub(8),
+        }),
+        "Whole": maintenance.gaps.is_none() && maintenance.stale.is_empty() && maintenance.untitled.is_empty(),
         "Changes": changes.iter().map(change_value).collect::<Vec<_>>(),
     }))
 }
@@ -563,7 +555,7 @@ async fn memories(State(w): State<Web>, Query(p): Query<HashMap<String, String>>
                         let mut path: Vec<_> = h.path.iter().collect();
                         path.reverse();
                         json!({
-                            "id": h.id, "layer": h.layer, "content": h.content, "truncated": h.truncated,
+                            "id": h.id, "layer": h.layer, "title": h.title, "content": h.content, "truncated": h.truncated,
                             "tags": h.tags, "occurred": h.occurred, "exact": h.exact,
                             "matched": match h.matched { "both" => "关键词和语义都命中", "keyword" => "关键词命中", _ => "语义相近" },
                             "strong": h.strong,
@@ -621,6 +613,8 @@ fn revision_values(revisions: &[Revision]) -> Vec<Value> {
             json!({
                 "version": r.version, "label": op_label(&r.op), "op": r.op, "at": r.at,
                 "who": actor_label(&r.actor), "reason": r.reason, "content": r.content,
+                "title": r.title, "old_title": older.map(|o| o.title.clone()),
+                "title_changed": older.is_some_and(|o| o.title != r.title),
                 "removed": diff.as_ref().map(|d| d.0.clone()),
                 "added": diff.as_ref().map(|d| d.1.clone()),
                 "same": older.is_some() && diff.is_none() && r.op == "update",
@@ -644,7 +638,7 @@ fn attachment_values(list: &[AttachmentView]) -> Vec<Value> {
 fn node_model(node: &NodeView, error: Option<String>, notice: Option<String>) -> Value {
     let mut model = json!({
         "View": "node",
-        "Title": first_line(&node.content),
+        "Title": node.label,
         "Node": node,
         "Attachments": attachment_values(&node.attachments),
         "Revisions": revision_values(&node.revisions),
@@ -793,6 +787,7 @@ async fn failed_action(w: &Web, id: &str, error: &anyhow::Error) -> Response {
 /// What the editor form sent.
 #[derive(Default)]
 struct Editor {
+    title: String,
     content: String,
     tags: String,
     occurred: String,
@@ -831,6 +826,7 @@ async fn read_editor(mut form: Multipart) -> Result<Editor, String> {
         }
         let text = field.text().await.map_err(upload)?;
         match name.as_str() {
+            "title" => e.title = text,
             "content" => e.content = text,
             "tags" => e.tags = text,
             "occurred" => e.occurred = text,
@@ -849,7 +845,7 @@ async fn read_editor(mut form: Multipart) -> Result<Editor, String> {
 fn labels(s: &Service, ids: &[String]) -> Vec<Value> {
     ids.iter()
         .filter_map(|id| s.get(id).ok().filter(|n| !n.deleted))
-        .map(|n| json!({"id": n.id, "text": first_line(&n.content), "layer": n.layer}))
+        .map(|n| json!({"id": n.id, "title": n.label, "layer": n.layer}))
         .collect()
 }
 
@@ -868,10 +864,8 @@ async fn render_editor(w: &Web, page: EditorPage<'_>) -> Response {
                 let path = if parent.is_empty() {
                     Value::Null
                 } else {
-                    s.get(&parent).map_or(
-                        Value::Null,
-                        |p| json!({"id": p.id, "text": first_line(&p.content)}),
-                    )
+                    s.get(&parent)
+                        .map_or(Value::Null, |p| json!({"id": p.id, "title": p.label}))
                 };
                 (labels(s, &refs), path)
             })
@@ -888,7 +882,7 @@ async fn render_editor(w: &Web, page: EditorPage<'_>) -> Response {
         "Node": page.node,
         "Attachments": page.node.map(|n| attachment_values(&n.attachments)).unwrap_or_default(),
         "Form": {
-            "content": page.form.content, "tags": page.form.tags, "occurred": page.form.occurred,
+            "title": page.form.title, "content": page.form.content, "tags": page.form.tags, "occurred": page.form.occurred,
             "sources": page.form.sources, "parent": page.form.parent, "version": page.form.version,
             "refs": refs, "remove": page.form.remove, "chosen": page.form.chosen,
         },
@@ -904,6 +898,7 @@ async fn render_editor(w: &Web, page: EditorPage<'_>) -> Response {
 /// The form as it starts for an existing node.
 fn form_of(node: &NodeView) -> Editor {
     Editor {
+        title: node.title.clone(),
         content: node.content.clone(),
         tags: tags_text(&node.tags),
         occurred: node.occurred.clone(),
@@ -975,6 +970,7 @@ async fn create_node(State(w): State<Web>, multipart: Multipart) -> Response {
         Err(e) => Err(anyhow::anyhow!(e)),
         Ok(occurred) => {
             let input = WriteInput {
+                title: form.title.clone(),
                 content: form.content.clone(),
                 tags: parse_tags(&form.tags),
                 parent: (!form.parent.is_empty()).then(|| form.parent.clone()),
@@ -1013,6 +1009,7 @@ fn update_input(node: &NodeView, form: &Editor, occurred: String) -> UpdateInput
     let sources = lines(&form.sources);
     let refs: Vec<String> = node.refs.iter().map(|r| r.id.clone()).collect();
     UpdateInput {
+        title: (form.title.trim() != node.title).then(|| form.title.clone()),
         content: (form.content.trim() != node.content).then(|| form.content.clone()),
         tags: (tags != node.tags).then_some(tags),
         occurred: (occurred != node.occurred).then_some(occurred),
@@ -1024,7 +1021,8 @@ fn update_input(node: &NodeView, form: &Editor, occurred: String) -> UpdateInput
 }
 
 fn is_unchanged(input: &UpdateInput) -> bool {
-    input.content.is_none()
+    input.title.is_none()
+        && input.content.is_none()
         && input.tags.is_none()
         && input.occurred.is_none()
         && input.refs.is_none()
@@ -1210,10 +1208,25 @@ async fn file(State(w): State<Web>, Path(hash): Path<String>, req: Request) -> R
 
 // ---------- JSON for the pages' scripts ----------
 
-async fn api_outline(State(w): State<Web>) -> Response {
-    match w.service.run(|s| s.outline()).await {
+/// `?root=<id>&depth=<n>`: the tree from the top (or from one node) `depth` levels deep (default 3, at most 12).
+async fn api_outline(State(w): State<Web>, Query(q): Query<HashMap<String, String>>) -> Response {
+    let root = q
+        .get("root")
+        .map(|r| r.trim().to_owned())
+        .filter(|r| !r.is_empty());
+    let depth = q
+        .get("depth")
+        .and_then(|d| d.parse::<usize>().ok())
+        .unwrap_or(3)
+        .min(12);
+    match w
+        .service
+        .run(move |s| s.outline(root.as_deref(), depth))
+        .await
+        .and_then(|r| r)
+    {
         Ok(tree) => Json(tree).into_response(),
-        Err(e) => broken(&e),
+        Err(e) => (StatusCode::NOT_FOUND, Json(json!({"error": failure(&e)}))).into_response(),
     }
 }
 

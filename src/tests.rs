@@ -54,6 +54,7 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
         .write(
             WriteInput {
                 content: "备份策略的结论".into(),
+                title: "汇总".into(),
                 adopt: vec![a.id.clone(), b.id.clone()],
                 tags: vec!["家庭服务器".into()],
                 ..say("")
@@ -77,7 +78,7 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
             .iter()
             .find(|n| n.id == a.id)
             .unwrap()
-            .text,
+            .title,
         "备份每天凌晨三点跑"
     );
     // an update without a version uses the latest; an old version is refused
@@ -165,9 +166,13 @@ fn nodes_are_written_read_changed_moved_and_deleted_through_the_service() {
             .collect::<Vec<_>>(),
         vec![(0, 2, 2), (1, 1, 0)]
     );
-    let outline = s.outline();
+    let outline = s.outline(None, 3).unwrap();
     assert_eq!(
-        (outline.len(), outline[0].size, outline[0].children.len()),
+        (
+            outline.len(),
+            outline[0].size,
+            outline[0].children.as_ref().unwrap().len()
+        ),
         (1, 3, 2)
     );
     assert_eq!(s.activity(3).len(), 3);
@@ -432,4 +437,78 @@ fn the_library_survives_a_restart_and_a_half_written_last_line() {
 fn open_again(dir: &Path, first: Arc<Service>) -> usize {
     drop(first);
     open(dir).stats().nodes
+}
+
+#[test]
+fn the_outline_is_cut_at_the_depth_asked_for_and_the_rest_is_fetched_by_root() {
+    let dir = tempfile::tempdir().unwrap();
+    let s = Service::open(dir.path(), Arc::new(Words)).unwrap();
+    let leaf = |text: &str, day: &str| {
+        s.write(
+            WriteInput {
+                content: text.into(),
+                occurred: day.into(),
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap()
+    };
+    let (a, b, c) = (
+        leaf("甲 记忆", "2025-01-03"),
+        leaf("乙 记忆", "2025-03-09"),
+        leaf("丙 记忆", "2024-12-01"),
+    );
+    let mid = s
+        .write(
+            WriteInput {
+                title: "中层".into(),
+                content: "中层结论".into(),
+                adopt: vec![a.id.clone(), b.id.clone()],
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    let top = s
+        .write(
+            WriteInput {
+                title: "顶层".into(),
+                content: "顶层结论".into(),
+                adopt: vec![mid.id.clone(), c.id.clone()],
+                ..Default::default()
+            },
+            "t",
+        )
+        .unwrap();
+    // two levels: the top and what is directly under it; the middle one says it has more but does not list it
+    let cut = s.outline(None, 1).unwrap();
+    assert_eq!(cut.len(), 1);
+    assert_eq!(
+        (cut[0].title.as_str(), cut[0].size, cut[0].layer),
+        ("顶层", 5, 2)
+    );
+    assert_eq!(
+        (cut[0].from.as_str(), cut[0].to.as_str()),
+        ("2024-12-01", "2025-03-09")
+    );
+    let kids = cut[0].children.as_ref().unwrap();
+    let mid_cut = kids.iter().find(|k| k.id == mid.id).unwrap();
+    assert!(mid_cut.children.is_none() && mid_cut.size == 3);
+    // a leaf is complete: it has no children to fetch
+    assert_eq!(
+        kids.iter()
+            .find(|k| k.id == c.id)
+            .unwrap()
+            .children
+            .as_ref()
+            .map(Vec::len),
+        Some(0)
+    );
+    // fetching the middle node by root returns its own children
+    let more = s.outline(Some(&mid.id), 1).unwrap();
+    assert_eq!(more[0].children.as_ref().unwrap().len(), 2);
+    assert_eq!(more[0].children.as_ref().unwrap()[0].title, "甲 记忆");
+    assert!(s.outline(Some("nope"), 1).is_err());
+    assert_eq!(s.outline(None, 9).unwrap()[0].id, top.id);
 }

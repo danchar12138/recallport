@@ -5,7 +5,8 @@
 {% set n = Node %}
 <article class="node" data-node-id="{{ n.id }}">
   <header class="node-head">
-    <nav class="path path-top" aria-label="它在树里的位置"><a href="/tree">树</a>{% for p in n.path %}<span class="sep" aria-hidden="true">›</span><a href="/node/{{ p.id }}">{{ p.text }}</a>{% endfor %}<span class="sep" aria-hidden="true">›</span><span class="here" aria-current="page">这一条</span></nav>
+    <nav class="path path-top" aria-label="它在树里的位置"><a href="/tree">树</a>{% for p in n.path %}<span class="sep" aria-hidden="true">›</span><a href="/node/{{ p.id }}">{{ p.title }}</a>{% endfor %}<span class="sep" aria-hidden="true">›</span><span class="here" aria-current="page">这一条</span></nav>
+    {% if n.title %}<h1 class="node-title">{{ n.title }}</h1>{% endif %}
     <div class="node-meta">
       {{ layer(n.layer) }}
       <span>第 {{ n.version }} 版</span>
@@ -93,7 +94,7 @@
       <details class="fold" id="move-panel">
         <summary>{{ icon("move", "sm") }}移动到别处</summary>
         <form class="stack" method="post" action="/node/{{ n.id }}/move" data-move data-self="{{ n.id }}">
-          <p class="help">一个节点只有一个位置：放在哪一条汇总下面。它下面的节点会跟着一起搬走。{% if n.parent %}现在在：{{ n.path[-1].text }}。{% else %}现在是顶层节点。{% endif %}</p>
+          <p class="help">一个节点只有一个位置：放在哪一条汇总下面。它下面的节点会跟着一起搬走。{% if n.parent %}现在在：{{ n.path[-1].title }}。{% else %}现在是顶层节点。{% endif %}</p>
           <div class="field" data-move-find hidden><label for="move-q">找一条汇总，把它放到下面</label><input type="text" id="move-q" data-move-search placeholder="输入几个字搜索" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="move-hits"><ul class="pick-list" id="move-hits" role="listbox" hidden></ul></div>
           <div class="field"><label for="move-parent">新位置（节点编号）</label><input type="text" id="move-parent" name="parent" value="" placeholder="搜索后自动填入" autocomplete="off" spellcheck="false"><p class="hint" id="move-picked" role="status"></p></div>
           <div class="btns"><button class="btn btn-primary btn-sm" type="submit">移到这里</button>{% if n.parent %}<button class="btn btn-sm" type="submit" name="top" value="1">设为顶层</button>{% endif %}</div>
@@ -120,7 +121,8 @@
         <li>
           <div class="rev-head"><span class="op op-{{ r.op }}">{{ r.label }}</span><b>第 {{ r.version }} 版</b><span class="muted">{{ r.who }} · <time datetime="{{ r.at }}">{{ local_time(r.at, true) }}</time></span></div>
           {% if r.reason %}<p class="reason">{{ r.reason }}</p>{% endif %}
-          {% if r.removed is not none %}<p class="diff"><span class="muted">改了：</span>{% if r.removed %}<del>{{ r.removed }}</del>{% endif %}{% if r.added %}<ins>{{ r.added }}</ins>{% endif %}</p>{% elif r.same %}<p class="muted">文字没有变化，改的是标签、日期、引用或附件。</p>{% endif %}
+          {% if r.title_changed %}<p class="diff"><span class="muted">标题：</span>{% if r.old_title %}<del>{{ r.old_title }}</del>{% endif %}{% if r.title %}<ins>{{ r.title }}</ins>{% else %}<span class="muted">（去掉了标题）</span>{% endif %}</p>{% endif %}
+          {% if r.removed is not none %}<p class="diff"><span class="muted">改了：</span>{% if r.removed %}<del>{{ r.removed }}</del>{% endif %}{% if r.added %}<ins>{{ r.added }}</ins>{% endif %}</p>{% elif r.same and not r.title_changed %}<p class="muted">文字没有变化，改的是标签、日期、引用或附件。</p>{% endif %}
           <details class="rev-content"><summary>这一版的全文</summary><p class="content-sm">{{ r.content }}</p></details>
         </li>
       {% endfor %}

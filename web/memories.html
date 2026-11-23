@@ -35,10 +35,10 @@
     {% for h in Hits %}
       <li class="card hit">
         <div class="hit-head">{{ layer(h.layer) }}<span class="chip chip-match{% if h.strong %} is-strong{% endif %}">{{ h.matched }}</span>{% if h.exact %}<span class="chip chip-match is-strong">精确</span>{% endif %}{% if h.strong %}<span class="chip chip-match is-strong">相关度高</span>{% else %}<span class="chip chip-match">相关度一般</span>{% endif %}{% if h.occurred %}<time class="muted">{{ h.occurred }}</time>{% endif %}</div>
-        <a class="hit-text" href="/node/{{ h.id }}">{{ h.content }}</a>
+        <a class="hit-title" href="/node/{{ h.id }}">{{ h.title }}</a>{% if h.content != h.title %}<p class="hit-text">{{ h.content }}</p>{% endif %}
         {% if h.truncated %}<p class="muted">只显示了开头，打开节点看全文。</p>{% endif %}
-        {% if h.expanded %}<div class="hit-sub"><span class="muted">它下面最贴近的：</span><ul class="mini">{% for c in h.expanded %}<li><a class="node-link" href="/node/{{ c.id }}"><span class="node-text">{{ c.text }}</span></a></li>{% endfor %}</ul></div>{% endif %}
-        <div class="hit-foot">{{ tags(h.tags) }}{% if h.path %}<nav class="path" aria-label="它在树里的位置"><span class="muted">在</span>{% for p in h.path %}<a href="/node/{{ p.id }}">{{ p.text }}</a>{% if not loop.last %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% endfor %}</nav>{% endif %}</div>
+        {% if h.expanded %}<div class="hit-sub"><span class="muted">它下面最贴近的：</span><ul class="mini">{% for c in h.expanded %}<li><a class="node-link" href="/node/{{ c.id }}"><span class="node-text">{{ c.title }}</span></a></li>{% endfor %}</ul></div>{% endif %}
+        <div class="hit-foot">{{ tags(h.tags) }}{% if h.path %}<nav class="path" aria-label="它在树里的位置"><span class="muted">在</span>{% for p in h.path %}<a href="/node/{{ p.id }}">{{ p.title }}</a>{% if not loop.last %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% endfor %}</nav>{% endif %}</div>
       </li>
     {% endfor %}
     </ol>
@@ -51,7 +51,7 @@
   <ul class="rows card">
     {% for b in Items %}
     <li class="row">
-      <div class="row-main"><a class="row-text" href="/node/{{ b.id }}">{{ b.text or "（没有文字）" }}</a>
+      <div class="row-main"><a class="row-text" href="/node/{{ b.id }}">{{ b.title or "（没有文字）" }}</a>
         <div class="row-meta">{{ layer(b.layer) }}{% if b.children %}<span class="muted">下面 {{ b.children }} 条</span>{% endif %}{{ tags(b.tags) }}</div></div>
       <div class="row-side">{% if b.occurred %}<span>发生 {{ b.occurred }}</span>{% endif %}<span class="muted">更新 <time datetime="{{ b.updated }}">{{ local_time(b.updated) }}</time></span></div>
     </li>

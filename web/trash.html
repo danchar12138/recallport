@@ -9,7 +9,7 @@
 {% for r in Rows %}
   <li class="card trash-item">
     <div class="trash-main">
-      <a class="trash-title" href="/node/{{ r.node.id }}">{{ r.node.text or "（没有文字）" }}</a>
+      <a class="trash-title" href="/node/{{ r.node.id }}">{{ r.node.title or "（没有文字）" }}</a>
       <p class="trash-meta">{% if r.node.tags %}{% for t in r.node.tags %}<span class="chip">{{ t }}</span> {% endfor %}{% endif %}<span>删除于 <time datetime="{{ r.node.updated }}">{{ local_time(r.node.updated) }}</time>{% if r.who %} · {{ r.who }}{% endif %}</span></p>
       {% if r.reason %}<p class="reason">原因：{{ r.reason }}</p>{% endif %}
     </div>

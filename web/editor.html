@@ -9,12 +9,18 @@
 <form class="editor-form" method="post" enctype="multipart/form-data" action="{% if n %}/node/{{ n.id }}/edit{% else %}/node/new{% endif %}" data-editor{% if n %} data-self="{{ n.id }}"{% endif %}>
   {% if n %}<input type="hidden" name="version" value="{{ Form.version }}">{% endif %}
   {% if Form.parent %}<input type="hidden" name="parent" value="{{ Form.parent }}">{% endif %}
-  {% if not n and Parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在这一条下面：<a href="/node/{{ Parent.id }}">{{ Parent.text }}</a></span></p>{% elif not n and Form.parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在节点 {{ Form.parent }} 下面（找不到这个节点，保存时会报错）</span></p>{% endif %}
+  {% if not n and Parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在这一条下面：<a href="/node/{{ Parent.id }}">{{ Parent.title }}</a></span></p>{% elif not n and Form.parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在节点 {{ Form.parent }} 下面（找不到这个节点，保存时会报错）</span></p>{% endif %}
+
+  <div class="field">
+    <label for="f-title">标题 <span class="opt">汇总必填，记忆可选</span></label>
+    <input type="text" id="f-title" name="title" value="{{ Form.title }}" maxlength="40" placeholder="16 个字以内的名称，例如：个人网站：迁到 Astro" autocomplete="off" aria-describedby="f-title-hint">
+    <p class="help" id="f-title-hint">标题是名字，不是一句话：树、路径和搜索结果里都用它。结论写在下面的内容里。</p>
+  </div>
 
   <div class="field">
     <label for="f-content">内容 <span class="req">必填</span></label>
-    <textarea id="f-content" name="content" rows="6" required maxlength="4000" data-autosize aria-describedby="f-content-foot">{{ Form.content }}</textarea>
-    <div class="field-foot" id="f-content-foot"><span class="hint">写成一句完整的话，过一段时间再看也读得懂。最多 4000 个字。</span><span class="counter" data-counter aria-live="off"></span></div>
+    <textarea id="f-content" name="content" rows="6" required maxlength="16000" data-autosize aria-describedby="f-content-foot">{{ Form.content }}</textarea>
+    <div class="field-foot" id="f-content-foot"><span class="hint">写成一句完整的话，过一段时间再看也读得懂。最多 16000 个字。</span><span class="counter" data-counter aria-live="off"></span></div>
   </div>
 
   <div class="field">
@@ -31,7 +37,7 @@
 
   <div class="field" data-refs>
     <label for="f-refs-q">引用的节点 <span class="opt">可选</span></label>
-    <ul class="ref-chips" data-ref-chips>{% for r in Form.refs %}<li class="chip">{{ layer(r.layer) }}<span class="chip-text">{{ r.text }}</span><input type="hidden" name="refs" value="{{ r.id }}"><button type="button" class="chip-x-btn" data-ref-remove aria-label="取消引用：{{ r.text }}">{{ icon("x", "xs") }}</button></li>{% endfor %}</ul>
+    <ul class="ref-chips" data-ref-chips>{% for r in Form.refs %}<li class="chip">{{ layer(r.layer) }}<span class="chip-text">{{ r.title }}</span><input type="hidden" name="refs" value="{{ r.id }}"><button type="button" class="chip-x-btn" data-ref-remove aria-label="取消引用：{{ r.title }}">{{ icon("x", "xs") }}</button></li>{% endfor %}</ul>
     <input type="text" id="f-refs-q" data-ref-search placeholder="搜一搜，把相关的节点加进来" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-refs-hits" hidden>
     <ul class="pick-list" id="f-refs-hits" role="listbox" hidden></ul>
     <div class="field-foot"><span class="hint">一条记忆常常属于不止一个故事；引用把它和别处的节点连起来。</span></div>

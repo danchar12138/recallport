@@ -25,6 +25,8 @@ pub struct Maintenance {
     pub layers: Vec<(u32, usize, usize)>,
     /// Summaries behind their children, with those children.
     pub stale: Vec<(String, Vec<String>)>,
+    /// Summaries that have no title (written before titles existed, or imported).
+    pub untitled: Vec<String>,
     /// The lowest layer with work: (layer, [(summary to extend, nodes that fit under it)], [groups for a new summary]).
     pub gaps: Option<Gaps>,
 }
@@ -62,9 +64,16 @@ impl Tree {
             }
         }
         stale.sort();
+        let mut untitled: Vec<String> = live
+            .iter()
+            .filter(|id| !self.children(id).is_empty() && self.nodes[**id].title.is_empty())
+            .map(|id| (*id).to_owned())
+            .collect();
+        untitled.sort();
         Maintenance {
             layers: counts.into_iter().map(|(l, (n, c))| (l, n, c)).collect(),
             stale,
+            untitled,
             gaps: self.gaps(&live, &layer_of),
         }
     }

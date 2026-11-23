@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 /// Longer than any note the 0.x series accepted (12,000 characters), so old libraries always fit.
 pub const MAX_CONTENT: usize = 16_000;
+/// A title is a name, not a sentence: the tools ask for 16 characters or fewer, 40 is the hard limit.
+pub const MAX_TITLE: usize = 40;
 pub const MAX_LINKS: usize = 64;
 pub const MAX_TAGS: usize = 12;
 pub const MAX_SOURCES: usize = 16;
@@ -47,6 +49,9 @@ pub struct Attachment {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Node {
     pub id: String,
+    /// A short name for the node. A summary always has one; for a plain memory it is optional.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title: String,
     pub content: String,
     /// Cross-cutting labels (a project, a device, a person). Only searched, never structural.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -87,6 +92,7 @@ pub struct Event {
 /// A new node. `adopt` lists existing nodes that become its children: that is how a summary is written.
 #[derive(Clone, Debug, Default)]
 pub struct Draft {
+    pub title: String,
     pub content: String,
     pub tags: Vec<String>,
     pub parent: Option<String>,
@@ -100,6 +106,7 @@ pub struct Draft {
 /// Changes to a node; what is `None` stays as it is. An empty patch only marks the node as checked.
 #[derive(Clone, Debug, Default)]
 pub struct Patch {
+    pub title: Option<String>,
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
     pub occurred: Option<String>,
@@ -110,7 +117,8 @@ pub struct Patch {
 
 impl Patch {
     pub fn is_empty(&self) -> bool {
-        self.content.is_none()
+        self.title.is_none()
+            && self.content.is_none()
             && self.tags.is_none()
             && self.occurred.is_none()
             && self.refs.is_none()
@@ -122,3 +130,40 @@ impl Patch {
 pub fn now() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
 }
+
+impl Node {
+    /// What the node is called wherever one line has to stand for it: its title, or for a memory without one
+    /// the first clause of its text.
+    pub fn label(&self) -> String {
+        if !self.title.is_empty() {
+            return self.title.clone();
+        }
+        let line = self
+            .content
+            .lines()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or("")
+            .trim();
+        let clause = line
+            .split(['。', '；', '！', '？', ';'])
+            .next()
+            .unwrap_or(line);
+        let mut out: String = clause.chars().take(LABEL_CHARS).collect();
+        if clause.chars().count() > LABEL_CHARS {
+            out.push('…');
+        }
+        out
+    }
+
+    /// The text the meaning of the node is computed from.
+    pub fn embed_text(&self) -> String {
+        if self.title.is_empty() {
+            self.content.clone()
+        } else {
+            format!("{}\n{}", self.title, self.content)
+        }
+    }
+}
+
+/// How much of a memory's first clause stands in for a title it does not have.
+const LABEL_CHARS: usize = 24;

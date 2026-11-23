@@ -48,17 +48,19 @@ pub struct Hit {
     pub layer: u32,
     /// Cosine of the query and the node: how close in meaning, whatever the keywords did.
     pub relevance: f32,
-    /// The whole query (lower-cased) occurs in the content or the tags.
+    /// The whole query (lower-cased) occurs in the title, the content or the tags.
     pub exact: bool,
     /// keyword, semantic or both.
     pub matched: &'static str,
+    /// Its title, or for a memory without one the start of its text.
+    pub title: String,
     pub content: String,
     /// The content was cut short; `get` returns all of it.
     pub truncated: bool,
-    /// The summaries above it, nearest first, as (id, start of the content).
+    /// The summaries above it, nearest first, as (id, title).
     pub path: Vec<(String, String)>,
-    /// For a summary: the children that match the query best, as (id, content).
-    pub expanded: Vec<(String, String)>,
+    /// For a summary: the children that match the query best, as (id, title, start of the content).
+    pub expanded: Vec<(String, String, String)>,
 }
 
 const RRF: f32 = 60.0;
@@ -159,26 +161,29 @@ impl Tree {
                         _ => "semantic",
                     },
                     relevance: self.vectors.get(id).map_or(0.0, |v| cosine(&qv, v)),
-                    exact: format!(
-                        "{}
-{}",
-                        node.content,
-                        node.tags.join(" ")
-                    )
-                    .to_lowercase()
-                    .contains(&query.to_lowercase()),
+                    exact: format!("{}\n{}\n{}", node.title, node.content, node.tags.join(" "))
+                        .to_lowercase()
+                        .contains(&query.to_lowercase()),
+                    title: node.label(),
                     content: start(&node.content, SNIPPET),
                     truncated: node.content.chars().count() > SNIPPET,
                     path: self
                         .ancestors(id)
                         .into_iter()
                         .take(4)
-                        .map(|a| (a.id.clone(), start(&a.content, 40)))
+                        .map(|a| (a.id.clone(), a.label()))
                         .collect(),
                     expanded: expanded
                         .into_iter()
                         .take(opts.expand)
-                        .map(|(c, _)| (c.clone(), start(&self.nodes[&c].content, CHILD_SNIPPET)))
+                        .map(|(c, _)| {
+                            let child = &self.nodes[&c];
+                            (
+                                c.clone(),
+                                child.label(),
+                                start(&child.content, CHILD_SNIPPET),
+                            )
+                        })
                         .collect(),
                 }
             })

@@ -41,7 +41,7 @@
 <section class="block" aria-labelledby="todo-title">
   <div class="section-head"><div><h2 id="todo-title">待办</h2><p>接入的 AI 会通过同一份清单自己整理，通常不需要你动手；这里让你知道树现在缺什么。</p></div></div>
   {% if Whole %}
-  <p class="calm">{{ icon("circle-check") }}<span><b>树是完整的。</b>每条记忆都有汇总收着，汇总也都跟得上最新的内容。</span></p>
+  <p class="calm">{{ icon("circle-check") }}<span><b>树是完整的。</b>每条记忆都有汇总收着，汇总都有标题，也都跟得上最新的内容。</span></p>
   {% endif %}
   {% if Gaps %}
   <div class="todo">
@@ -55,6 +55,14 @@
     <div class="todo-item"><p>这 {{ g.count }} 条讲的是同一件事，可以合成一条新的汇总：</p><ul class="mini">{% for n in g.nodes %}<li>{{ node_link(n) }}</li>{% endfor %}</ul></div>
     {% endfor %}
     {% if Gaps.groups_more %}<p class="muted">还有 {{ Gaps.groups_more }} 组。</p>{% endif %}
+  </div>
+  {% endif %}
+  {% if Untitled.total %}
+  <div class="todo">
+    <h3>{{ Untitled.total }} 条汇总还没有标题</h3>
+    <p class="help">树和路径里都用标题来称呼汇总，没有标题的会退而用正文开头。AI 下次整理时会补上；你也可以在节点页的「编辑」里自己写一个。</p>
+    <div class="todo-item"><ul class="mini">{% for n in Untitled.items %}<li>{{ node_link(n) }}</li>{% endfor %}</ul></div>
+    {% if Untitled.more %}<p class="muted">还有 {{ Untitled.more }} 条。</p>{% endif %}
   </div>
   {% endif %}
   {% if Stale.total %}

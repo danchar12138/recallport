@@ -29,8 +29,8 @@ pub struct Service {
 #[derive(Clone, Debug, Serialize)]
 pub struct Brief {
     pub id: String,
-    /// The first line of the content, cut short.
-    pub text: String,
+    /// Its title, or for a memory without one the start of its text.
+    pub title: String,
     pub layer: u32,
     pub occurred: String,
     pub updated: String,
@@ -61,12 +61,17 @@ pub struct Revision {
     pub at: String,
     pub actor: String,
     pub reason: String,
+    pub title: String,
     pub content: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct NodeView {
     pub id: String,
+    /// The title as stored; empty for a memory that has none.
+    pub title: String,
+    /// What to call it where one line has to do: the title, or the start of the text.
+    pub label: String,
     pub content: String,
     pub tags: Vec<String>,
     pub parent: Option<String>,
@@ -92,7 +97,10 @@ pub struct NodeView {
 #[derive(Clone, Debug, Serialize)]
 pub struct Link {
     pub id: String,
-    pub text: String,
+    pub title: String,
+    /// The start of its text (only for the best-matching children that come with a summary).
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub snippet: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -104,6 +112,7 @@ pub struct HitView {
     pub strong: bool,
     pub exact: bool,
     pub matched: &'static str,
+    pub title: String,
     pub content: String,
     pub truncated: bool,
     pub tags: Vec<String>,
@@ -180,6 +189,8 @@ pub struct GapsView {
 #[derive(Clone, Debug, Serialize)]
 pub struct MaintenanceView {
     pub layers: Vec<LayerStat>,
+    /// Summaries without a title.
+    pub untitled: Vec<Brief>,
     pub stale: Vec<StaleView>,
     pub gaps: Option<GapsView>,
 }
@@ -188,12 +199,17 @@ pub struct MaintenanceView {
 #[derive(Clone, Debug, Serialize)]
 pub struct OutlineNode {
     pub id: String,
-    pub text: String,
+    pub title: String,
+    /// The start of its text, for drawing a card.
+    pub snippet: String,
     pub layer: u32,
     /// Nodes at or under it.
     pub size: usize,
-    pub occurred: String,
-    pub children: Vec<OutlineNode>,
+    /// The first and last date (`YYYY-MM-DD`) anything at or under it happened; empty when none is dated.
+    pub from: String,
+    pub to: String,
+    /// `None` when not loaded yet (ask for it with the node as `root`); empty for a node with nothing under it.
+    pub children: Option<Vec<OutlineNode>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -236,6 +252,7 @@ pub struct AttachInput {
 
 #[derive(Clone, Debug, Default)]
 pub struct WriteInput {
+    pub title: String,
     pub content: String,
     pub tags: Vec<String>,
     pub parent: Option<String>,
@@ -248,6 +265,7 @@ pub struct WriteInput {
 
 #[derive(Clone, Debug, Default)]
 pub struct UpdateInput {
+    pub title: Option<String>,
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
     pub occurred: Option<String>,
@@ -258,14 +276,10 @@ pub struct UpdateInput {
     pub remove_attachments: Vec<String>,
 }
 
-fn first_line(text: &str) -> String {
-    let line = text
-        .lines()
-        .find(|l| !l.trim().is_empty())
-        .unwrap_or("")
-        .trim();
-    let mut out: String = line.chars().take(100).collect();
-    if line.chars().count() > 100 {
+fn snippet(text: &str, chars: usize) -> String {
+    let text = text.trim();
+    let mut out: String = text.chars().take(chars).collect();
+    if text.chars().count() > chars {
         out.push('…');
     }
     out
@@ -315,7 +329,7 @@ impl Service {
     fn brief(&self, t: &Tree, n: &Node, layers: Option<&HashMap<String, u32>>) -> Brief {
         Brief {
             id: n.id.clone(),
-            text: first_line(&n.content),
+            title: n.label(),
             layer: layers.map_or_else(|| t.layer(&n.id), |l| l.get(&n.id).copied().unwrap_or(0)),
             occurred: n.occurred.clone(),
             updated: n.updated.clone(),
@@ -371,12 +385,15 @@ impl Service {
                 at: e.at.clone(),
                 actor: e.actor.clone(),
                 reason: e.reason.clone(),
+                title: e.node.title.clone(),
                 content: e.node.content.clone(),
             })
             .collect();
         revisions.reverse();
         Ok(NodeView {
             id: n.id.clone(),
+            title: n.title.clone(),
+            label: n.label(),
             content: n.content.clone(),
             tags: n.tags.clone(),
             parent: n.parent.clone(),
@@ -405,9 +422,10 @@ impl Service {
         let t = self.read();
         let hits: Vec<Hit> = t.search(opts)?;
         let strong = !no_strong_match(&hits);
-        let link = |id: &str, text: &str| Link {
+        let link = |id: &str, title: &str, snippet: &str| Link {
             id: id.to_owned(),
-            text: first_line(text),
+            title: title.to_owned(),
+            snippet: snippet.to_owned(),
         };
         let views = hits
             .into_iter()
@@ -419,12 +437,21 @@ impl Service {
                     strong: h.exact || h.relevance >= STRONG,
                     exact: h.exact,
                     matched: h.matched,
+                    title: h.title,
                     content: h.content,
                     truncated: h.truncated,
                     tags: node.map(|n| n.tags.clone()).unwrap_or_default(),
                     occurred: node.map(|n| n.occurred.clone()).unwrap_or_default(),
-                    path: h.path.iter().map(|(id, text)| link(id, text)).collect(),
-                    expanded: h.expanded.iter().map(|(id, text)| link(id, text)).collect(),
+                    path: h
+                        .path
+                        .iter()
+                        .map(|(id, title)| link(id, title, ""))
+                        .collect(),
+                    expanded: h
+                        .expanded
+                        .iter()
+                        .map(|(id, title, text)| link(id, title, text))
+                        .collect(),
                     id: h.id,
                 }
             })
@@ -496,7 +523,7 @@ impl Service {
             .into_iter()
             .map(|n| Brief {
                 id: n.id.clone(),
-                text: first_line(&n.content),
+                title: n.label(),
                 layer: 0,
                 occurred: n.occurred.clone(),
                 updated: n.updated.clone(),
@@ -584,6 +611,7 @@ impl Service {
                     covered: *covered,
                 })
                 .collect(),
+            untitled: many(&m.untitled),
             stale: m
                 .stale
                 .iter()
@@ -610,32 +638,60 @@ impl Service {
         }
     }
 
-    /// The whole tree, for the zoomable picture. Texts are short; a node's full text comes from `get`.
-    pub fn outline(&self) -> Vec<OutlineNode> {
+    /// The tree for the zoomable picture, `depth` levels deep: from the top when `root` is `None`, else from that
+    /// node. A node below the depth comes without its children (`children: None`) and is asked for later with
+    /// itself as `root`. Texts are short; a node's full text comes from `get`.
+    pub fn outline(&self, root: Option<&str>, depth: usize) -> Result<Vec<OutlineNode>> {
         let t = self.read();
         let layers = t.layers();
-        fn build(t: &Tree, layers: &HashMap<String, u32>, id: &str) -> Option<OutlineNode> {
+        fn build(
+            t: &Tree,
+            layers: &HashMap<String, u32>,
+            id: &str,
+            depth: usize,
+        ) -> Option<OutlineNode> {
             let n = t.live(id)?;
-            let children: Vec<OutlineNode> = t
+            let kids: Vec<OutlineNode> = t
                 .children(id)
                 .iter()
-                .filter_map(|c| build(t, layers, c))
+                .filter_map(|c| build(t, layers, c, depth.saturating_sub(1)))
                 .collect();
+            let dates = std::iter::once(&n.occurred)
+                .chain(kids.iter().flat_map(|k| [&k.from, &k.to]))
+                .filter(|d| !d.is_empty())
+                .map(|d| d.chars().take(10).collect::<String>());
+            let (from, to) = dates.fold((String::new(), String::new()), |(lo, hi), d| {
+                (
+                    if lo.is_empty() || d < lo {
+                        d.clone()
+                    } else {
+                        lo
+                    },
+                    if d > hi { d } else { hi },
+                )
+            });
             Some(OutlineNode {
                 id: n.id.clone(),
-                text: first_line(&n.content).chars().take(60).collect(),
+                title: n.label(),
+                snippet: snippet(&n.content, 160),
                 layer: layers.get(id).copied().unwrap_or(0),
-                size: 1 + children.iter().map(|c| c.size).sum::<usize>(),
-                occurred: n.occurred.clone(),
-                children,
+                size: 1 + kids.iter().map(|c| c.size).sum::<usize>(),
+                from,
+                to,
+                children: (depth > 0 || kids.is_empty()).then_some(kids),
             })
+        }
+        if let Some(root) = root {
+            t.live(root)
+                .with_context(|| format!("没有这个节点：{root}"))?;
+            return Ok(build(&t, &layers, root, depth).into_iter().collect());
         }
         let mut roots: Vec<&Node> = t.nodes().filter(|n| n.parent.is_none()).collect();
         roots.sort_by(|a, b| a.occurred.cmp(&b.occurred).then_with(|| a.id.cmp(&b.id)));
-        roots
+        Ok(roots
             .into_iter()
-            .filter_map(|n| build(&t, &layers, &n.id))
-            .collect()
+            .filter_map(|n| build(&t, &layers, &n.id, depth))
+            .collect())
     }
 
     // ---------- changing ----------
@@ -667,6 +723,7 @@ impl Service {
             .collect::<Result<Vec<_>>>()?;
         let node = self.write_lock().write(
             Draft {
+                title: input.title,
                 content: input.content,
                 tags: input.tags,
                 parent: input.parent,
@@ -715,6 +772,7 @@ impl Service {
                 id,
                 expect.unwrap_or(node.version),
                 Patch {
+                    title: input.title,
                     content: input.content,
                     tags: input.tags,
                     occurred: input.occurred,
