@@ -1,30 +1,12 @@
-/* The node page and the editor: the family tree that opens level by level, picking a node by searching (move,
-   references), tags as chips, the date field, the character counter, file list. Every field also works as a plain
-   form without this script. */
+/* The node page and the editor: the title edited in place, the family tree that opens level by level, the move dialog
+   (picking a node by searching), and in the editor tags as chips, the date field, the character counter, the file list.
+   The parts every page shares (rp.h, rp.picker, rp.toast ...) come from ui.js. */
 (() => {
   'use strict';
   const doc = document;
   const $ = (selector, scope = doc) => scope.querySelector(selector);
-  const make = (tag, className, text) => {
-    const el = doc.createElement(tag);
-    if (className) el.className = className;
-    if (text !== undefined) el.textContent = text;
-    return el;
-  };
-  const icon = name => {
-    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', 'icon icon-xs');
-    svg.setAttribute('aria-hidden', 'true');
-    const use = doc.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', `#${name}`);
-    svg.append(use);
-    return svg;
-  };
-    const layerBadge = layer => {
-    const badge = make('span', 'layer', `第 ${layer} 层`);
-    badge.dataset.layer = String(Math.min(layer, 5));
-    return badge;
-  };
+  const {h, icon, api, toast, picker, layerBadge, parseTags} = window.rp;
+  const make = (tag, className, text) => h(tag, {class: className, text});
 
   /* ---------- the family tree: a node whose children were not sent asks for them when it is opened ---------- */
   const famItem = node => {
@@ -46,7 +28,7 @@
     const kids = $('ul', fold);
     if (fold.dataset.loaded || kids.children.length) return;
     fold.dataset.loaded = '1';
-    kids.replaceChildren(make('li', 'muted', '正在取……'));
+    kids.replaceChildren(h('li', {class: 'loading'}, h('span', {class: 'spinner', 'aria-hidden': 'true'}), '正在取……'));
     try {
       const response = await fetch(`/api/outline?root=${encodeURIComponent(fold.dataset.lazy)}&depth=1`);
       const list = await response.json();
@@ -63,64 +45,47 @@
     family.addEventListener('toggle', event => { if (event.target.dataset && event.target.dataset.lazy && event.target.open) lazyFold(event.target); }, true);
   }
 
-  /* ---------- pick a node by typing a few words ---------- */
-  // `input` is the search box, `list` the (hidden) results list; `onPick({id, text, layer})` gets the choice.
-  const picker = (input, list, onPick, skip = () => false) => {
-    let timer = 0;
-    let serial = 0;
-    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); };
-    const note = text => {
-      list.replaceChildren(make('li', 'pick-note', text));
-      list.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-    };
-    const show = hits => {
-      const rows = hits.filter(hit => !skip(hit.id));
-      if (!rows.length) { note('没有找到，换几个字试试'); return; }
-      list.replaceChildren(...rows.map(hit => {
-        const row = make('li');
-        row.setAttribute('role', 'option');
-        const btn = make('button', 'pick');
-        btn.type = 'button';
-        const text = hit.title;
-        btn.append(layerBadge(hit.layer), make('span', 'node-text', text));
-        btn.addEventListener('click', () => { close(); input.value = ''; onPick({id: hit.id, text, layer: hit.layer}); });
-        row.append(btn);
-        return row;
-      }));
-      list.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-    };
-    const search = async () => {
-      const q = input.value.trim();
-      if (!q) { close(); return; }
-      const mine = ++serial;
-      try {
-        const response = await fetch(`/api/search?k=8&q=${encodeURIComponent(q)}`);
-        const body = await response.json();
-        if (mine !== serial) return;
-        if (!response.ok) note(body.error || '搜索失败');
-        else show(body.hits);
-      } catch {
-        if (mine === serial) note('搜索失败，请稍后再试');
-      }
-    };
-    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 250); });
-    input.addEventListener('keydown', event => {
-      if (event.key === 'Escape') { close(); }
-      else if (event.key === 'Enter') { event.preventDefault(); clearTimeout(timer); search(); }
-      else if (event.key === 'ArrowDown') { $('.pick', list)?.focus(); event.preventDefault(); }
+  /* ---------- the title, edited in place: click, type, Enter saves, Esc cancels ---------- */
+  const page = $('.node-page');
+  const titleButton = $('[data-title-edit]');
+  if (titleButton) {
+    const heading = titleButton.parentElement;
+    titleButton.addEventListener('click', () => {
+      const empty = titleButton.classList.contains('is-empty');
+      const input = h('input', {type: 'text', value: empty ? '' : titleButton.textContent, maxlength: '40', required: true, 'aria-label': '标题', autocomplete: 'off', placeholder: '16 个字以内的名称'});
+      const error = h('p', {class: 'field-error', role: 'alert', hidden: true});
+      const save = h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'});
+      const form = h('form', {class: 'inline-form'}, input, h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: cancel}), save);
+      function cancel() { form.replaceWith(titleButton); error.remove(); titleButton.focus(); }
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const title = input.value.trim();
+        if (!title) { error.textContent = '标题必填：给它起一个 16 个字以内的名称'; error.hidden = false; input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
+        save.disabled = true;
+        const r = await api('POST', `/api/node/${encodeURIComponent(page.dataset.nodeId)}`, {version: Number(page.dataset.version), title});
+        save.disabled = false;
+        if (!r.ok) {
+          error.textContent = r.data.conflict ? '这个节点刚刚被改过了，请刷新页面后再改。' : (r.data.error || '没有保存成功');
+          error.hidden = false;
+          return;
+        }
+        page.dataset.version = String(r.data.version);
+        titleButton.textContent = r.data.label;
+        titleButton.classList.remove('is-empty');
+        form.replaceWith(titleButton);
+        error.remove();
+        titleButton.focus();
+        toast('标题已保存');
+      });
+      input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); cancel(); } });
+      titleButton.replaceWith(form);
+      heading.append(error);
+      input.focus();
+      input.select();
     });
-    list.addEventListener('keydown', event => {
-      const items = [...list.querySelectorAll('.pick')];
-      const at = items.indexOf(doc.activeElement);
-      if (event.key === 'ArrowDown') { items[Math.min(at + 1, items.length - 1)]?.focus(); event.preventDefault(); }
-      else if (event.key === 'ArrowUp') { (at > 0 ? items[at - 1] : input).focus(); event.preventDefault(); }
-      else if (event.key === 'Escape') { close(); input.focus(); }
-    });
-  };
+  }
 
-  /* ---------- the move form on the node page ---------- */
+  /* ---------- the move dialog: a search finds the new parent, its id fills the form ---------- */
   const move = $('form[data-move]');
   if (move) {
     const find = $('[data-move-find]', move);
@@ -128,17 +93,41 @@
     const target = $('input[name=parent]', move);
     const picked = $('#move-picked', move);
     find.hidden = false;
+    $('[data-move-id]', move).hidden = true;
     picker(search, $('#move-hits', move), choice => {
       target.value = choice.id;
       picked.textContent = `已选：${choice.text}`;
       picked.className = 'hint is-ok';
     }, id => id === move.dataset.self);
-    target.addEventListener('input', () => { picked.textContent = ''; });
+    move.addEventListener('submit', event => {
+      if (event.submitter?.name === 'top' || target.value.trim()) return;
+      event.preventDefault();
+      picked.textContent = '先搜索并选一个新的上级';
+      picked.className = 'hint is-error';
+      search.focus();
+    });
   }
 
   /* ---------- the editor ---------- */
   const form = $('form[data-editor]');
   if (!form) return;
+
+  // A missing title or text is said under the field, the same way everywhere, not in the browser's own bubble.
+  form.noValidate = true;
+  form.addEventListener('submit', event => {
+    let first = null;
+    for (const [name, message] of [['title', '标题必填：给它起一个 16 个字以内的名称'], ['content', '内容不能是空的']]) {
+      const input = form.elements[name];
+      const field = input.closest('.field');
+      $('.field-error', field)?.remove();
+      input.removeAttribute('aria-invalid');
+      if (input.value.trim()) continue;
+      input.setAttribute('aria-invalid', 'true');
+      input.after(h('p', {class: 'field-error', role: 'alert', text: message}));
+      first ||= input;
+    }
+    if (first) { event.preventDefault(); first.focus(); }
+  });
   let dirty = false;
   let submitting = false;
   const touch = () => {
@@ -148,7 +137,7 @@
   };
   form.addEventListener('input', touch);
   form.addEventListener('change', touch);
-  form.addEventListener('submit', () => { submitting = true; });
+  form.addEventListener('submit', event => { if (!event.defaultPrevented) submitting = true; });
   window.addEventListener('beforeunload', event => { if (dirty && !submitting) { event.preventDefault(); event.returnValue = ''; } });
   form.addEventListener('keydown', event => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); }
@@ -171,15 +160,7 @@
   // tags: chips; the original text field stays the value that is sent
   const tagField = $('input[data-tags]', form);
   if (tagField) {
-    const parse = text => {
-      const parts = /[,，、;；\n]/.test(text) ? text.split(/[,，、;；\n]/) : text.split(/\s+/);
-      const out = [];
-      for (const part of parts) {
-        const tag = part.trim().replace(/^#+/, '').trim();
-        if (tag && !out.includes(tag)) out.push(tag);
-      }
-      return out;
-    };
+    const parse = parseTags;
     let tags = parse(tagField.value);
     const wrap = make('div', 'tag-input');
     const chips = make('span', 'tag-chips');
@@ -197,7 +178,7 @@
       tagField.value = tags.join(', ') + (tags.length === 1 && /\s/.test(tags[0]) ? ',' : '');
       chips.replaceChildren(...tags.map(tag => {
         const chip = make('span', 'chip');
-        const remove = make('button', 'chip-x-btn');
+        const remove = make('button', 'chip-x');
         remove.type = 'button';
         remove.setAttribute('aria-label', `去掉标签 ${tag}`);
         remove.append(icon('x'));
@@ -243,11 +224,11 @@
       precision.append(btn);
       return btn;
     });
-    const today = make('button', 'btn btn-sm', '今天');
+    const today = make('button', 'btn', '今天');
     today.type = 'button';
-    const clear = make('button', 'btn btn-sm btn-ghost', '清空');
+    const clear = make('button', 'btn btn-ghost', '清空');
     clear.type = 'button';
-    const pick = make('button', 'btn btn-sm btn-icon', '');
+    const pick = make('button', 'btn btn-icon', '');
     pick.type = 'button';
     pick.title = '用日历选择';
     pick.setAttribute('aria-label', '用日历选择日期');
@@ -305,7 +286,7 @@
       hidden.type = 'hidden';
       hidden.name = 'refs';
       hidden.value = choice.id;
-      const remove = make('button', 'chip-x-btn');
+      const remove = make('button', 'chip-x');
       remove.type = 'button';
       remove.dataset.refRemove = '';
       remove.setAttribute('aria-label', `取消引用：${choice.text}`);

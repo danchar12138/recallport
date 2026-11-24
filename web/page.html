@@ -8,7 +8,6 @@
 <script src="/theme.js"></script>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/admin.css">
 <script src="/ui.js" defer></script>
 </head>
 <body data-view="{{ View }}">
@@ -111,22 +110,47 @@ SOFTWARE.
 <a class="skip-link" href="#main">跳到主要内容</a>
 <header class="top" id="side-nav">
   <a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#history"/></svg></span><span class="brand-name">RecallPort</span></a>
-  <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="side-nav" title="展开导航" aria-label="展开导航"><svg class="icon" aria-hidden="true"><use href="#panel"/></svg><span class="nav-label">收起导航</span></button>
-  <nav class="tabs" aria-label="主导航">
-    {% for tab in tabs %}<a href="{{ tab[0] }}" title="{{ tab[2] }}"{% if tab[1] == here %} aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="#{{ tab[3] }}"/></svg><span class="nav-label">{{ tab[2] }}</span></a>
-    {% endfor %}
-  </nav>
-  <div class="theme-switch theme-switch-mobile" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
-  <div class="side-foot">
-    <div class="status-line" title="服务运行中，只监听本机 127.0.0.1"><span class="dot"></span><span class="nav-label">服务运行中</span></div>
-    <div class="theme-switch" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
+  <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="nav-body" title="展开导航" aria-label="展开导航"><svg class="icon icon-lg" aria-hidden="true"><use href="#panel"/></svg><span class="nav-label">收起导航</span></button>
+  <div class="nav-body" id="nav-body">
+    <nav class="tabs" aria-label="主导航">
+      {% for tab in tabs %}<a href="{{ tab[0] }}" title="{{ tab[2] }}"{% if tab[1] == here %} aria-current="page"{% endif %}><svg class="icon icon-lg" aria-hidden="true"><use href="#{{ tab[3] }}"/></svg><span class="nav-label">{{ tab[2] }}</span></a>
+      {% endfor %}
+    </nav>
+    <div class="side-foot">
+      <div class="status-line" title="服务运行中，只监听本机 127.0.0.1"><span class="dot"></span><span class="nav-label">服务运行中</span></div>
+      <div class="segmented" role="group" aria-label="界面主题"><button type="button" data-theme-set="auto" title="跟随系统" aria-label="跟随系统" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#monitor"/></svg></button><button type="button" data-theme-set="light" title="浅色" aria-label="浅色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg></button><button type="button" data-theme-set="dark" title="深色" aria-label="深色" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg></button></div>
+    </div>
   </div>
 </header>
 <div class="nav-scrim" data-nav-scrim></div>
 <main id="main" class="shell{% if View == "tree" %} shell-wide{% endif %}">
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}
-{% if Notice %}<div class="banner banner-ok" role="status"><svg class="icon" aria-hidden="true"><use href="#circle-check"/></svg><p>{{ Notice }}</p></div>{% endif %}
 {% include View ~ ".html" %}
 </main>
+<div class="toast-region" id="toasts" role="region" aria-label="通知" aria-live="polite">{% if Notice %}<div class="toast" data-tone="ok" data-auto role="status"><svg class="icon" aria-hidden="true"><use href="#circle-check"/></svg><span>{{ Notice }}</span></div>{% endif %}</div>
+<dialog class="dialog dialog-help" id="help-dialog" aria-labelledby="help-title">
+  <div class="dialog-form">
+    <div class="dialog-head"><h2 id="help-title">快捷键</h2><button type="button" class="btn btn-ghost btn-icon btn-sm" data-dialog-close aria-label="关闭"><svg class="icon" aria-hidden="true"><use href="#x"/></svg></button></div>
+    <div class="dialog-body">
+      <dl class="keys">
+        <dt><kbd>/</kbd></dt><dd>搜索</dd>
+        <dt><kbd>?</kbd></dt><dd>打开这份快捷键说明</dd>
+        <dt><kbd>Esc</kbd></dt><dd>关闭对话框、面板或下拉列表</dd>
+        {% if View == "tree" %}
+        <dt><kbd>0</kbd></dt><dd>适应窗口</dd>
+        <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>缩放</dd>
+        <dt><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></dt><dd>平移</dd>
+        <dt><kbd>Enter</kbd></dt><dd>放大到选中的卡片</dd>
+        <dt><kbd>O</kbd></dt><dd>大纲</dd>
+        <dt><kbd>F</kbd></dt><dd>沉浸模式</dd>
+        <dt><kbd>E</kbd></dt><dd>编辑选中的节点</dd>
+        <dt><kbd>N</kbd></dt><dd>在选中的节点下面新建</dd>
+        {% elif View == "editor" %}
+        <dt><kbd>Ctrl</kbd><kbd>Enter</kbd></dt><dd>保存</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</dialog>
 </body>
 </html>

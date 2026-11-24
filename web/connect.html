@@ -1,34 +1,31 @@
-{% macro state_badge(c) %}<span class="adm-badge" data-state="{{ c.state }}">{% if c.state == "connected" %}已接入{% elif c.state == "conflict" %}地址不同{% elif c.state == "error" %}配置有问题{% else %}未接入{% endif %}</span>{% endmacro %}
-<div id="adm-connect" class="adm">
+{% from "parts.html" import icon %}
+{% macro state_badge(c) %}<span class="badge" data-state="{{ c.state }}">{% if c.state == "connected" %}已接入{% elif c.state == "conflict" %}地址不同{% elif c.state == "error" %}配置有问题{% else %}未接入{% endif %}</span>{% endmacro %}
+<div id="adm-connect">
 <header class="page-head">
   <div><h1>接入</h1><p class="sub">让 AI 客户端使用这份本地记忆。只在本机可用，不需要账号或令牌。</p></div>
 </header>
 
-<section class="adm-sec" id="address" aria-labelledby="h-address">
-  <div class="adm-intro card">
-    <h2 id="h-address">MCP 地址</h2>
-    <p>“接入”就是告诉 AI 客户端：记忆服务在下面这个地址。RecallPort 只会在客户端的配置里加一项叫 <code>recallport</code> 的内容，改之前先备份原文件，别的配置一律不动。接入后重启客户端，它就能用下面的 9 个工具读写记忆。</p>
-    <div class="adm-path">
-      <span class="adm-path-label">地址</span>
-      <code id="adm-mcp-url" class="adm-path-value">{{ Url }}</code>
-      <button type="button" class="btn btn-sm" data-copy="{{ Url }}" aria-label="复制 MCP 地址">复制地址</button>
-    </div>
+<section class="section" id="address" aria-labelledby="h-address">
+  <div class="section-head"><div><h2 id="h-address">MCP 地址</h2><p>“接入”就是告诉 AI 客户端：记忆服务在下面这个地址。RecallPort 只会在客户端的配置里加一项叫 <code>recallport</code> 的内容，改之前先备份原文件，别的配置一律不动。接入后重启客户端，它就能用下面的 9 个工具读写记忆。</p></div></div>
+  <div class="card copyline">
+    <span class="copyline-label">地址</span>
+    <code id="adm-mcp-url" class="copyline-value">{{ Url }}</code>
+    <button type="button" class="btn btn-sm" data-copy="{{ Url }}" aria-label="复制 MCP 地址">{{ icon("copy") }}复制地址</button>
   </div>
 </section>
 
-<section class="adm-sec" id="clients" aria-labelledby="h-clients">
+<section class="section" id="clients" aria-labelledby="h-clients">
   <div class="section-head"><div><h2 id="h-clients">一键接入</h2><p>RecallPort 能直接改写下面两个客户端的配置；别的客户端见后面的“其他客户端”。</p></div></div>
-  <p class="adm-flash" data-flash role="status" aria-live="polite" hidden></p>
-  <div class="adm-clients" data-region="clients">
+  <div class="clients" data-region="clients">
     {% for c in Clients %}
-    <article class="adm-client card" data-client="{{ c.id }}" data-state="{{ c.state }}" aria-labelledby="client-{{ c.id }}">
-      <div class="adm-client-head">
+    <article class="client card" data-client="{{ c.id }}" data-state="{{ c.state }}" aria-labelledby="client-{{ c.id }}">
+      <div class="client-head">
         <h3 id="client-{{ c.id }}" tabindex="-1">{{ c.name }}</h3>
         {{ state_badge(c) }}
-        {% if c.state == "connected" and c.seen %}<span class="adm-badge" data-state="seen">最近连过</span>{% endif %}
+        {% if c.state == "connected" and c.seen %}<span class="badge" data-state="seen">最近连过</span>{% endif %}
       </div>
-      <p class="adm-sub">{{ c.scope }} · 配置文件 <code>{{ c.path }}</code>{% if not c.installed %} · 没有检测到它已安装，仍然可以接入{% endif %}</p>
-      <p class="adm-status">
+      <p class="sub">{{ c.scope }} · 配置文件 <code>{{ c.path }}</code>{% if not c.installed %} · 没有检测到它已安装，仍然可以接入{% endif %}</p>
+      <p class="client-status">
         {% if c.state == "connected" %}
           {% if c.seen %}最近连过：{{ c.seen.name }} · {{ local_time(c.seen.at) }} · 共 {{ c.seen.calls }} 次调用。{% else %}配置正确，但还没有收到它的连接。重启 {{ c.name }} 后，点“验证连接”确认。{% endif %}
         {% elif c.state == "conflict" %}
@@ -39,29 +36,31 @@
           还没有接入。
         {% endif %}
       </p>
-      <div class="adm-actions">
-        {% if c.state == "none" %}<button type="button" class="btn btn-primary" data-client-act="connect">一键接入</button>{% endif %}
-        {% if c.state == "conflict" %}<button type="button" class="btn btn-primary" data-client-act="connect" data-replace="1" data-confirm="替换 {{ c.name }} 里原有的 recallport 配置？它会改为指向当前地址，原文件先备份。">替换为当前地址</button>{% endif %}
+      <div class="btns">
+        {% if c.state == "none" %}<button type="button" class="btn btn-primary" data-client-act="connect">{{ icon("plug") }}一键接入</button>{% endif %}
+        {% if c.state == "conflict" %}<button type="button" class="btn btn-primary" data-client-act="connect" data-replace="1" data-confirm="替换 {{ c.name }} 里原有的 recallport 配置？" data-confirm-text="它会改为指向当前地址，原文件先备份。" data-confirm-ok="替换">替换为当前地址</button>{% endif %}
         {% if c.state != "error" %}<button type="button" class="btn{% if c.state == "connected" %} btn-primary{% endif %}" data-client-act="verify">验证连接</button>{% endif %}
-        {% if c.state == "connected" or c.state == "conflict" %}<button type="button" class="btn btn-danger-ghost" data-client-act="disconnect" data-confirm="断开 {{ c.name }}？只会删掉它配置里的 recallport 这一项（原文件先备份），记忆不受影响。">断开</button>{% endif %}
+        {% if c.state == "connected" or c.state == "conflict" %}<button type="button" class="btn btn-danger" data-client-act="disconnect" data-confirm="断开 {{ c.name }}？" data-confirm-text="只会删掉它配置里的 recallport 这一项（原文件先备份），记忆不受影响。" data-confirm-ok="断开">断开</button>{% endif %}
       </div>
-      <div class="adm-verify" data-verify aria-live="polite"></div>
+      <div class="verify" data-verify aria-live="polite"></div>
 
       {% if c.state != "error" %}
-      <details class="adm-details">
+      <details class="fold">
         <summary>将写入的配置</summary>
-        <p class="adm-hint">写进 <code>{{ c.path }}</code>，只有这一项：</p>
-        <div class="adm-code"><pre id="preview-{{ c.id }}">{{ c.preview }}</pre><button type="button" class="btn btn-sm" data-copy-target="#preview-{{ c.id }}" aria-label="复制 {{ c.name }} 的配置">复制</button></div>
-        {% if c.command %}<p class="adm-hint">或者自己在命令行里加：</p>
-        <div class="adm-code"><pre id="command-{{ c.id }}">{{ c.command }}</pre><button type="button" class="btn btn-sm" data-copy-target="#command-{{ c.id }}" aria-label="复制命令">复制</button></div>{% endif %}
+        <div class="fold-body">
+        <p class="help">写进 <code>{{ c.path }}</code>，只有这一项：</p>
+        <div class="code"><pre id="preview-{{ c.id }}">{{ c.preview }}</pre><button type="button" class="btn btn-sm" data-copy-target="#preview-{{ c.id }}" aria-label="复制 {{ c.name }} 的配置">{{ icon("copy") }}复制</button></div>
+        {% if c.command %}<p class="help">或者自己在命令行里加：</p>
+        <div class="code"><pre id="command-{{ c.id }}">{{ c.command }}</pre><button type="button" class="btn btn-sm" data-copy-target="#command-{{ c.id }}" aria-label="复制命令">{{ icon("copy") }}复制</button></div>{% endif %}
+        </div>
       </details>
 
-      <div class="adm-rules">
-        <h4>使用规则 <span class="chip">可选</span> <span class="adm-badge" data-state="{% if c.rules %}connected{% else %}none{% endif %}">{% if c.rules %}已写入{% else %}未写入{% endif %}</span></h4>
+      <div class="rules">
+        <h4>使用规则 <span class="badge" data-state="{% if c.rules %}connected{% else %}none{% endif %}">{% if c.rules %}已写入{% else %}未写入{% endif %}</span></h4>
         <p>一小段提示，写进 {{ c.name }} 的全局指令文件 <code>{{ c.rules_path }}</code>，让 AI 在该查的时候主动查、该记的时候主动记。不写也能用：AI 在你要求时仍会调用工具，只是不一定主动。它用标记包住，文件里的其他内容不动，随时可以更新或移除，改动前会备份原文件。</p>
-        <div class="adm-actions">
+        <div class="btns">
           <button type="button" class="btn btn-sm" data-client-act="rules-on">{% if c.rules %}更新为最新规则{% else %}写入使用规则{% endif %}</button>
-          {% if c.rules %}<button type="button" class="btn btn-sm btn-danger-ghost" data-client-act="rules-off" data-confirm="从 {{ c.rules_path }} 里移除使用规则？文件里的其他内容不动。">移除规则</button>{% endif %}
+          {% if c.rules %}<button type="button" class="btn btn-sm btn-danger" data-client-act="rules-off" data-confirm="从 {{ c.rules_path }} 里移除使用规则？" data-confirm-text="文件里的其他内容不动。" data-confirm-ok="移除">移除规则</button>{% endif %}
         </div>
       </div>
       {% endif %}
@@ -69,47 +68,49 @@
     {% endfor %}
   </div>
 
-  <details class="adm-details adm-standalone">
-    <summary>查看使用规则的全文</summary>
-    <div class="adm-code"><pre id="adm-rules-text" class="adm-prose">{{ Rules }}</pre><button type="button" class="btn btn-sm" data-copy-target="#adm-rules-text" aria-label="复制使用规则">复制</button></div>
-  </details>
+  <div class="fold-stack">
+    <details class="fold">
+      <summary>查看使用规则的全文</summary>
+      <div class="code"><pre id="adm-rules-text" class="is-prose">{{ Rules }}</pre><button type="button" class="btn btn-sm" data-copy-target="#adm-rules-text" aria-label="复制使用规则">{{ icon("copy") }}复制</button></div>
+    </details>
 
-  <details class="adm-details adm-standalone" data-recent>
-    <summary>最近访问过 MCP 的客户端{% if Recent %}（{{ Recent|length }}）{% endif %}</summary>
-    {% if Recent %}
-    <ul class="adm-recent">
-      {% for r in Recent %}<li><b>{{ r.name }}</b><span class="muted"> · {{ local_time(r.at) }} · {{ r.calls }} 次调用{% if r.agent and r.agent != r.name %} · {{ r.agent }}{% endif %}</span></li>{% endfor %}
-    </ul>
-    {% else %}<p class="adm-hint">还没有任何客户端访问过。接入并重启客户端后，它会出现在这里。</p>{% endif %}
-  </details>
+    <details class="fold" data-recent>
+      <summary>最近访问过 MCP 的客户端{% if Recent %}（{{ Recent|length }}）{% endif %}</summary>
+      {% if Recent %}
+      <ul class="recent">
+        {% for r in Recent %}<li><b>{{ r.name }}</b><span class="muted"> · {{ local_time(r.at) }} · {{ r.calls }} 次调用{% if r.agent and r.agent != r.name %} · {{ r.agent }}{% endif %}</span></li>{% endfor %}
+      </ul>
+      {% else %}<p class="help">还没有任何客户端访问过。接入并重启客户端后，它会出现在这里。</p>{% endif %}
+    </details>
+  </div>
 </section>
 
-<section class="adm-sec" id="manual" aria-labelledby="h-manual">
+<section class="section" id="manual" aria-labelledby="h-manual">
   <div class="section-head"><div><h2 id="h-manual">其他客户端</h2><p>任何支持 MCP 的 HTTP 方式（Streamable HTTP）的客户端都能接入，地址同上，不需要认证。配置的字段名因客户端而异（常见的有 <code>type</code> / <code>transport</code>、<code>url</code> / <code>serverUrl</code>），以它自己的文档为准。</p></div></div>
-  <div class="adm-snippets">
-    <div class="adm-snippet card">
+  <div class="snippets">
+    <div class="snippet card">
       <h3>JSON（<code>mcpServers</code> 写法）</h3>
-      <div class="adm-code"><pre id="snip-json">{
+      <div class="code"><pre id="snip-json">{
   "mcpServers": {
     "recallport": {
       "type": "http",
       "url": "{{ Url }}"
     }
   }
-}</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-json" aria-label="复制 JSON 配置">复制</button></div>
+}</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-json" aria-label="复制 JSON 配置">{{ icon("copy") }}复制</button></div>
     </div>
-    <div class="adm-snippet card">
+    <div class="snippet card">
       <h3>TOML（Codex 一类）</h3>
-      <div class="adm-code"><pre id="snip-toml">[mcp_servers.recallport]
-url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-toml" aria-label="复制 TOML 配置">复制</button></div>
+      <div class="code"><pre id="snip-toml">[mcp_servers.recallport]
+url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target="#snip-toml" aria-label="复制 TOML 配置">{{ icon("copy") }}复制</button></div>
     </div>
   </div>
 </section>
 
-<section class="adm-sec" id="tools" aria-labelledby="h-tools">
+<section class="section" id="tools" aria-labelledby="h-tools">
   <div class="section-head">
     <div><h2 id="h-tools">工具手册</h2><p>接入后，AI 能用到下面 9 个工具。整份手册可以复制给 AI（比如放进项目说明里）。</p></div>
-    <button type="button" class="btn" data-copy="" data-manual-copy>复制整份手册</button>
+    <button type="button" class="btn" data-copy="" data-manual-copy>{{ icon("copy") }}复制整份手册</button>
   </div>
 
   <div class="adm-model card" id="how">
@@ -141,7 +142,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>expand</code><small>整数</small></dt><dd>命中的是汇总时，顺带带出它下面最相关的几个节点。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>命中的节点：编号、层、正文（太长会截断，要全文用 <code>get</code>）、标签、发生日期、与问题的相关度；汇总命中时带上它下面最相关的节点，每个命中还带着它上面各层汇总的路径。没有真正相关的内容时会明说，命中只是线索。</p>
-      <div class="adm-code"><pre id="ex-search">{"query": "备份策略", "queries": ["backup schedule", "每天几点备份"], "max_layer": 1, "limit": 5}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-search" aria-label="复制 search 示例">复制</button></div>
+      <div class="code"><pre id="ex-search">{"query": "备份策略", "queries": ["backup schedule", "每天几点备份"], "max_layer": 1, "limit": 5}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-search" aria-label="复制 search 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-get" data-tool="get">
@@ -152,7 +153,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>history</code><small>布尔</small></dt><dd>为 true 时附上这个节点每一版的正文、改动人和时间。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>完整正文、版本号、标签、发生日期、所在的层、从最上面到它的路径、它的子节点、引用和被引用、来源、附件（含文件在本机的路径）。</p>
-      <div class="adm-code"><pre id="ex-get">{"id": "替换成节点编号", "history": true}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-get" aria-label="复制 get 示例">复制</button></div>
+      <div class="code"><pre id="ex-get">{"id": "替换成节点编号", "history": true}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-get" aria-label="复制 get 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-write" data-tool="write">
@@ -170,8 +171,8 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>attachments</code><small>对象数组</small></dt><dd>要归档的文件。每项：<code>path</code>（本机绝对路径）<b>或</b> <code>data_base64</code>（内联内容，约 96 KB 以内，更大的请用 <code>path</code>）；<code>name</code> 文件名；<code>caption</code> 一句说明（说明不会被搜索，重要的信息写进正文）；<code>reference</code> 为 true 时只记住文件的位置、不复制进记忆库（只对 <code>path</code> 有效）。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>写好的节点，内容和 <code>get</code> 一样（含新节点的编号和所在的层）。</p>
-      <div class="adm-code"><pre id="ex-write">{"title": "备份改到凌晨三点", "content": "家庭服务器的备份改成每天凌晨三点跑，因为白天会占满上行带宽。", "tags": ["家庭服务器"], "occurred": "2026-11-22"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-write" aria-label="复制 write 示例">复制</button></div>
-      <div class="adm-code"><pre id="ex-adopt">{"title": "家庭服务器备份策略", "content": "家庭服务器的备份策略：每天凌晨三点，保留七份。", "adopt": ["节点编号 1", "节点编号 2"]}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-adopt" aria-label="复制写汇总的示例">复制</button></div>
+      <div class="code"><pre id="ex-write">{"title": "备份改到凌晨三点", "content": "家庭服务器的备份改成每天凌晨三点跑，因为白天会占满上行带宽。", "tags": ["家庭服务器"], "occurred": "2026-11-22"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-write" aria-label="复制 write 示例">{{ icon("copy") }}复制</button></div>
+      <div class="code"><pre id="ex-adopt">{"title": "家庭服务器备份策略", "content": "家庭服务器的备份策略：每天凌晨三点，保留七份。", "adopt": ["节点编号 1", "节点编号 2"]}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-adopt" aria-label="复制写汇总的示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-update" data-tool="update">
@@ -189,7 +190,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>touch</code><small>布尔</small></dt><dd>为 true 表示“核对过，仍然正确”：不改内容，只刷新这个节点的更新时间，它之后不再被当作过期。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>更新后的节点，内容和 <code>get</code> 一样。</p>
-      <div class="adm-code"><pre id="ex-update">{"id": "节点编号", "version": 2, "content": "备份改成每天凌晨四点，保留十四份。"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-update" aria-label="复制 update 示例">复制</button></div>
+      <div class="code"><pre id="ex-update">{"id": "节点编号", "version": 2, "content": "备份改成每天凌晨四点，保留十四份。"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-update" aria-label="复制 update 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-move" data-tool="move">
@@ -200,7 +201,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>to</code><small>节点编号</small></dt><dd>移到哪个节点下面；不填就移到最上层。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>移动的结果；不合法的移动（比如把节点放进它自己的子树里）会被拒绝并说明原因。</p>
-      <div class="adm-code"><pre id="ex-move">{"ids": ["节点编号 1", "节点编号 2"], "to": "汇总的节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-move" aria-label="复制 move 示例">复制</button></div>
+      <div class="code"><pre id="ex-move">{"ids": ["节点编号 1", "节点编号 2"], "to": "汇总的节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-move" aria-label="复制 move 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-delete" data-tool="delete">
@@ -212,7 +213,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>reason</code><small>字符串</small></dt><dd>为什么删，记在历史里。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>删除的结果，包括有几个子节点上移了。</p>
-      <div class="adm-code"><pre id="ex-delete">{"id": "节点编号", "reason": "和另一条重复"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-delete" aria-label="复制 delete 示例">复制</button></div>
+      <div class="code"><pre id="ex-delete">{"id": "节点编号", "reason": "和另一条重复"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-delete" aria-label="复制 delete 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-restore" data-tool="restore">
@@ -222,7 +223,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>回收站里的节点（用 <code>trash</code> 查）。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>取回后的节点，内容和 <code>get</code> 一样。</p>
-      <div class="adm-code"><pre id="ex-restore">{"id": "节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-restore" aria-label="复制 restore 示例">复制</button></div>
+      <div class="code"><pre id="ex-restore">{"id": "节点编号"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-restore" aria-label="复制 restore 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-trash" data-tool="trash">
@@ -232,7 +233,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>limit</code><small>整数</small></dt><dd>最多列出几个。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>回收站里的节点（编号、正文的第一行、删除时间和原因）。</p>
-      <div class="adm-code"><pre id="ex-trash">{"limit": 20}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-trash" aria-label="复制 trash 示例">复制</button></div>
+      <div class="code"><pre id="ex-trash">{"limit": 20}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-trash" aria-label="复制 trash 示例">{{ icon("copy") }}复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-maintain" data-tool="maintain">
@@ -242,14 +243,14 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt>（没有参数）</dt><dd>传空对象 <code>{}</code>。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>每一层的节点数，以及已经有多少挂在汇总下面；过期的汇总和下面比它更新的节点；没有标题的旧节点（<code>untitled</code>）；自下而上的下一批缺口——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点。一轮处理完再调用，会给出下一批或更高一层。</p>
-      <div class="adm-code"><pre id="ex-maintain">{}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-maintain" aria-label="复制 maintain 示例">复制</button></div>
+      <div class="code"><pre id="ex-maintain">{}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-maintain" aria-label="复制 maintain 示例">{{ icon("copy") }}复制</button></div>
     </article>
   </div>
 </section>
 
-<section class="adm-sec" id="trouble" aria-labelledby="h-trouble">
+<section class="section" id="trouble" aria-labelledby="h-trouble">
   <div class="section-head"><div><h2 id="h-trouble">遇到问题</h2></div></div>
-  <ul class="adm-trouble card">
+  <ul class="trouble card">
     <li><b>客户端不调用工具。</b>接入之后要重启客户端（Claude Code 要新开一个会话）才会读到新配置。点上面的“验证连接”确认服务和 9 个工具都正常；再写入“使用规则”，AI 会更主动地查和记。仍然不用的话，直接对它说“先用 RecallPort 查一下”。</li>
     <li><b>验证连接失败或连不上。</b>确认 RecallPort 还在运行（系统托盘里有它的图标），并且客户端配置里的地址和上面的 MCP 地址一致。</li>
     <li><b>端口被占用。</b>默认端口 3765。被其他程序占用时，RecallPort 会改用附近的端口，MCP 地址也就变了：再点一次“一键接入”（卡片提示“地址不同”时选“替换为当前地址”）。想固定端口，可以用 <code>--listen 127.0.0.1:端口</code> 启动。</li>

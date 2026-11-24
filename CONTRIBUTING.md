@@ -43,6 +43,7 @@ cargo test
 
 - 页面的内容安全策略是 `script-src 'self'; style-src 'self'`：**不能**写内联 `<script>`、`<style>` 或 `style="…"`，也不能引用 CDN。请把脚本放进 `web/*.js`，样式放进 `web/style.css`。动态设置样式请使用 `element.style.xxx = …`（CSSOM 允许），进度条用 `<meter>` / `<progress>`。
 - 颜色请使用 `style.css` 顶部的设计令牌，并同时检查浅色和深色。
+- 界面只有一套组件（按钮、输入框、徽章、卡片、列表行、对话框、toast、折叠卡片……都在 `style.css` 里，共用 `ui.js` 里的 `window.rp`）。新页面请组合它们，不要为某一页另写一套；确认用 `data-confirm`（或 `rp.ask`），成功反馈用 `rp.toast`，不要用浏览器自带的 `alert` / `confirm`。
 - 模板由 [minijinja](https://github.com/mitsuhiko/minijinja) 渲染。避免依赖 Jinja2 独有的特性，并检查对可能不存在的变量不要直接取属性。
 - 新增模板或静态文件需要在 `src/web/mod.rs` 里登记。
 

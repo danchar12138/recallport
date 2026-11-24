@@ -1,21 +1,21 @@
-{% from "parts.html" import icon, layer %}
+{% from "parts.html" import icon, layer, tags %}
 <header class="page-head">
   <div><h1>回收站</h1><p class="sub">删除的节点先放在这里，30 天后自动永久删除</p></div>
-  {% if Rows %}<form method="post" action="/trash/empty" data-confirm="清空回收站？里面的 {{ Rows|length }} 个节点和它们的历史会永久删除，无法恢复。"><button class="btn btn-danger-ghost" type="submit">{{ icon("trash") }}清空回收站</button></form>{% endif %}
+  {% if Rows %}<div class="head-actions"><form method="post" action="/trash/empty" data-confirm="清空回收站？" data-confirm-text="里面的 {{ Rows|length }} 个节点和它们的历史会永久删除，无法恢复。" data-confirm-ok="清空"><button class="btn btn-danger" type="submit">{{ icon("trash") }}清空回收站</button></form></div>{% endif %}
 </header>
 <div class="banner banner-info" role="note">{{ icon("info") }}<p>删除一个节点时，它下面的节点会上移一层，不会跟着一起删。在回收站里的节点不出现在搜索、树和列表里；恢复后它回到原来的位置（原来的位置没有了就成为顶层节点）。</p></div>
 {% if Rows %}
-<ul class="trash-list">
+<ul class="card list is-hover">
 {% for r in Rows %}
-  <li class="card trash-item">
-    <div class="trash-main">
-      <a class="trash-title" href="/node/{{ r.node.id }}">{{ r.node.title or "（没有文字）" }}</a>
-      <p class="trash-meta">{% if r.node.tags %}{% for t in r.node.tags %}<span class="chip">{{ t }}</span> {% endfor %}{% endif %}<span>删除于 <time datetime="{{ r.node.updated }}">{{ local_time(r.node.updated) }}</time>{% if r.who %} · {{ r.who }}{% endif %}</span></p>
+  <li>
+    <div class="row-main">
+      <a class="row-title" href="/node/{{ r.node.id }}">{{ r.node.title or "（没有文字）" }}</a>
+      <div class="row-meta">{{ layer(r.node.layer) }}{{ tags(r.node.tags) }}<span>删除于 <time datetime="{{ r.node.updated }}">{{ local_time(r.node.updated) }}</time>{% if r.who %} · {{ r.who }}{% endif %}</span></div>
       {% if r.reason %}<p class="reason">原因：{{ r.reason }}</p>{% endif %}
     </div>
-    <div class="trash-actions">
-      <form method="post" action="/trash/{{ r.node.id }}/restore"><button class="btn btn-sm" type="submit">{{ icon("undo", "sm") }}恢复</button></form>
-      <form method="post" action="/trash/{{ r.node.id }}/purge" data-confirm="永久删除这个节点和它的历史？无法恢复。"><button class="btn btn-sm btn-danger-ghost" type="submit">{{ icon("trash", "sm") }}永久删除</button></form>
+    <div class="row-actions">
+      <form method="post" action="/trash/{{ r.node.id }}/restore"><button class="btn btn-sm" type="submit">{{ icon("undo") }}恢复</button></form>
+      <form method="post" action="/trash/{{ r.node.id }}/purge" data-confirm="永久删除「{{ r.node.title or '这个节点' }}」？" data-confirm-text="它和它的历史会永久删除，无法恢复。" data-confirm-ok="永久删除"><button class="btn btn-sm btn-danger" type="submit">{{ icon("trash") }}永久删除</button></form>
     </div>
   </li>
 {% endfor %}

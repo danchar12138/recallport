@@ -3,9 +3,9 @@
   <div><h1>记忆</h1><p class="sub">搜索或浏览整棵树里的每一个节点</p></div>
   <div class="head-actions"><a class="btn btn-primary" href="/node/new">{{ icon("plus") }}新建节点</a></div>
 </header>
-<form class="searchform" id="filter-form" method="get" action="/memories" role="search">
-  <div class="searchrow">
-    <span class="searchfield">{{ icon("search") }}<input type="search" name="q" value="{{ Q }}" placeholder="说一句话，或写几个关键词" aria-label="搜索" autocomplete="off"></span>
+<form class="card toolbar" id="filter-form" method="get" action="/memories" role="search">
+  <div class="toolbar-search">
+    <span class="searchfield">{{ icon("search") }}<input type="search" name="q" value="{{ Q }}" placeholder="说一句话，或写几个关键词" aria-label="搜索" autocomplete="off" data-search><button type="button" class="btn btn-ghost btn-icon btn-sm search-clear" data-search-clear aria-label="清除搜索">{{ icon("x") }}</button></span>
     <button class="btn btn-primary" type="submit">搜索</button>
   </div>
   <div class="filters">
@@ -13,20 +13,20 @@
     <label class="filter">发生在<input type="date" name="from" value="{{ From }}"></label>
     <label class="filter">到<input type="date" name="through" value="{{ Through }}"></label>
     {% if Mode == "list" %}<label class="filter">排序<select name="order"><option value=""{% if not Order %} selected{% endif %}>最近更新</option><option value="created"{% if Order == "created" %} selected{% endif %}>最近记录</option><option value="occurred"{% if Order == "occurred" %} selected{% endif %}>发生时间</option></select></label>{% endif %}
-    {% if Filtered %}<a class="btn btn-ghost btn-sm" href="/memories{% if Q %}?q={{ Q|urlencode }}{% endif %}">清除筛选</a>{% endif %}
+    {% if Filtered %}<a class="btn btn-ghost" href="/memories{% if Q %}?q={{ Q|urlencode }}{% endif %}">{{ icon("x") }}清除筛选</a>{% endif %}
   </div>
   {% if Tag %}<input type="hidden" name="tag" value="{{ Tag }}">{% endif %}
   {% if Tags or Tag %}
   <div class="tag-filter" role="group" aria-label="按标签筛选">
     <span class="muted">标签</span>
-    {% if Tag %}<a class="chip chip-on" href="/memories{{ ClearTag }}" title="取消这个标签">{{ Tag }}{{ icon("x", "xs") }}</a>{% endif %}
+    {% if Tag %}<a class="chip chip-on" href="/memories{{ ClearTag }}" title="取消这个标签">{{ Tag }}{{ icon("x") }}</a>{% endif %}
     {% for t in Tags %}{% if t.name != Tag %}<a class="chip chip-btn" href="/memories{{ t.link }}">{{ t.name }}<small>{{ t.count }}</small></a>{% endif %}{% endfor %}
   </div>
   {% endif %}
 </form>
 
 {% if Nodes == 0 %}
-<div class="card"><div class="empty">{{ icon("list") }}<h3>还没有记忆</h3><p>等接入的 AI 写进记忆，或者自己写第一条。</p><div class="actions"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}新建节点</a></div></div></div>
+<div class="card"><div class="empty">{{ icon("list") }}<h3>还没有记忆</h3><p>等接入的 AI 写进记忆，或者自己写第一条。</p><div class="btns"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}新建节点</a></div></div></div>
 {% elif Mode == "search" %}
   {% if Hits %}
     <div class="result-bar"><h2>找到 <b>{{ Hits|length }}</b> 条最相关的</h2></div>
@@ -38,7 +38,7 @@
         <a class="hit-title" href="/node/{{ h.id }}">{{ h.title }}</a>{% if h.content != h.title %}<p class="hit-text">{{ h.content }}</p>{% endif %}
         {% if h.truncated %}<p class="muted">只显示了开头，打开节点看全文。</p>{% endif %}
         {% if h.expanded %}<div class="hit-sub"><span class="muted">它下面最贴近的：</span><ul class="mini">{% for c in h.expanded %}<li><a class="node-link" href="/node/{{ c.id }}"><span class="node-text">{{ c.title }}</span></a></li>{% endfor %}</ul></div>{% endif %}
-        <div class="hit-foot">{{ tags(h.tags) }}{% if h.path %}<nav class="path" aria-label="它在树里的位置"><span class="muted">在</span>{% for p in h.path %}<a href="/node/{{ p.id }}">{{ p.title }}</a>{% if not loop.last %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% endfor %}</nav>{% endif %}</div>
+        <div class="hit-foot">{{ tags(h.tags) }}{% if h.path %}<nav class="crumbs" aria-label="它在树里的位置"><span>在</span>{% for p in h.path %}<a href="/node/{{ p.id }}">{{ p.title }}</a>{% if not loop.last %}<span class="sep" aria-hidden="true">›</span>{% endif %}{% endfor %}</nav>{% endif %}</div>
       </li>
     {% endfor %}
     </ol>
@@ -48,11 +48,11 @@
 {% else %}
   <div class="result-bar"><h2>{% if Filtered %}符合条件的{% else %}全部{% endif %} <b>{{ Total }}</b> 个节点{% if Pages > 1 %}，第 {{ PageNo }} / {{ Pages }} 页{% endif %}</h2></div>
   {% if Items %}
-  <ul class="rows card">
+  <ul class="card list is-hover">
     {% for b in Items %}
-    <li class="row">
-      <div class="row-main"><a class="row-text" href="/node/{{ b.id }}">{{ b.title or "（没有文字）" }}</a>
-        <div class="row-meta">{{ layer(b.layer) }}{% if b.children %}<span class="muted">下面 {{ b.children }} 条</span>{% endif %}{{ tags(b.tags) }}</div></div>
+    <li>
+      <div class="row-main"><a class="row-title" href="/node/{{ b.id }}">{{ b.title or "（没有文字）" }}</a>
+        <div class="row-meta">{{ layer(b.layer) }}{% if b.children %}<span>下面 {{ b.children }} 条</span>{% endif %}{{ tags(b.tags) }}</div></div>
       <div class="row-side">{% if b.occurred %}<span>发生 {{ b.occurred }}</span>{% endif %}<span class="muted">更新 <time datetime="{{ b.updated }}">{{ local_time(b.updated) }}</time></span></div>
     </li>
     {% endfor %}

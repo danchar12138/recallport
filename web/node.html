@@ -6,45 +6,49 @@
 {% else %}<a class="node-link" href="/node/{{ c.id }}">{{ layer(c.layer) }}<span class="node-text">{{ c.title or "（没有文字）" }}</span></a>{% endif %}</li>
 {% endmacro %}
 {% if not Node %}
-<div class="card"><div class="empty">{{ icon("search") }}<h3>找不到这个节点</h3><p>它可能已经被永久删除，或者链接不对。</p><div class="actions"><a class="btn btn-primary" href="/memories">去记忆页</a><a class="btn" href="/trash">看看回收站</a></div></div></div>
+<header class="page-head"><div><h1>找不到这个节点</h1><p class="sub">它可能已经被永久删除，或者链接不对。</p></div></header>
+<div class="card"><div class="empty">{{ icon("search") }}<h3>没有这个节点</h3><p>可以回到记忆页搜索它，或者看看回收站里有没有。</p><div class="btns"><a class="btn btn-primary" href="/memories">去记忆页</a><a class="btn" href="/trash">看看回收站</a></div></div></div>
 {% else %}
 {% set n = Node %}
-<article class="node" data-node-id="{{ n.id }}">
-  <header class="node-head">
-    <nav class="path path-top" aria-label="它在树里的位置"><a href="/tree">树</a>{% for p in n.path %}<span class="sep" aria-hidden="true">›</span><a href="/node/{{ p.id }}">{{ p.title }}</a>{% endfor %}<span class="sep" aria-hidden="true">›</span><span class="here" aria-current="page">这一条</span></nav>
-    {% if n.title %}<h1 class="node-title">{{ n.title }}</h1>{% endif %}
-    <div class="node-meta">
-      {{ layer(n.layer) }}
-      <span>第 {{ n.version }} 版</span>
-      {% if n.occurred %}<span>{{ icon("calendar", "sm") }}发生于 {{ n.occurred }}</span>{% else %}<span class="muted">没记发生时间</span>{% endif %}
-      <span class="muted">记录于 <time datetime="{{ n.created }}">{{ local_time(n.created) }}</time></span>
-      <span class="muted">更新于 <time datetime="{{ n.updated }}">{{ local_time(n.updated) }}</time></span>
+<article class="node-page" data-node-id="{{ n.id }}" data-version="{{ n.version }}">
+  <nav class="crumbs" aria-label="它在树里的位置"><a href="/tree">树</a>{% for p in n.path %}<span class="sep" aria-hidden="true">›</span><a href="/node/{{ p.id }}">{{ p.title }}</a>{% endfor %}<span class="sep" aria-hidden="true">›</span><span class="here" aria-current="page">这一条</span></nav>
+  <header class="page-head">
+    <div>
+      <h1 class="node-title">{% if n.deleted %}{{ n.label }}{% else %}<button type="button" class="inline-edit{% if not n.title %} is-empty{% endif %}" data-title-edit title="点一下改标题">{{ n.label }}</button>{% endif %}</h1>
+      <div class="meta">
+        {{ layer(n.layer) }}
+        <span>第 {{ n.version }} 版</span>
+        {% if n.occurred %}<span>{{ icon("calendar") }}发生于 {{ n.occurred }}</span>{% else %}<span>没记发生时间</span>{% endif %}
+        <span>记录于 <time datetime="{{ n.created }}">{{ local_time(n.created) }}</time></span>
+        <span>更新于 <time datetime="{{ n.updated }}">{{ local_time(n.updated) }}</time></span>
+      </div>
     </div>
+    {% if not n.deleted %}
+    <div class="head-actions node-actions">
+      <a class="btn btn-primary" href="/node/{{ n.id }}/edit">{{ icon("edit") }}编辑</a>
+      <a class="btn" href="/node/new?parent={{ n.id }}">{{ icon("plus") }}新建子节点</a>
+      <button type="button" class="btn" data-dialog-open="move-dialog">{{ icon("move") }}移动</button>
+      <a class="btn" href="/tree?focus={{ n.id }}">{{ icon("tree") }}在树里打开</a>
+      <button type="button" class="btn btn-danger" data-dialog-open="delete-dialog">{{ icon("trash") }}删除</button>
+    </div>
+    {% endif %}
   </header>
 
   {% if n.deleted %}
   <div class="banner banner-warn" role="status">{{ icon("trash") }}<div><p><b>在回收站里。</b>它不出现在搜索、树和列表里，30 天后会自动永久删除。</p>
-    <div class="banner-actions"><form method="post" action="/trash/{{ n.id }}/restore"><button class="btn btn-sm btn-primary" type="submit">{{ icon("undo", "sm") }}恢复</button></form>
-    <form method="post" action="/trash/{{ n.id }}/purge" data-confirm="永久删除这个节点和它的历史？无法恢复。"><button class="btn btn-sm btn-danger-ghost" type="submit">永久删除</button></form></div></div></div>
+    <div class="banner-actions"><form method="post" action="/trash/{{ n.id }}/restore"><button class="btn btn-sm btn-primary" type="submit">{{ icon("undo") }}恢复</button></form>
+    <form method="post" action="/trash/{{ n.id }}/purge" data-confirm="永久删除「{{ n.label }}」？" data-confirm-text="它和它的历史会永久删除，无法恢复。" data-confirm-ok="永久删除"><button class="btn btn-sm btn-danger" type="submit">{{ icon("trash") }}永久删除</button></form></div></div></div>
   {% endif %}
 
   <section class="card node-body" aria-label="内容">
     <p class="content">{{ n.content }}</p>
-    {% if n.tags %}<div class="node-tags">{{ icon("tag", "sm") }}{{ tags(n.tags) }}</div>{% endif %}
+    {% if n.tags %}<div class="node-tags">{{ icon("tag") }}{{ tags(n.tags) }}</div>{% endif %}
   </section>
-
-  {% if not n.deleted %}
-  <div class="node-actions">
-    <a class="btn btn-primary" href="/node/{{ n.id }}/edit">{{ icon("edit") }}编辑</a>
-    <a class="btn" href="/node/new?parent={{ n.id }}">{{ icon("plus") }}新建子节点</a>
-    <a class="btn" href="/tree?focus={{ n.id }}">{{ icon("tree") }}在树里查看</a>
-  </div>
-  {% endif %}
 
   {% if Family %}
   {% set place = Family.place %}
-  <section class="block" aria-labelledby="family-title">
-    <h2 id="family-title">在树里的位置 <span class="count">{% if n.parent %}同级 {{ place.count }} 条，这是第 {{ place.index + 1 }} 条{% else %}最上层{% endif %}{% if n.descendants %}，下面一共 {{ n.descendants }} 条{% endif %}</span></h2>
+  <details class="fold" open>
+    <summary><h2>在树里的位置</h2><span class="count">{% if n.parent %}同级 {{ place.count }} 条，这是第 {{ place.index + 1 }} 条{% else %}最上层{% endif %}{% if n.descendants %}，下面一共 {{ n.descendants }} 条{% endif %}</span></summary>
     <ul class="family" data-family>
       {% for p in n.path %}<li class="fam-anc"><a class="node-link" href="/node/{{ p.id }}">{{ layer(p.layer) }}<span class="node-text">{{ p.title }}</span></a><ul>{% endfor %}
       {% if n.parent %}
@@ -59,36 +63,34 @@
       {% endif %}
       {% for p in n.path %}</ul></li>{% endfor %}
     </ul>
-  </section>
+  </details>
   {% endif %}
 
   {% if n.children %}
-  <section class="block" aria-labelledby="kids-title">
-    <details class="fold"{% if n.children|length <= 12 %} open{% endif %}>
-      <summary><h2 id="kids-title">下面的节点 <span class="count">{{ n.children|length }} 条{% if n.descendants > n.children|length %}，一共 {{ n.descendants }} 条{% endif %}</span></h2></summary>
-      <ul class="plain">{% for c in n.children %}<li class="line">{{ node_link(c) }}{% if c.children %}<small class="muted">下面 {{ c.children }} 条</small>{% endif %}</li>{% endfor %}</ul>
-    </details>
-  </section>
+  <details class="fold"{% if n.children|length <= 12 %} open{% endif %}>
+    <summary><h2>下面的节点</h2><span class="count">{{ n.children|length }} 条{% if n.descendants > n.children|length %}，一共 {{ n.descendants }} 条{% endif %}</span></summary>
+    <ul class="plain">{% for c in n.children %}<li class="line">{{ node_link(c) }}{% if c.children %}<small class="muted">下面 {{ c.children }} 条</small>{% endif %}</li>{% endfor %}</ul>
+  </details>
   {% endif %}
 
   {% if n.refs or n.referenced_by %}
-  <section class="block" aria-labelledby="refs-title">
-    <h2 id="refs-title">相关的节点</h2>
+  <details class="fold" open>
+    <summary><h2>相关的节点</h2></summary>
     {% if n.refs %}<h3 class="sub-title">它引用的</h3><ul class="plain">{% for r in n.refs %}<li class="line">{{ node_link(r) }}</li>{% endfor %}</ul>{% endif %}
     {% if n.referenced_by %}<h3 class="sub-title">引用了它的</h3><ul class="plain">{% for r in n.referenced_by %}<li class="line">{{ node_link(r) }}</li>{% endfor %}</ul>{% endif %}
-  </section>
+  </details>
   {% endif %}
 
   {% if n.sources %}
-  <section class="block" aria-labelledby="src-title">
-    <h2 id="src-title">来源</h2>
+  <details class="fold" open>
+    <summary><h2>来源</h2></summary>
     <ul class="plain sources">{% for s in n.sources %}<li>{{ s }}</li>{% endfor %}</ul>
-  </section>
+  </details>
   {% endif %}
 
   {% if Attachments %}
-  <section class="block" aria-labelledby="files-title">
-    <h2 id="files-title">附件 <span class="count">{{ Attachments|length }}</span></h2>
+  <details class="fold" open>
+    <summary><h2>附件</h2><span class="count">{{ Attachments|length }}</span></summary>
     <ul class="files">
     {% for a in Attachments %}
       <li class="file">
@@ -102,60 +104,58 @@
           {% elif a.kind == "video" %}<video class="file-media" controls preload="metadata" src="/file/{{ a.hash }}"></video>
           {% elif a.kind == "pdf" %}<iframe class="file-pdf" src="/file/{{ a.hash }}" title="{{ a.name }}" loading="lazy"></iframe>{% endif %}
           <div class="file-info">
-            <span class="file-name">{{ icon("paperclip", "sm") }}<b>{{ a.name }}</b></span>
+            <span class="file-name">{{ icon("paperclip") }}<b>{{ a.name }}</b></span>
             <span class="muted">{{ a.size_text }}</span>
-            <a class="btn btn-sm" href="/file/{{ a.hash }}" {% if a.kind == "file" %}download{% else %}target="_blank" rel="noopener"{% endif %}>{% if a.kind == "file" %}{{ icon("download", "sm") }}下载{% else %}在新标签页打开{% endif %}</a>
+            <a class="btn btn-sm" href="/file/{{ a.hash }}" {% if a.kind == "file" %}download{% else %}target="_blank" rel="noopener"{% endif %}>{% if a.kind == "file" %}{{ icon("download") }}下载{% else %}{{ icon("external") }}打开{% endif %}</a>
           </div>
         {% endif %}
         {% if a.caption %}<p class="caption">{{ a.caption }}</p>{% endif %}
       </li>
     {% endfor %}
     </ul>
-  </section>
+  </details>
   {% endif %}
 
-  {% if not n.deleted %}
-  <section class="block manage" aria-labelledby="manage-title">
-    <h2 id="manage-title">移动和删除</h2>
-    <div class="manage-grid">
-      <details class="fold" id="move-panel">
-        <summary>{{ icon("move", "sm") }}移动到别处</summary>
-        <form class="stack" method="post" action="/node/{{ n.id }}/move" data-move data-self="{{ n.id }}">
-          <p class="help">一个节点只有一个位置：放在哪一条汇总下面。它下面的节点会跟着一起搬走。{% if n.parent %}现在在：{{ n.path[-1].title }}。{% else %}现在是顶层节点。{% endif %}</p>
-          <div class="field" data-move-find hidden><label for="move-q">找一条汇总，把它放到下面</label><input type="text" id="move-q" data-move-search placeholder="输入几个字搜索" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="move-hits"><ul class="pick-list" id="move-hits" role="listbox" hidden></ul></div>
-          <div class="field"><label for="move-parent">新位置（节点编号）</label><input type="text" id="move-parent" name="parent" value="" placeholder="搜索后自动填入" autocomplete="off" spellcheck="false"><p class="hint" id="move-picked" role="status"></p></div>
-          <div class="btns"><button class="btn btn-primary btn-sm" type="submit">移到这里</button>{% if n.parent %}<button class="btn btn-sm" type="submit" name="top" value="1">设为顶层</button>{% endif %}</div>
-        </form>
-      </details>
-      <details class="fold fold-danger" id="delete-panel">
-        <summary>{{ icon("trash", "sm") }}删除</summary>
-        <form class="stack" method="post" action="/node/{{ n.id }}/delete" data-confirm="确定删除这个节点？它会进回收站，30 天内可以恢复。">
-          <input type="hidden" name="version" value="{{ n.version }}">
-          <p class="help">删除后它进回收站，保留 30 天，期间可以恢复；到期自动永久删除。{% if n.children %}它下面的 {{ n.children|length }} 个节点不会跟着删，会上移一层，挂到{% if n.parent %}它的上一级下面{% else %}顶层{% endif %}。{% endif %}</p>
-          <div class="field"><label for="delete-reason">为什么删除？</label><input type="text" id="delete-reason" name="reason" required maxlength="200" placeholder="例如：重复了、记错了、不需要了" autocomplete="off"></div>
-          <div class="btns"><button class="btn btn-danger btn-sm" type="submit">删除</button></div>
-        </form>
-      </details>
-    </div>
-  </section>
-  {% endif %}
-
-  <section class="block" aria-labelledby="history-title">
-    <details class="fold">
-      <summary><h2 id="history-title">历史 <span class="count">{{ Revisions|length }} 个版本</span></h2></summary>
+  <details class="fold">
+      <summary><h2>历史</h2><span class="count">{{ Revisions|length }} 个版本</span></summary>
       <ol class="timeline">
       {% for r in Revisions %}
         <li>
-          <div class="rev-head"><span class="op op-{{ r.op }}">{{ r.label }}</span><b>第 {{ r.version }} 版</b><span class="muted">{{ r.who }} · <time datetime="{{ r.at }}">{{ local_time(r.at, true) }}</time></span></div>
+          <div class="rev-head"><span class="badge op-{{ r.op }}">{{ r.label }}</span><b>第 {{ r.version }} 版</b><span class="muted">{{ r.who }} · <time datetime="{{ r.at }}">{{ local_time(r.at, true) }}</time></span></div>
           {% if r.reason %}<p class="reason">{{ r.reason }}</p>{% endif %}
           {% if r.title_changed %}<p class="diff"><span class="muted">标题：</span>{% if r.old_title %}<del>{{ r.old_title }}</del>{% endif %}{% if r.title %}<ins>{{ r.title }}</ins>{% else %}<span class="muted">（去掉了标题）</span>{% endif %}</p>{% endif %}
           {% if r.removed is not none %}<p class="diff"><span class="muted">改了：</span>{% if r.removed %}<del>{{ r.removed }}</del>{% endif %}{% if r.added %}<ins>{{ r.added }}</ins>{% endif %}</p>{% elif r.same and not r.title_changed %}<p class="muted">文字没有变化，改的是标签、日期、引用或附件。</p>{% endif %}
-          <details class="rev-content"><summary>这一版的全文</summary><p class="content-sm">{{ r.content }}</p></details>
+          <details class="fold is-flat rev-content"><summary>这一版的全文</summary><p class="content-sm">{{ r.content }}</p></details>
         </li>
       {% endfor %}
       </ol>
-    </details>
-  </section>
+  </details>
+
+  {% if not n.deleted %}
+  <dialog class="dialog" id="move-dialog" aria-labelledby="move-title">
+    <form class="dialog-form" method="post" action="/node/{{ n.id }}/move" data-move data-self="{{ n.id }}">
+      <div class="dialog-head"><h2 id="move-title">移动「{{ n.label }}」</h2></div>
+      <div class="dialog-body">
+        <p>一个节点只有一个位置：放在哪一条汇总下面。它下面的节点会跟着一起搬走。{% if n.parent %}现在在「{{ n.path[-1].title }}」下面。{% else %}现在是顶层节点。{% endif %}</p>
+        <div class="field" data-move-find hidden><label for="move-q">找一条汇总，把它放到下面</label><input type="text" id="move-q" data-move-search placeholder="输入几个字搜索" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="move-hits"><ul class="menu" id="move-hits" role="listbox" hidden></ul></div>
+        <div class="field" data-move-id><label for="move-parent">新位置（节点编号）</label><input type="text" id="move-parent" name="parent" value="" placeholder="搜索后自动填入" autocomplete="off" spellcheck="false"></div>
+        <p class="hint" id="move-picked" role="status"></p>
+      </div>
+      <div class="dialog-foot"><button type="button" class="btn" data-dialog-close>取消</button>{% if n.parent %}<button class="btn" type="submit" name="top" value="1">移到最上层</button>{% endif %}<button class="btn btn-primary" type="submit">移到这里</button></div>
+    </form>
+  </dialog>
+  <dialog class="dialog" id="delete-dialog" aria-labelledby="delete-title">
+    <form class="dialog-form" method="post" action="/node/{{ n.id }}/delete">
+      <input type="hidden" name="version" value="{{ n.version }}">
+      <div class="dialog-head"><h2 id="delete-title">删除「{{ n.label }}」？</h2></div>
+      <div class="dialog-body">
+        <p>删除后会进回收站，30 天内可恢复。{% if n.children %}它下面的 {{ n.children|length }} 个节点不会跟着删，会上移一层，挂到{% if n.parent %}它的上一级下面{% else %}顶层{% endif %}。{% endif %}</p>
+        <div class="field"><label for="delete-reason">为什么删除</label><input type="text" id="delete-reason" name="reason" value="不再需要了" required maxlength="200" autocomplete="off"></div>
+      </div>
+      <div class="dialog-foot"><button type="button" class="btn" data-dialog-close>取消</button><button class="btn btn-danger" type="submit">删除</button></div>
+    </form>
+  </dialog>
+  {% endif %}
 </article>
 <script src="/node.js" defer></script>
 {% endif %}

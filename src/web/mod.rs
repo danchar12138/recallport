@@ -88,7 +88,6 @@ pub fn router(service: Arc<Service>, address: SocketAddr, app: Arc<App>) -> Resu
     }
     assets!(router:
         "style.css" => "text/css; charset=utf-8",
-        "admin.css" => "text/css; charset=utf-8",
         "icon.svg" => "image/svg+xml",
         "theme.js" => "text/javascript; charset=utf-8",
         "ui.js" => "text/javascript; charset=utf-8",

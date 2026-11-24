@@ -1,42 +1,22 @@
 /* The two administration pages: 数据 (#adm-data) and 接入 (#adm-connect).
    Every action is a JSON call to /api/…; the long ones are background jobs that this file polls. After something
-   changed on the server the page reloads, and the message to show afterwards waits in sessionStorage. Copying and
-   two-step confirmation (data-copy, data-confirm) belong to ui.js. */
+   changed on the server the page reloads, and the message to show afterwards (a toast) waits in sessionStorage. Copying,
+   the confirmation dialog and the toast (data-copy, data-confirm, rp.toast) belong to ui.js. */
 (() => {
   'use strict';
   const doc = document;
   const $ = (selector, root = doc) => root.querySelector(selector);
   const $$ = (selector, root = doc) => [...root.querySelectorAll(selector)];
 
-  /** Build an element; text always goes through textContent. */
-  const h = (tag, props = {}, ...children) => {
-    const node = doc.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value === undefined || value === null || value === false) continue;
-      if (key === 'text') node.textContent = value;
-      else node.setAttribute(key, value === true ? '' : value);
-    }
-    node.append(...children.filter(child => child !== null && child !== undefined && child !== false));
-    return node;
-  };
+  const {h, api: call, toast} = window.rp;
 
-  /** A JSON call. Failures carry the server's own explanation in `message`. */
+  /** A JSON call that throws on failure, carrying the server's own explanation in `message`. */
   const api = async (url, {method = 'POST', body} = {}) => {
-    let response;
-    try {
-      response = await fetch(url, {
-        method,
-        headers: body === undefined ? {} : {'Content-Type': 'application/json'},
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-    } catch {
-      throw Object.assign(new Error('连不上本机的 RecallPort 服务，请确认它还在运行。'), {offline: true});
+    const r = await call(method, url, body);
+    if (!r.ok) {
+      throw Object.assign(new Error(r.status === 0 ? r.data.error : (r.data?.error || `操作没有成功（HTTP ${r.status}）。`)), {offline: r.status === 0, status: r.status, data: r.data});
     }
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw Object.assign(new Error(data?.error || `操作没有成功（HTTP ${response.status}）。`), {status: response.status, data});
-    }
-    return data;
+    return r.data;
   };
 
   const size = bytes => {
@@ -46,7 +26,7 @@
     return unit === 0 ? `${bytes} B` : `${value.toFixed(1)} ${units[unit]}`;
   };
 
-  const FLASH = 'adm-flash';
+  const FLASH = 'rp-flash';
   const keepForNextPage = message => { try { sessionStorage.setItem(FLASH, JSON.stringify(message)); } catch { /* the page just reloads without a note */ } };
   const takeFromLastPage = () => {
     try {
@@ -100,7 +80,8 @@
       phase.textContent = '';
       bar.hidden = true;
       panel.dataset.tone = tone;
-      result.replaceChildren(...lines, h('div', {class: 'adm-actions'}, h('button', {type: 'button', class: 'btn btn-sm', 'data-dismiss': '', text: tone === 'error' ? '关闭' : '知道了'})));
+      if (tone === 'ok') toast(heading);
+      result.replaceChildren(...lines, h('div', {class: 'btns'}, h('button', {type: 'button', class: 'btn btn-sm', 'data-dismiss': '', text: tone === 'error' ? '关闭' : '知道了'})));
       result.focus({preventScroll: true});
       panel.scrollIntoView({block: 'nearest', behavior: 'smooth'});
     };
@@ -121,7 +102,7 @@
       }
       if (r.legacy) lines.push(h('p', {text: '这是旧版（0.x）的备份，已转换：被更正过的记忆成了同一个节点的历史版本，汇总成了上一层的父节点，实体成了标签。'}));
       if (r.missing_files > 0) {
-        lines.push(h('p', {class: 'adm-warn', text: `有 ${r.missing_files} 个附件文件在备份里找不到（自动备份不带附件文件，或者备份不完整）。对应的节点都在，只是那些文件打不开。`}));
+        lines.push(h('p', {class: 'warn-text', text: `有 ${r.missing_files} 个附件文件在备份里找不到（自动备份不带附件文件，或者备份不完整）。对应的节点都在，只是那些文件打不开。`}));
       }
       return lines;
     };
@@ -198,7 +179,7 @@
       uploadBox.hidden = false;
       uploadBar.value = 0;
       uploadPct.textContent = '正在上传 0%';
-      const cancel = h('button', {type: 'button', class: 'btn btn-sm', text: '取消'});
+      const cancel = h('button', {type: 'button', class: 'btn btn-sm', text: '取消上传'});
       cancel.addEventListener('click', () => upload?.abort());
       uploadBox.append(cancel);
       try {
@@ -294,13 +275,7 @@
   /* ---------------------------------------------------------------- 接入 */
 
   const initConnect = root => {
-    const note = $('[data-flash]', root);
-    const say = (text, tone = 'ok') => {
-      note.textContent = text;
-      note.dataset.tone = tone;
-      note.hidden = false;
-      note.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-    };
+    const say = (text, tone = 'ok') => toast(text, tone);
 
     const verdict = (card, check) => {
       const out = $('[data-verify]', card);
@@ -308,12 +283,12 @@
       const state = card.dataset.state;
       const lines = [];
       if (check.ok) {
-        lines.push(h('p', {class: 'adm-verify-line', 'data-tone': 'ok', text: `本机服务正常：${check.server || 'RecallPort'}，${check.tools.length} 个工具可用（应有 ${check.expected} 个）。`}));
+        lines.push(h('p', {class: 'verify-line', 'data-tone': 'ok', text: `本机服务正常：${check.server || 'RecallPort'}，${check.tools.length} 个工具可用（应有 ${check.expected} 个）。`}));
       } else {
-        lines.push(h('p', {class: 'adm-verify-line', 'data-tone': 'error', text: `检查没有通过：${check.error}`}));
+        lines.push(h('p', {class: 'verify-line', 'data-tone': 'error', text: `检查没有通过：${check.error}`}));
       }
       if (check.tools.length) {
-        lines.push(h('ul', {class: 'adm-tools-found', 'aria-label': '服务提供的工具'}, ...check.tools.map(tool => h('li', {class: check.missing.includes(tool) ? 'is-missing' : ''}, h('code', {text: tool})))));
+        lines.push(h('ul', {class: 'tools-found', 'aria-label': '服务提供的工具'}, ...check.tools.map(tool => h('li', {class: check.missing.includes(tool) ? 'is-missing' : ''}, h('code', {text: tool})))));
       }
       if (check.ok) {
         const seen = Boolean($('[data-state="seen"]', card));
@@ -322,7 +297,7 @@
           ? (seen ? `${name} 的配置正确，而且它连过本服务。` : `${name} 的配置正确，但还没收到它的连接：请重启 ${name}，它读到新配置后才会连上来。`)
           : state === 'conflict' ? `${name} 的配置指向别的地址，它连不到这个服务。选“替换为当前地址”。`
           : `${name} 还没有接入，上面只检查了本机服务。`;
-        lines.push(h('p', {class: 'adm-verify-line', 'data-tone': tone, text}));
+        lines.push(h('p', {class: 'verify-line', 'data-tone': tone, text}));
       }
       out.replaceChildren(...lines);
     };
@@ -359,14 +334,13 @@
       const card = button.closest('[data-client]');
       const act = button.dataset.clientAct;
       button.disabled = true;
-      note.hidden = true;
       if (act === 'verify') {
         const out = $('[data-verify]', card);
-        out.replaceChildren(h('p', {class: 'adm-verify-line', 'data-tone': 'info', text: '正在检查本机服务……'}));
+        out.replaceChildren(h('p', {class: 'verify-line', 'data-tone': 'info', text: '正在检查本机服务……'}));
         try {
           verdict(card, await api('/api/clients/verify'));
         } catch (error) {
-          out.replaceChildren(h('p', {class: 'adm-verify-line', 'data-tone': 'error', text: error.message}));
+          out.replaceChildren(h('p', {class: 'verify-line', 'data-tone': 'error', text: error.message}));
         }
         button.disabled = false;
         return;

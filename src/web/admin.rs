@@ -1138,6 +1138,8 @@ mod tests {
         let mut env = Environment::new();
         env.set_undefined_behavior(UndefinedBehavior::Strict);
         env.add_function("local_time", |value: String, _seconds: Option<bool>| value);
+        env.add_template("parts.html", include_str!("../../web/parts.html"))
+            .unwrap();
         env.add_template("data.html", include_str!("../../web/data.html"))
             .unwrap();
         env.add_template("connect.html", include_str!("../../web/connect.html"))
@@ -1213,7 +1215,7 @@ mod tests {
             let has_backups = !model["Backups"].as_array().unwrap().is_empty();
             assert!(html.contains("id=\"restore\""));
             assert_eq!(
-                html.contains("adm-legacy"),
+                html.contains("class=\"legacy card\""),
                 model["Empty"] == true && has_backups
             );
             assert_eq!(

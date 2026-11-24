@@ -1,69 +1,53 @@
 {% from "parts.html" import icon %}
 {% if Empty %}
 <header class="page-head"><div><h1>树</h1><p class="sub">整棵记忆树，可以一路放大到每一条记忆</p></div></header>
-<div class="card"><div class="empty">{{ icon("tree") }}<h3>树还是空的</h3><p>等接入的 AI 写进第一批记忆，这里就会长出一幅可以缩放的图：缩小看最上面的几条总汇总，放大看到每一条具体的记忆。</p><div class="actions"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}自己写一条</a></div></div></div>
+<div class="card"><div class="empty">{{ icon("tree") }}<h3>树还是空的</h3><p>等接入的 AI 写进第一批记忆，这里就会长出一幅可以缩放的图：缩小看最上面的几条总汇总，放大看到每一条具体的记忆。</p><div class="btns"><a class="btn btn-primary" href="/connect">{{ icon("plug") }}去接入 AI</a><a class="btn" href="/node/new">{{ icon("plus") }}新建节点</a></div></div></div>
 {% else %}
 <div class="tree-app" id="tree-app">
+  <h1 class="sr-only">树</h1>
   <div class="tree-stage" id="tree-stage">
     <canvas id="tree-canvas" tabindex="0" role="application" aria-label="记忆树的缩放图" aria-describedby="tree-help"></canvas>
-    <p class="sr-only" id="tree-help">用滚轮或加减键缩放，拖动或方向键平移，点一个方块选中它并在右侧面板里读全文、编辑、新建子记忆、移动、删除，双击或按回车放大到这张卡片，按 Esc 回到上一个视图，按 0 回到整棵树，按 F 进入沉浸，按 O 打开大纲。右上角的滑块可以快速缩放。图的文字版是大纲、下面「最上层的节点」列表和右侧面板。</p>
-    <div class="tree-msg" id="tree-msg" role="status"><span class="spinner" aria-hidden="true"></span>正在画树……</div>
+    <p class="sr-only" id="tree-help">用滚轮或加减键缩放，拖动或方向键平移，点一个方块选中它并在右侧面板里读全文、编辑、新建子节点、移动、删除，双击或按回车放大到这张卡片，按 Esc 回到上一个视图，按 0 回到整棵树，按 F 进入沉浸，按 O 打开大纲。右上角的滑块可以快速缩放。图的文字版是大纲、下面「最上层的节点」列表和右侧面板。</p>
+    <div class="tree-msg loading" id="tree-msg" role="status"><span class="spinner" aria-hidden="true"></span>正在画树……</div>
     <canvas class="tree-mini" id="tree-mini" aria-hidden="true"></canvas>
 
     <div class="tree-pill glass" id="tree-pill">
       <form class="tree-search" id="tree-search" role="search">
         <label class="sr-only" for="tree-q">在整棵树里搜索</label>
-        <span class="searchfield">{{ icon("search") }}<input type="search" id="tree-q" name="q" placeholder="在整棵树里找……" autocomplete="off" aria-controls="tree-hits" aria-keyshortcuts="/"></span>
+        <span class="searchfield">{{ icon("search") }}<input type="search" id="tree-q" name="q" placeholder="在整棵树里搜索" autocomplete="off" aria-controls="tree-hits" aria-keyshortcuts="/"><button type="button" class="btn btn-ghost btn-icon btn-sm search-clear" data-search-clear aria-label="清除搜索">{{ icon("x") }}</button></span>
       </form>
-      <nav class="tree-crumbs" id="tree-crumbs" aria-label="当前位置"></nav>
+      <nav class="crumbs tree-crumbs" id="tree-crumbs" aria-label="当前位置"></nav>
     </div>
     <ul class="tree-hits glass" id="tree-hits" hidden aria-label="搜索结果"></ul>
 
     <div class="tree-tools glass" role="group" aria-label="视图">
-      <button type="button" class="tool" id="tree-ol-toggle" aria-pressed="false" aria-controls="tree-side" aria-keyshortcuts="O" title="大纲（O）" aria-label="大纲">{{ icon("list") }}</button>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-ol-toggle" aria-pressed="false" aria-controls="tree-side" aria-keyshortcuts="O" title="大纲（O）" aria-label="大纲">{{ icon("list") }}</button>
       <span class="tree-sep" aria-hidden="true"></span>
       <div class="tree-zoom" role="group" aria-label="缩放">
-        <button type="button" class="tool" id="tree-out" title="缩小（-）" aria-label="缩小">{{ icon("minus") }}</button>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-out" title="缩小（-）" aria-label="缩小">{{ icon("minus") }}</button>
         <div class="tree-slider" id="tree-slider" role="slider" tabindex="0" aria-label="缩放" aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="放大到 100%" title="拖动缩放（方向键 ±，Home 适应窗口）"><span class="tree-slider-track"></span><span class="tree-slider-fill"></span><span class="tree-slider-thumb"></span></div>
-        <button type="button" class="tool" id="tree-in" title="放大（+）" aria-label="放大">{{ icon("plus") }}</button>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-in" title="放大（+）" aria-label="放大">{{ icon("plus") }}</button>
         <output class="tree-pct" id="tree-pct" aria-hidden="true">100%</output>
-        <button type="button" class="tool" id="tree-fit" title="适应窗口（0）" aria-label="适应窗口">{{ icon("scan") }}</button>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-fit" title="适应窗口（0）" aria-label="适应窗口">{{ icon("scan") }}</button>
       </div>
       <span class="tree-sep" aria-hidden="true"></span>
-      <button type="button" class="tool" id="tree-immerse" aria-pressed="false" aria-keyshortcuts="F" title="沉浸模式（F）" aria-label="沉浸模式">{{ icon("expand") }}</button>
-      <button type="button" class="tool" id="tree-keys-toggle" aria-pressed="false" aria-controls="tree-keys" title="快捷键（?）" aria-label="快捷键">{{ icon("keyboard") }}</button>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-immerse" aria-pressed="false" aria-keyshortcuts="F" title="沉浸模式（F）" aria-label="沉浸模式">{{ icon("expand") }}</button>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-keys-toggle" data-dialog-open="help-dialog" aria-keyshortcuts="?" title="快捷键（?）" aria-label="快捷键">{{ icon("keyboard") }}</button>
     </div>
-    <div class="tree-keys glass" id="tree-keys" hidden>
-      <h2>快捷键</h2>
-      <dl>
-        <dt><kbd>/</kbd></dt><dd>搜索</dd>
-        <dt><kbd>0</kbd></dt><dd>适应窗口</dd>
-        <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>缩放</dd>
-        <dt><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></dt><dd>平移</dd>
-        <dt><kbd>Enter</kbd></dt><dd>放大到选中的卡片</dd>
-        <dt><kbd>O</kbd></dt><dd>大纲</dd>
-        <dt><kbd>F</kbd></dt><dd>沉浸</dd>
-        <dt><kbd>E</kbd></dt><dd>编辑选中的</dd>
-        <dt><kbd>N</kbd></dt><dd>在选中的下面新建</dd>
-        <dt><kbd>Esc</kbd></dt><dd>回到上一个视图</dd>
-      </dl>
-    </div>
-
     <div class="tree-foot glass" id="tree-foot">
       <button type="button" class="tree-foot-dot" id="tree-foot-toggle" aria-expanded="true" aria-controls="tree-legend" title="图例" aria-label="图例"><span></span></button>
       <ul class="tree-legend" id="tree-legend" aria-label="图例"></ul>
       <p class="tree-status" id="tree-status" role="status" aria-live="polite"></p>
     </div>
 
-    <button type="button" class="tree-handle glass" id="tree-handle" aria-pressed="false" aria-controls="tree-side" aria-keyshortcuts="O" title="大纲（O）">{{ icon("list", "sm") }}<span>大纲</span></button>
+    <button type="button" class="tree-handle glass" id="tree-handle" aria-pressed="false" aria-controls="tree-side" aria-keyshortcuts="O" title="大纲（O）">{{ icon("list") }}<span>大纲</span></button>
     <aside class="tree-side glass" id="tree-side" aria-label="节点大纲">
-      <div class="tree-side-head"><h2>大纲</h2><button type="button" class="tool" id="tree-side-close" title="收起大纲" aria-label="收起大纲">{{ icon("x", "sm") }}</button></div>
+      <div class="tree-side-head glass-head"><h2>大纲</h2><button type="button" class="btn btn-ghost btn-icon btn-sm" id="tree-side-close" title="收起大纲" aria-label="收起大纲">{{ icon("x") }}</button></div>
       <ul class="tree-ol" id="tree-ol" role="tree" aria-label="记忆树的大纲"></ul>
     </aside>
 
     <aside class="tree-panel glass" id="tree-panel" aria-label="节点详情" tabindex="-1"></aside>
 
-    <div class="tree-toast" id="tree-toast" role="status" aria-live="polite"></div>
     <div class="tree-tip" id="tree-tip" role="tooltip" hidden></div>
     <p class="tree-exit glass" id="tree-exit">按 <kbd>Esc</kbd> 或 <kbd>F</kbd> 退出沉浸</p>
   </div>

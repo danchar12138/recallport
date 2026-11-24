@@ -47,65 +47,18 @@
   const half = v => Math.round(v * 2) / 2;
 
   /* ---------- small helpers ---------- */
-  // h('div', {class: 'x', onclick: fn, text: 'hi'}, child, ...): a tiny element builder.
-  const h = (tag, attrs, ...kids) => {
-    const node = doc.createElement(tag);
-    for (const [key, value] of Object.entries(attrs || {})) {
-      if (value === undefined || value === null || value === false) continue;
-      if (key === 'class') node.className = value;
-      else if (key === 'text') node.textContent = value;
-      else if (key === 'value') node.value = value;
-      else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? '' : value);
-    }
-    for (const kid of kids.flat()) if (kid) node.append(kid);        // nothing for false, null, 0 or an empty text
-    return node;
-  };
-  const icon = (name, size = 'sm') => {
-    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', `icon icon-${size}`);
-    svg.setAttribute('aria-hidden', 'true');
-    const use = doc.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', `#${name}`);
-    svg.append(use);
-    return svg;
-  };
+  // The element builder, the icon, the JSON call, the toast and the layer badge are the interface parts every page shares (ui.js).
+  const {h, icon, api, parseTags, layerBadge: badge} = window.rp;
+  const toast = (text, error = false) => window.rp.toast(text, error ? 'error' : 'ok');
   const store = {
     get(key) { try { return localStorage.getItem(key); } catch { return null; } },
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode: the choice lasts for this page */ } },
-  };
-  const api = async (method, url, body) => {
-    try {
-      const response = await fetch(url, {method, headers: body ? {'Content-Type': 'application/json'} : undefined, body: body ? JSON.stringify(body) : undefined});
-      const data = await response.json().catch(() => ({}));
-      return {ok: response.ok, status: response.status, data};
-    } catch {
-      return {ok: false, status: 0, data: {error: '连不上本机的服务，稍后再试'}};
-    }
   };
   const fmtTime = iso => {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso || '';
     const p = v => String(v).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-  };
-  const parseTags = text => {
-    const parts = /[,，、;；\n]/.test(text) ? text.split(/[,，、;；\n]/) : text.split(/\s+/);
-    const out = [];
-    for (const part of parts) {
-      const tag = part.trim().replace(/^#+/, '').trim();
-      if (tag && !out.includes(tag)) out.push(tag);
-    }
-    return out;
-  };
-  let toastTimer = 0;
-  const toast = (text, error = false) => {
-    const box = $('tree-toast');
-    box.textContent = text;
-    box.classList.toggle('is-error', error);
-    box.classList.add('is-on');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => box.classList.remove('is-on'), error ? 6000 : 3200);
   };
 
   /* ---------- colours: CSS custom properties, read again when the theme changes ---------- */
@@ -1215,11 +1168,6 @@
   let selectSerial = 0;
   let kidsShown = 6;
   const fold = {relations: true, history: false};
-  const badge = layer => {
-    const b = h('span', {class: 'layer', text: layer === 0 ? '第 0 层 · 记忆' : `第 ${layer} 层 · 汇总`});
-    b.dataset.layer = String(Math.min(layer, 5));
-    return b;
-  };
   const span = it => (it.from ? (it.to && it.to !== it.from ? `${it.from} – ${it.to}` : it.from) : '');
   const snippetOf = text => {
     const t = text.trim();
@@ -1250,13 +1198,15 @@
     search();
   };
 
-  const field = (label, control, hint) => h('div', {class: 'field'}, h('label', {for: control.id, text: label}), control, hint && h('p', {class: 'hint', text: hint}));
+  const field = (label, control, hint, required = false) => h('div', {class: 'field'}, h('label', {for: control.id}, label, required && h('span', {class: 'req', text: '必填'})), control, hint && h('p', {class: 'hint', text: hint}));
   const formError = (box, r, retry) => {
     box.replaceChildren(icon('alert'), h('p', {text: r.data.error || '没有成功'}));
     box.hidden = false;
     if (r.data.conflict) box.append(h('button', {type: 'button', class: 'btn btn-sm', text: '重新载入最新内容', onclick: retry}));
   };
   const errorBox = () => h('div', {class: 'banner banner-error', role: 'alert', hidden: true});
+  const cancelButton = () => h('button', {type: 'button', class: 'btn', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }});
+  const ctrlEnter = (area, form) => area.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); } });
 
   // Run a change from a form (or any element that holds the buttons and one error box): `done(data)` when it
   // worked, else the reason shows in the box, with a way to load the newest version when someone else changed it.
@@ -1294,6 +1244,7 @@
     if (r.ok) { act = null; editTitle = false; }
     return r;
   };
+  const needTitle = form => formError(form.querySelector('.banner'), {data: {error: '标题必填：给它起一个 16 个字以内的名称'}});
 
   const editForm = d => {
     const title = h('input', {type: 'text', id: 'f-title', value: d.title, maxlength: '40', required: true, placeholder: '16 个字以内的名称', autocomplete: 'off'});
@@ -1302,58 +1253,49 @@
     const occurred = h('input', {type: 'text', id: 'f-occurred', value: d.occurred, placeholder: '2024-09-12，或只写 2024-09、2024', autocomplete: 'off'});
     const form = h('form', {class: 'pane-form', 'aria-label': '编辑这个节点'},
       h('h3', {text: '编辑'}), errorBox(),
-      field('标题（必填）', title, '一个名称，不是一句话；结论写在内容里'),
+      field('标题', title, '一个名称，不是一句话；结论写在内容里', true),
       field('内容', content), field('标签（用逗号分开）', tags), field('发生时间', occurred),
-      h('div', {class: 'btns'},
-        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}),
-        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }}),
-        h('span', {class: 'hint', text: 'Ctrl+Enter 保存'})));
+      h('div', {class: 'form-actions'}, h('span', {class: 'hint', text: 'Ctrl+Enter 保存'}), cancelButton(), h('button', {type: 'submit', class: 'btn btn-primary', text: '保存'})));
     form.addEventListener('submit', event => {
       event.preventDefault();
-      if (!title.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '标题必填：给它起一个 16 个字以内的名称'}}); return; }
+      if (!title.value.trim()) { needTitle(form); return; }
       submit(form, () => saveChange({title: title.value, content: content.value, tags: parseTags(tags.value), occurred: occurred.value}),
         async data => { apply(selected, data); renderPanel(); toast('已保存'); });
     });
-    content.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); } });
+    ctrlEnter(content, form);
     return form;
   };
   const childForm = d => {
     const title = h('input', {type: 'text', id: 'f-title', maxlength: '40', required: true, placeholder: '16 个字以内的名称', autocomplete: 'off'});
     const content = h('textarea', {id: 'f-content', rows: '6', placeholder: '写下这一条记忆'});
     const tags = h('input', {type: 'text', id: 'f-tags', autocomplete: 'off'});
-    const form = h('form', {class: 'pane-form', 'aria-label': '新建子记忆'},
-      h('h3', {text: `在「${d.label}」下面新建一条`}), errorBox(),
-      field('标题（必填）', title, '一个名称，不是一句话；结论写在内容里'), field('内容', content), field('标签（用逗号分开）', tags),
-      h('div', {class: 'btns'},
-        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}),
-        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }}),
-        h('span', {class: 'hint', text: 'Ctrl+Enter 保存'})));
+    const form = h('form', {class: 'pane-form', 'aria-label': '新建子节点'},
+      h('h3', {text: `在「${d.label}」下面新建`}), errorBox(),
+      field('标题', title, '一个名称，不是一句话；结论写在内容里', true), field('内容', content), field('标签（用逗号分开）', tags),
+      h('div', {class: 'form-actions'}, h('span', {class: 'hint', text: 'Ctrl+Enter 保存'}), cancelButton(), h('button', {type: 'submit', class: 'btn btn-primary', text: '新建'})));
     form.addEventListener('submit', event => {
       event.preventDefault();
-      if (!title.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '标题必填：给它起一个 16 个字以内的名称'}}); return; }
+      if (!title.value.trim()) { needTitle(form); return; }
       if (!content.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '内容不能是空的'}}); return; }
       submit(form, () => api('POST', '/api/node', {parent: d.id, title: title.value, content: content.value, tags: parseTags(tags.value)}),
         async data => { act = null; await rebuild(data.id); toast('已新建，它已经长在树里了'); });
     });
-    content.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); } });
+    ctrlEnter(content, form);
     return form;
   };
-  const moveForm = d => {
+  // Move and delete ask in a dialog, the same one the node page uses: the dialog stays open and says why when the change fails.
+  const moveDialog = d => {
     let chosen = null;
-    const q = h('input', {type: 'search', id: 'f-move', placeholder: '输入几个字，找一条汇总或节点', autocomplete: 'off', 'aria-label': '搜索新的上级'});
-    const list = h('ul', {class: 'pick-list', hidden: true});
+    const q = h('input', {type: 'text', id: 'f-move', placeholder: '输入几个字，找一条汇总或节点', autocomplete: 'off', 'aria-label': '搜索新的上级'});
+    const list = h('ul', {class: 'menu', hidden: true});
     const picked = h('p', {class: 'hint', role: 'status'});
-    const go_ = h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '移到这里', disabled: true});
-    const form = h('form', {class: 'pane-form', 'aria-label': '移动这个节点'},
-      h('h3', {text: '移动'}), errorBox(),
-      h('p', {class: 'pane-note', text: `一个节点只有一个位置，放在哪一条汇总下面；它下面的节点跟着一起搬走。${d.parent ? `现在在「${d.path[d.path.length - 1].title}」下面。` : '现在是最上层。'}`}),
-      field('新的上级', q), list, picked,
-      h('div', {class: 'btns'}, go_,
-        d.parent && h('button', {type: 'button', class: 'btn btn-sm', text: '移到最上层', onclick: () => run(null)}),
-        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }})));
-    const run = parent => submit(form, () => api('POST', `/api/node/${encodeURIComponent(d.id)}/move`, {parent}),
-      async () => { act = null; await rebuild(d.id); toast(parent ? '已移动' : '已移到最上层'); });
-    form.addEventListener('submit', event => { event.preventDefault(); if (chosen) run(chosen); });
+    const run = async parent => {
+      const r = await api('POST', `/api/node/${encodeURIComponent(d.id)}/move`, {parent});
+      if (!r.ok) return r.data.error || '没有移成功';
+      await rebuild(d.id);
+      toast(parent ? '已移动' : '已移到最上层');
+      return '';
+    };
     let serial = 0, timer = 0;
     const find = async () => {
       const text = q.value.trim();
@@ -1366,40 +1308,44 @@
         chosen = hit.id;
         picked.textContent = `已选：${hit.title}`;
         picked.className = 'hint is-ok';
-        go_.disabled = false;
         list.hidden = true;
-        go_.focus();
       }}, badge(hit.layer), h('span', {class: 'node-text', text: hit.title})))) : [h('li', {class: 'pick-note', text: r.ok ? '没有找到，换几个字试试' : r.data.error})]));
       list.hidden = false;
     };
     q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(find, 250); });
     q.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); clearTimeout(timer); find(); } });
-    return form;
+    window.rp.ask({
+      title: `移动「${d.label}」`,
+      text: `一个节点只有一个位置：放在哪一条汇总下面。它下面的节点会跟着一起搬走。${d.parent ? `现在在「${d.path[d.path.length - 1].title}」下面。` : '现在是顶层节点。'}`,
+      ok: '移到这里',
+      fields: h('div', {class: 'stack'}, field('新的上级', q), list, picked),
+      check: () => (chosen ? run(chosen) : '先搜索并选一个新的上级'),
+      extra: d.parent ? [{text: '移到最上层', check: () => run(null)}] : [],
+    });
   };
-  const deleteForm = d => {
+  const deleteDialog = d => {
     const reason = h('input', {type: 'text', id: 'f-reason', value: '不再需要了', maxlength: '200', autocomplete: 'off', required: true});
     const where = d.parent ? `「${d.path[d.path.length - 1].title}」` : '最上层';
-    const form = h('form', {class: 'pane-form', 'aria-label': '删除这个节点'},
-      h('h3', {text: '删除'}), errorBox(),
-      h('p', {class: 'pane-note', text: `它会进回收站，保留 30 天，期间可以恢复。${d.children.length ? `它下面的 ${d.children.length} 个节点不会跟着删，会上移一层，挂到${where}下面。` : ''}`}),
-      field('为什么删除', reason),
-      h('div', {class: 'btns'},
-        h('button', {type: 'submit', class: 'btn btn-danger btn-sm', text: '删除', 'data-confirm': '确定把它移到回收站？'}),
-        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: () => { act = null; renderPanel(); focusPanel(); }})));
-    form.addEventListener('submit', event => {
-      event.preventDefault();
-      if (!reason.value.trim()) { formError(form.querySelector('.banner'), {data: {error: '要写明为什么删除'}}); return; }
-      submit(form, () => api('POST', `/api/node/${encodeURIComponent(d.id)}/delete`, {version: d.version, reason: reason.value}),
-        async data => {
-          act = null;
-          await rebuild(data.parent);
-          toast(data.moved ? `已移到回收站，它下面的 ${data.moved} 个节点上移了一层` : '已移到回收站');
-        });
+    window.rp.ask({
+      title: `删除「${d.label}」？`,
+      text: `删除后会进回收站，30 天内可恢复。${d.children.length ? `它下面的 ${d.children.length} 个节点不会跟着删，会上移一层，挂到${where}下面。` : ''}`,
+      ok: '删除',
+      danger: true,
+      fields: field('为什么删除', reason),
+      check: async () => {
+        if (!reason.value.trim()) return '要写明为什么删除';
+        const r = await api('POST', `/api/node/${encodeURIComponent(d.id)}/delete`, {version: d.version, reason: reason.value});
+        if (!r.ok) return r.data.error || '没有删除成功';
+        await rebuild(r.data.parent);
+        toast(r.data.moved ? `已移到回收站，它下面的 ${r.data.moved} 个节点上移了一层` : '已移到回收站');
+        return '';
+      },
     });
-    return form;
   };
   const open_ = name => {
     if (!selected || !detail) return;
+    if (name === 'move') { moveDialog(detail); return; }
+    if (name === 'delete') { deleteDialog(detail); return; }
     act = act === name ? null : name;
     renderPanel();
     const first = panel.querySelector('.pane-form input:not([type=hidden]), .pane-form textarea');
@@ -1409,7 +1355,7 @@
 
   const relItem = (b, lead) => h('button', {type: 'button', class: 'rel-item', onclick: () => goTo(b.id)}, badge(b.layer), h('span', {class: 'rel-title', text: b.title || '（没有文字）'}), lead && h('span', {class: 'rel-lead', text: lead}));
   const section = (key, title, count, ...body) => {
-    const node = h('details', {class: 'pane-fold', open: fold[key]}, h('summary', {}, title, count !== undefined && h('span', {class: 'count', text: count})), h('div', {class: 'pane-fold-body'}, ...body));
+    const node = h('details', {class: 'fold is-flat pane-fold', open: fold[key]}, h('summary', {}, title, count !== undefined && h('span', {class: 'count', text: count})), h('div', {class: 'pane-fold-body'}, ...body));
     node.addEventListener('toggle', () => { fold[key] = node.open; });
     return node;
   };
@@ -1422,7 +1368,7 @@
     parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: d.path.length ? '路径' : '位置'}), d.path.length ? path : h('p', {class: 'pane-note', text: d.layer === 0 && !d.children.length ? '还没汇总到任何一条汇总下面。' : '在最上层。'})));
     if (d.children.length) {
       const shown = d.children.slice(0, kidsShown);
-      parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: `孩子 · ${d.children.length} 条${d.descendants > d.children.length ? `，下面一共 ${d.descendants} 条` : ''}`}),
+      parts.push(h('div', {class: 'pane-sec'}, h('h3', {text: `子节点 · ${d.children.length} 条${d.descendants > d.children.length ? `，下面一共 ${d.descendants} 条` : ''}`}),
         h('div', {class: 'rel-list'}, shown.map(c => relItem(c, c.snippet))),
         d.children.length > shown.length && h('button', {type: 'button', class: 'btn btn-sm btn-ghost rel-more', text: `再显示 ${Math.min(10, d.children.length - shown.length)} 条`, onclick: () => { kidsShown += 10; renderPanel(); }})));
     }
@@ -1470,9 +1416,9 @@
     if (editTitle && d) {
       const input = h('input', {type: 'text', value: d.title, maxlength: '40', required: true, 'aria-label': '标题', autocomplete: 'off', placeholder: '16 个字以内的名称'});
       const cancel = () => { editTitle = false; renderPanel(); focusPanel(); };
-      const form = h('form', {class: 'pane-title-edit'}, input,
-        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}),
-        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: cancel}));
+      const form = h('form', {class: 'inline-form pane-title-edit'}, input,
+        h('button', {type: 'button', class: 'btn btn-sm', text: '取消', onclick: cancel}),
+        h('button', {type: 'submit', class: 'btn btn-primary btn-sm', text: '保存'}));
       const wrap = h('div', {class: 'pane-title-box'}, form, errorBox());
       form.addEventListener('submit', event => {
         event.preventDefault();
@@ -1483,37 +1429,37 @@
       return [wrap];
     }
     const label = d ? d.label : n.title;
-    return [h('button', {type: 'button', class: `pane-title${d && !d.title ? ' is-empty' : ''}`, title: d ? '点一下改标题' : '', text: label || '（没有文字）', onclick: startTitleEdit})];
+    return [h('button', {type: 'button', class: `inline-edit pane-title${d && !d.title ? ' is-empty' : ''}`, title: d ? '点一下改标题' : '', text: label || '（没有文字）', onclick: startTitleEdit})];
   };
 
   const actionButton = (name, label, ic, on, extra = {}) => h('button', {type: 'button', class: 'btn btn-sm btn-ghost', disabled: !detail, 'aria-pressed': act === name ? 'true' : false, onclick: on, ...extra}, icon(ic), label);
   const paneHead = (n, d) => {
-    const pin = h('button', {type: 'button', class: 'tool', 'aria-pressed': String(detailPinned), title: '固定面板：点空白处不会收起', 'aria-label': '固定详情面板', onclick: () => setDetailPinned(!detailPinned)}, icon('pin'));
+    const pin = h('button', {type: 'button', class: 'btn btn-ghost btn-icon btn-sm', 'aria-pressed': String(detailPinned), title: '固定面板：点空白处不会收起', 'aria-label': '固定详情面板', onclick: () => setDetailPinned(!detailPinned)}, icon('pin'));
     return h('div', {class: 'pane-head', id: 'pane-head'},
-      h('div', {class: 'pane-top'}, badge(n.layer), h('span', {class: 'grow', text: d ? `第 ${d.version} 版${d.occurred ? ` · 发生于 ${d.occurred}` : ''}` : ''}),
-        h('button', {type: 'button', class: 'tool', title: '放大到这张卡片（Enter）', 'aria-label': '放大到这张卡片', 'aria-keyshortcuts': 'Enter', onclick: () => zoomTo(n)}, icon('zoom-in')),
-        h('a', {class: 'pane-open', href: `/node/${encodeURIComponent(n.id)}`, title: '在记忆页打开（有完整的层级关系和历史）', 'aria-label': '在记忆页打开'}, icon('external')),
+      h('div', {class: 'pane-top glass-head'}, badge(n.layer), h('span', {class: 'grow', text: d ? `第 ${d.version} 版${d.occurred ? ` · 发生于 ${d.occurred}` : ''}` : ''}),
+        h('button', {type: 'button', class: 'btn btn-ghost btn-icon btn-sm', title: '放大到这张卡片（Enter）', 'aria-label': '放大到这张卡片', 'aria-keyshortcuts': 'Enter', onclick: () => zoomTo(n)}, icon('zoom-in')),
+        h('a', {class: 'btn btn-ghost btn-icon btn-sm pane-open', href: `/node/${encodeURIComponent(n.id)}`, title: '打开节点页（有完整的层级关系和历史）', 'aria-label': '打开节点页'}, icon('external')),
         pin,
-        h('button', {type: 'button', class: 'tool', title: '关闭（Esc）', 'aria-label': '关闭详情面板', onclick: () => { closePanel(); canvas.focus(); }}, icon('x'))),
+        h('button', {type: 'button', class: 'btn btn-ghost btn-icon btn-sm', title: '关闭（Esc）', 'aria-label': '关闭详情面板', onclick: () => { closePanel(); canvas.focus(); }}, icon('x'))),
       ...titleBlock(n, d),
       h('div', {class: 'pane-acts'},
         actionButton('edit', '编辑', 'edit', () => open_('edit'), {'aria-keyshortcuts': 'E'}),
-        actionButton('child', '新建子记忆', 'plus', () => open_('child'), {'aria-keyshortcuts': 'N'}),
+        actionButton('child', '新建子节点', 'plus', () => open_('child'), {'aria-keyshortcuts': 'N'}),
         actionButton('move', '移动', 'move', () => open_('move')),
         actionButton('delete', '删除', 'trash', () => open_('delete'))));
   };
   const renderPanel = () => {
     const keep = panel.querySelector('.pane-scroll')?.scrollTop || 0;
     if (!selected) {
-      panel.replaceChildren(h('div', {class: 'pane-scroll'}, h('div', {class: 'pane-empty'}, h('b', {text: '详情面板'}), h('p', {text: '点一个卡片，就能在这里读全文、编辑、新建子记忆、移动、删除，看它的上下级和历史。'}),
-        h('p', {}, h('kbd', {text: 'E'}), ' 编辑　', h('kbd', {text: 'N'}), ' 新建子记忆　', h('kbd', {text: 'Esc'}), ' 关闭'))));
+      panel.replaceChildren(h('div', {class: 'pane-scroll'}, h('div', {class: 'pane-empty'}, h('b', {text: '详情面板'}), h('p', {text: '点一个卡片，就能在这里读全文、编辑、新建子节点、移动、删除，看它的上下级和历史。'}),
+        h('p', {}, h('kbd', {text: 'E'}), ' 编辑　', h('kbd', {text: 'N'}), ' 新建子节点　', h('kbd', {text: 'Esc'}), ' 关闭'))));
       return;
     }
     const n = selected, d = detail && detail.id === n.id ? detail : null;
-    const form = d && act ? { edit: editForm, child: childForm, move: moveForm, delete: deleteForm }[act](d) : null;
+    const form = d && act ? { edit: editForm, child: childForm }[act](d) : null;
     const meta = d ? h('div', {class: 'pane-meta'},
       d.descendants ? h('span', {text: `下面共 ${d.descendants} 条`}) : null,
-      h('span', {text: `记录于 ${fmtTime(d.created)}`}), h('span', {text: `更新于 ${fmtTime(d.updated)}`})) : h('div', {class: 'pane-meta'}, n.size > 1 && h('span', {text: `下面共 ${n.size - 1} 条`}), span(n) && h('span', {text: span(n)}), h('span', {text: '正在取详细内容……'}));
+      h('span', {text: `记录于 ${fmtTime(d.created)}`}), h('span', {text: `更新于 ${fmtTime(d.updated)}`})) : h('div', {class: 'pane-meta'}, n.size > 1 && h('span', {text: `下面共 ${n.size - 1} 条`}), span(n) && h('span', {text: span(n)}), h('span', {class: 'loading'}, h('span', {class: 'spinner', 'aria-hidden': 'true'}), '正在取详细内容……'));
     panel.replaceChildren(paneHead(n, d), h('div', {class: 'pane-scroll'}, form, meta, content(n, d), d && relations(n, d), d && history(d)));
     const body = panel.querySelector('.pane-scroll');
     if (body) body.scrollTop = keep;
@@ -1743,7 +1689,7 @@
   doc.addEventListener('keydown', event => {
     if (event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
     const target = event.target;
-    if (typing(target)) return;
+    if (typing(target) || doc.querySelector('dialog[open]')) return;   // a dialog owns the keys while it is open
     const onPicture = target === canvas || target === doc.body;
     const pan = (dx, dy) => { stopMotion(); go({cx: goal.cx + (dx * vw * 0.15) / goal.k, cy: goal.cy + (dy * vh * 0.15) / goal.k, k: goal.k}); };
     switch (event.key) {
@@ -1752,7 +1698,6 @@
       case 'o': case 'O': setOutline(!outlineOpen()); break;
       case 'e': case 'E': if (selected) open_('edit'); else return; break;
       case 'n': case 'N': if (selected) open_('child'); else return; break;
-      case '?': toggleKeys(); break;
       case '+': case '=': stopMotion(); zoomBy(1.5); break;
       case '-': case '_': stopMotion(); zoomBy(1 / 1.5); break;
       case '0': fitAll(); break;
@@ -1763,8 +1708,7 @@
       case 'ArrowDown': if (!onPicture) return; pan(0, 1); break;
       case 'Enter': if (!onPicture || !selected) return; zoomTo(selected); break;
       case 'Escape':
-        if (!$('tree-keys').hidden) toggleKeys();
-        else if (!hitList.hidden) hitList.hidden = true;
+        if (!hitList.hidden) hitList.hidden = true;
         else if (goBack()) break;
         else if (!atFit) fitAll(true, false);
         else if (selected || panelOpen()) { closePanel(); canvas.focus(); }
@@ -1779,13 +1723,6 @@
   $('tree-in').addEventListener('click', () => { stopMotion(); zoomBy(1.6); });
   $('tree-out').addEventListener('click', () => { stopMotion(); zoomBy(1 / 1.6); });
   $('tree-fit').addEventListener('click', () => fitAll());
-  const keysBox = $('tree-keys'), keysBtn = $('tree-keys-toggle');
-  function toggleKeys() {
-    keysBox.hidden = !keysBox.hidden;
-    keysBtn.setAttribute('aria-pressed', String(!keysBox.hidden));
-  }
-  keysBtn.addEventListener('click', toggleKeys);
-
   /* ---------- immersive: only the picture (the page covers the whole window; Esc has to reach the page, so the
      browser's own full screen is not used) ---------- */
   const immerseBtn = $('tree-immerse');
@@ -1794,11 +1731,7 @@
     immerseBtn.setAttribute('aria-pressed', String(on));
     tip.hidden = true;
     hitList.hidden = true;
-    if (on) {
-      keysBox.hidden = true;
-      keysBtn.setAttribute('aria-pressed', 'false');
-      canvas.focus({preventScroll: true});
-    }
+    if (on) canvas.focus({preventScroll: true});
     request();
   }
   immerseBtn.addEventListener('click', () => setImmersive(!app.classList.contains('is-immersive')));
