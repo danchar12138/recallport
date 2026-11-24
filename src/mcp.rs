@@ -198,7 +198,7 @@ fn describe(m: &MaintenanceView) -> String {
         .map_or(0, |g| g.groups.len() + g.extend.len());
     let todo = if batches > 0 || !m.stale.is_empty() || !m.untitled.is_empty() {
         format!(
-            "To tidy: {batches} batches wait for a summary, {} summaries are stale, {} summaries have no title; call `maintain` when you have a quiet moment.",
+            "To tidy: {batches} batches wait for a summary, {} summaries are stale, {} nodes have no title; call `maintain` when you have a quiet moment.",
             m.stale.len(),
             m.untitled.len()
         )
@@ -294,9 +294,8 @@ impl From<AttachmentArg> for AttachInput {
 
 #[derive(Deserialize, JsonSchema)]
 struct WriteArgs {
-    /// A short name for the node: a noun phrase of 16 characters or fewer, not a sentence (40 is the limit). REQUIRED when you give `adopt` (a summary); optional for a plain memory.
-    #[serde(default)]
-    title: Option<String>,
+    /// REQUIRED, for every node: a short name for it, a noun phrase of 16 characters or fewer, not a sentence (40 is the limit).
+    title: String,
     /// One self-contained experience or one summary: what happened, why, the outcome, in the user's language, so a reader with no context understands it.
     content: String,
     /// The node this one sits under.
@@ -324,7 +323,7 @@ struct WriteArgs {
 
 #[derive(Deserialize, JsonSchema)]
 struct UpdateArgs {
-    /// The new title (16 characters or fewer, a name, not a sentence). A summary always keeps one.
+    /// The new title (16 characters or fewer, a name, not a sentence). Every node keeps one: it cannot be emptied.
     #[serde(default)]
     title: Option<String>,
     /// The node id.
@@ -501,7 +500,7 @@ fn related_to(service: &Service, node: &NodeView, adopted: &[String]) -> Vec<Val
 
 const FIX: &str = "\
 Work bottom-up, one layer at a time. For each batch in `gaps.groups`: `get` a few of its nodes, then `write` ONE summary with `adopt` = the ids of the batch: a `title` (a name of 16 characters or fewer) and as `content` the conclusion (not a list). \
-For each entry in `untitled`: `update` its `title`. \
+For each entry in `untitled` (any node written before titles were required): `update` its `title`, a name of 16 characters or fewer. \
 For each entry in `gaps.extend`: `move` its `nodes` under that existing summary (`move` with `to` = the summary id). \
 For each stale summary: `get` it and its newer children; if the story changed, `update` its content, and if it is still right, `update` with `touch: true`. \
 Call `maintain` again after each layer: the work for the layer above appears once this one is covered. The tree is finished when at most 8 roots remain and nothing is listed. \
@@ -528,7 +527,7 @@ impl Mcp {
     }
 
     #[tool(
-        description = "Save a durable experience to the long-term memory: a decision with its reasons, a root cause, a fix that worked, a failed approach and why, a preference or constraint, a change of situation. Call it proactively right after such a moment. One self-contained experience per node, in the user's language; accounts, passwords, keys and other private details are kept verbatim when they help later work (do not redact them). To write a SUMMARY of existing nodes, give their ids in `adopt`: they become its children; give it a `title` (a name of 16 characters or fewer) and as `content` the conclusion, not a list. Search first: if a node already says it, `update` that node instead. The result is the new node plus `related` (live nodes that say something similar, to update or cross-link) and `hints`.",
+        description = "Save a durable experience to the long-term memory: a decision with its reasons, a root cause, a fix that worked, a failed approach and why, a preference or constraint, a change of situation. Call it proactively right after such a moment. One self-contained experience per node, in the user's language; accounts, passwords, keys and other private details are kept verbatim when they help later work (do not redact them). To write a SUMMARY of existing nodes, give their ids in `adopt`: they become its children; give it as `content` the conclusion, not a list. Every node needs a `title`, a name of 16 characters or fewer (not a sentence). Search first: if a node already says it, `update` that node instead. The result is the new node plus `related` (live nodes that say something similar, to update or cross-link) and `hints`.",
         annotations(destructive_hint = false, open_world_hint = false)
     )]
     async fn write(
@@ -715,7 +714,7 @@ impl Mcp {
 
     async fn do_write(&self, args: WriteArgs, actor: &str) -> Result<Value> {
         let input = WriteInput {
-            title: args.title.unwrap_or_default(),
+            title: args.title,
             content: args.content,
             tags: args.tags,
             parent: given(args.parent),
@@ -862,7 +861,7 @@ impl Mcp {
             "stale": m.stale,
             "untitled": m.untitled,
             "gaps": m.gaps,
-            "fix": if idle { "Nothing to do: nothing is missing a summary, no summary is stale and every summary has a title." } else { FIX },
+            "fix": if idle { "Nothing to do: nothing is missing a summary, no summary is stale and every node has a title." } else { FIX },
         }))
     }
 }
@@ -887,7 +886,7 @@ THINGS CHANGE
 
 THE TREE
 - Layer 0 is what you extract from conversations. A summary is a node you `write` with `adopt` = the ids of the nodes it sums up (aim for 3 to 12, at most 64); it sits one layer above its tallest child, and summaries of summaries make the next layer, as many layers as the library needs.
-- A summary has a `title` (a name of 16 characters or fewer, not a sentence; required) and as `content` the conclusion, not a list. A plain memory may have a title too, but does not need one. A summary is only an index: when the details matter, `get` the nodes under it. `move` puts a node under another one; `refs` cross-link nodes that belong together without being parent and child; tags are free labels.
+- Every node, memory or summary, has a `title` (a name of 16 characters or fewer, not a sentence; required). A summary's `content` is the conclusion, not a list. A summary is only an index: when the details matter, `get` the nodes under it. `move` puts a node under another one; `refs` cross-link nodes that belong together without being parent and child; tags are free labels.
 
 KEEPING IT HEALTHY
 - Call `maintain` now and then. It reports where summaries are missing (lowest layer first) and which summaries have gone stale, and says how to fix them; you do the writing, moving and updating. The user gave you standing permission over the whole library: do not ask for approval. That includes `delete` for exact duplicates and wrong nodes: nothing is lost, the node goes to the recycle bin for 30 days (`trash` lists it, `restore` brings it back).
@@ -1043,7 +1042,7 @@ mod tests {
     }
 
     fn note(content: &str) -> WriteArgs {
-        serde_json::from_value(json!({ "content": content })).unwrap()
+        serde_json::from_value(json!({ "title": "笔记", "content": content })).unwrap()
     }
 
     fn query(text: &str) -> SearchArgs {
@@ -1351,6 +1350,41 @@ mod tests {
         assert!(m.get_info().instructions.unwrap().contains("31 nodes"));
     }
 
+    #[test]
+    fn every_node_written_through_mcp_needs_a_title() {
+        let tools = Mcp::tool_router().list_all();
+        let schema = |name: &str| {
+            let tool = tools.iter().find(|t| t.name == name).unwrap();
+            serde_json::to_value(&*tool.input_schema).unwrap()
+        };
+        let write = schema("write");
+        let required = write["required"].as_array().unwrap();
+        assert!(required.contains(&json!("title")) && required.contains(&json!("content")));
+        // an update may leave the title alone, but it cannot empty it (the tree refuses that)
+        let update = schema("update");
+        assert!(
+            !update["required"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("title"))
+        );
+        let description = tools
+            .iter()
+            .find(|t| t.name == "write")
+            .unwrap()
+            .description
+            .as_deref();
+        assert!(
+            description
+                .unwrap_or_default()
+                .contains("Every node needs a `title`")
+        );
+        assert!(
+            serde_json::from_value::<WriteArgs>(json!({"content": "没有标题"})).is_err(),
+            "a write without a title does not even parse"
+        );
+    }
+
     #[tokio::test]
     async fn the_instructions_name_every_tool_and_prompts_carry_the_library() {
         let dir = tempfile::tempdir().unwrap();
@@ -1466,7 +1500,7 @@ mod tests {
         };
         let write = |id: u32| {
             json!({"jsonrpc": "2.0", "id": id, "method": "tools/call", "params": {
-                "name": "write", "arguments": {"content": format!("over the wire {id}")}}})
+                "name": "write", "arguments": {"title": "线上写入", "content": format!("over the wire {id}")}}})
         };
         let init = json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
             "protocolVersion": "2025-06-18", "capabilities": {},

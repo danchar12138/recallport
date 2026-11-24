@@ -12,9 +12,9 @@
   {% if not n and Parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在这一条下面：<a href="/node/{{ Parent.id }}">{{ Parent.title }}</a></span></p>{% elif not n and Form.parent %}<p class="where">{{ icon("tree", "sm") }}<span>放在节点 {{ Form.parent }} 下面（找不到这个节点，保存时会报错）</span></p>{% endif %}
 
   <div class="field">
-    <label for="f-title">标题 <span class="opt">汇总必填，记忆可选</span></label>
-    <input type="text" id="f-title" name="title" value="{{ Form.title }}" maxlength="40" placeholder="16 个字以内的名称，例如：个人网站：迁到 Astro" autocomplete="off" aria-describedby="f-title-hint">
-    <p class="help" id="f-title-hint">标题是名字，不是一句话：树、路径和搜索结果里都用它。结论写在下面的内容里。</p>
+    <label for="f-title">标题 <span class="req">必填</span></label>
+    <input type="text" id="f-title" name="title" value="{{ Form.title }}" required maxlength="40" placeholder="16 个字以内的名称，例如：个人网站：迁到 Astro" autocomplete="off" aria-describedby="f-title-hint">
+    <p class="help" id="f-title-hint">每个节点都要有标题。标题是名字，不是一句话：树、路径和搜索结果里都用它；结论写在下面的内容里。</p>
   </div>
 
   <div class="field">

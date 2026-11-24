@@ -28,6 +28,7 @@ fn open(dir: &Path) -> Tree {
 fn leaf(t: &mut Tree, text: &str, day: &str) -> Node {
     t.write(
         Draft {
+            title: "记忆".into(),
             content: text.into(),
             occurred: day.into(),
             ..Default::default()
@@ -212,6 +213,7 @@ fn reparenting_cannot_make_a_loop() {
     let b = t
         .write(
             Draft {
+                title: "乙".into(),
                 content: "乙".into(),
                 parent: Some(a.id.clone()),
                 ..Default::default()
@@ -442,47 +444,62 @@ fn now_for_tests() -> String {
 }
 
 #[test]
-fn a_summary_needs_a_short_title_and_a_memory_may_have_none() {
+fn every_node_needs_a_short_title_and_cannot_lose_it() {
     let dir = tempfile::tempdir().unwrap();
     let mut t = open(dir.path());
-    let a = leaf(&mut t, "备份每天凌晨三点跑。保留七份。", "2025-01-01");
-    // no title: the label is the first clause
-    assert_eq!(a.label(), "备份每天凌晨三点跑");
-    let summary = |title: &str| Draft {
+    let draft = |title: &str, adopt: Vec<String>| Draft {
         title: title.into(),
-        content: "结论：备份够用".into(),
-        adopt: vec![a.id.clone()],
+        content: "备份每天凌晨三点跑。保留七份。".into(),
+        adopt,
         ..Default::default()
     };
-    let error = t.write(summary(""), "t").unwrap_err().to_string();
-    assert!(error.contains("汇总必须有标题"), "{error}");
+    // a memory without a title is refused, and so is one that is only blanks
+    for title in ["", "  \n "] {
+        let error = t.write(draft(title, vec![]), "t").unwrap_err().to_string();
+        assert!(error.contains("标题必填"), "{error}");
+    }
     let long = "很长".repeat(30);
     assert!(
-        t.write(summary(&long), "t")
+        t.write(draft(&long, vec![]), "t")
             .unwrap_err()
             .to_string()
             .contains("标题最多")
     );
-    let sum = t.write(summary("  备份\n策略 "), "t").unwrap();
-    // whitespace and line breaks are squeezed out of a title
     assert_eq!(
-        (sum.title.as_str(), sum.label().as_str()),
-        ("备份 策略", "备份 策略")
+        t.nodes().count(),
+        0,
+        "a refused write leaves nothing behind"
     );
-    // a summary cannot lose its title, a memory can have one added and removed
+    // whitespace and line breaks are squeezed out of a title
+    let a = t.write(draft("  备份\n时间 ", vec![]), "t").unwrap();
+    assert_eq!(
+        (a.title.as_str(), a.label().as_str()),
+        ("备份 时间", "备份 时间")
+    );
+    // a summary needs one as well
     let error = t
-        .update(
-            &sum.id,
-            1,
-            Patch {
-                title: Some(String::new()),
-                ..Default::default()
-            },
-            "t",
-        )
+        .write(draft("", vec![a.id.clone()]), "t")
         .unwrap_err()
         .to_string();
-    assert!(error.contains("不能清空"), "{error}");
+    assert!(error.contains("标题必填"), "{error}");
+    let sum = t.write(draft("备份策略", vec![a.id.clone()]), "t").unwrap();
+    // neither a memory nor a summary can lose its title; both can be renamed
+    for id in [&a.id, &sum.id] {
+        let version = t.node(id).unwrap().version;
+        let error = t
+            .update(
+                id,
+                version,
+                Patch {
+                    title: Some(" ".into()),
+                    ..Default::default()
+                },
+                "t",
+            )
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("不能清空"), "{error}");
+    }
     let a = t
         .update(
             &a.id,
@@ -502,33 +519,64 @@ fn a_summary_needs_a_short_title_and_a_memory_may_have_none() {
 }
 
 #[test]
-fn summaries_without_a_title_are_reported_for_the_ai_to_name() {
+fn imported_nodes_without_a_title_are_reported_for_the_ai_to_name() {
     let dir = tempfile::tempdir().unwrap();
     let mut t = open(dir.path());
-    let a = leaf(&mut t, "端口改成 8080", "2025-01-01");
-    let b = leaf(&mut t, "端口冲突已解决", "2025-01-02");
-    let titled = t
-        .write(
-            Draft {
-                title: "端口".into(),
-                content: "端口的结论".into(),
-                adopt: vec![a.id.clone()],
-                ..Default::default()
-            },
-            "t",
-        )
-        .unwrap();
-    // moving a node under a memory that has no title makes that memory a summary without one
-    t.reparent(std::slice::from_ref(&b.id), Some(&a.id), "t")
-        .unwrap();
+    let stamp = now_for_tests();
+    let id = |n: u32| format!("{n:032x}");
+    let old = |n: u32, title: &str, parent: Option<u32>| Event {
+        at: stamp.clone(),
+        actor: "legacy".into(),
+        op: "import".into(),
+        reason: String::new(),
+        node: Node {
+            id: id(n),
+            title: title.into(),
+            content: format!("第 {n} 条的内容"),
+            tags: vec![],
+            parent: parent.map(id),
+            refs: vec![],
+            sources: vec![],
+            attachments: vec![],
+            version: 1,
+            occurred: "2025-01-01".into(),
+            created: stamp.clone(),
+            updated: stamp.clone(),
+            status: Status::Live,
+        },
+    };
+    // an old memory, an old summary and a titled one, written before every node needed a title
+    t.replace(
+        vec![
+            old(1, "", None),
+            old(2, "", Some(1)),
+            old(3, "有标题", None),
+        ],
+        &HashMap::new(),
+    )
+    .unwrap();
+    // old data is not refused, it is listed (a memory too, not only a summary), and the label still reads
     let untitled = t.maintenance().untitled;
-    assert_eq!(untitled, vec![a.id.clone()]);
-    assert!(!untitled.contains(&titled.id));
+    assert_eq!(untitled, vec![id(1), id(2)]);
+    assert_eq!(t.node(&id(1)).unwrap().label(), "第 1 条的内容");
+    let version = t.node(&id(1)).unwrap().version;
     t.update(
-        &a.id,
-        2,
+        &id(1),
+        version,
         Patch {
-            title: Some("端口改动".into()),
+            title: Some("甲".into()),
+            ..Default::default()
+        },
+        "t",
+    )
+    .unwrap();
+    assert_eq!(t.maintenance().untitled, vec![id(2)]);
+    let version = t.node(&id(2)).unwrap().version;
+    t.update(
+        &id(2),
+        version,
+        Patch {
+            title: Some("乙".into()),
             ..Default::default()
         },
         "t",

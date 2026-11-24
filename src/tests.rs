@@ -35,8 +35,21 @@ fn open(dir: &Path) -> Arc<Service> {
     Service::open(dir, Arc::new(Words)).unwrap()
 }
 
+/// A node to write: its title is the first line of its text, cut to the 16 characters a name may have.
 fn say(text: &str) -> WriteInput {
+    let title: String = text
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .chars()
+        .take(16)
+        .collect();
     WriteInput {
+        title: if title.is_empty() {
+            "记忆".into()
+        } else {
+            title
+        },
         content: text.into(),
         ..Default::default()
     }
@@ -203,6 +216,7 @@ fn attachments_are_copied_travel_in_backups_and_are_swept_with_the_node() {
     let n = s
         .write(
             WriteInput {
+                title: "记忆".into(),
                 attachments: vec![
                     AttachInput {
                         path: Some(file.to_string_lossy().into_owned()),
@@ -446,6 +460,7 @@ fn the_outline_is_cut_at_the_depth_asked_for_and_the_rest_is_fetched_by_root() {
     let leaf = |text: &str, day: &str| {
         s.write(
             WriteInput {
+                title: text.into(),
                 content: text.into(),
                 occurred: day.into(),
                 ..Default::default()
@@ -521,6 +536,7 @@ fn an_outline_node_carries_enough_text_to_fill_a_card_and_a_node_knows_its_neigh
     let leaf = |text: &str, day: &str, parent: Option<&str>| {
         s.write(
             WriteInput {
+                title: text.chars().take(16).collect(),
                 content: text.into(),
                 occurred: day.into(),
                 parent: parent.map(str::to_owned),

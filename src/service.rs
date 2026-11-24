@@ -196,7 +196,7 @@ pub struct GapsView {
 #[derive(Clone, Debug, Serialize)]
 pub struct MaintenanceView {
     pub layers: Vec<LayerStat>,
-    /// Summaries without a title.
+    /// Nodes without a title.
     pub untitled: Vec<Brief>,
     pub stale: Vec<StaleView>,
     pub gaps: Option<GapsView>,
@@ -223,6 +223,8 @@ const NEIGHBOURS: usize = 4;
 pub struct OutlineNode {
     pub id: String,
     pub title: String,
+    /// The node has no title of its own (old data): `title` is then the first clause of its text.
+    pub untitled: bool,
     /// The start of its text, for drawing a card.
     pub snippet: String,
     pub layer: u32,
@@ -737,6 +739,7 @@ impl Service {
             Some(OutlineNode {
                 id: n.id.clone(),
                 title: n.label(),
+                untitled: n.title.is_empty(),
                 snippet: snippet(&n.content, OUTLINE_TEXT),
                 layer: layers.get(id).copied().unwrap_or(0),
                 size: 1 + kids.iter().map(|c| c.size).sum::<usize>(),
@@ -848,11 +851,6 @@ impl Service {
             )?;
         }
         self.get(id)
-    }
-
-    /// Mark a node as checked and still right.
-    pub fn touch(&self, id: &str, expect: Option<u32>, actor: &str) -> Result<NodeView> {
-        self.update(id, expect, UpdateInput::default(), actor)
     }
 
     pub fn move_nodes(&self, ids: &[String], to: Option<&str>, actor: &str) -> Result<()> {

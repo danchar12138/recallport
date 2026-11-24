@@ -36,7 +36,6 @@
   {% if not n.deleted %}
   <div class="node-actions">
     <a class="btn btn-primary" href="/node/{{ n.id }}/edit">{{ icon("edit") }}编辑</a>
-    <form method="post" action="/node/{{ n.id }}/touch"><input type="hidden" name="version" value="{{ n.version }}"><button class="btn" type="submit" title="内容没问题的话，点这里告诉 AI 和以后的自己：我看过了，仍然正确">{{ icon("circle-check") }}确认仍然正确</button></form>
     <a class="btn" href="/node/new?parent={{ n.id }}">{{ icon("plus") }}新建子节点</a>
     <a class="btn" href="/tree?focus={{ n.id }}">{{ icon("tree") }}在树里查看</a>
   </div>

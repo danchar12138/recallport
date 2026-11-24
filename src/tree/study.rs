@@ -12,6 +12,22 @@ fn text(v: &Value, k: &str) -> String {
     v[k].as_str().unwrap_or_default().to_owned()
 }
 
+/// The title a corpus event is written with: its own, or for the memories of the corpus that have none (every node
+/// has a title now) the first clause of its text, 16 characters at most.
+fn title_of(ev: &Value) -> String {
+    let title = text(ev, "title");
+    if !title.is_empty() {
+        return title;
+    }
+    let content = text(ev, "content");
+    let clause = content
+        .split(['。', '；', '！', '？', ';', '，', ',', '\n'])
+        .map(str::trim)
+        .find(|c| !c.is_empty())
+        .unwrap_or_default();
+    clause.chars().take(16).collect()
+}
+
 fn list(v: &Value, k: &str) -> Vec<String> {
     v[k].as_array()
         .map(|a| {
@@ -50,7 +66,7 @@ fn replay(corpus: &Value) -> Replayed {
                 let node = tree
                     .write(
                         Draft {
-                            title: text(ev, "title"),
+                            title: title_of(ev),
                             content: text(ev, "content"),
                             tags: list(ev, "tags"),
                             occurred: text(ev, "occurred"),
@@ -321,7 +337,7 @@ fn study_writes() {
             continue;
         }
         let draft = Draft {
-            title: text(ev, "title"),
+            title: title_of(ev),
             content: text(ev, "content"),
             tags: list(ev, "tags"),
             occurred: text(ev, "occurred"),

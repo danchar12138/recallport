@@ -1,8 +1,8 @@
 /* Generic behaviour every page can use, no page-specific logic:
-   theme buttons, copy buttons, two-step confirmation, double-submit guard.
+   theme buttons, the navigation rail, copy buttons, two-step confirmation, double-submit guard.
    Markup contract:
      <button data-theme-set="auto|light|dark">
-     <button data-nav-pin>      (tree page: keep the navigation open instead of a narrow rail)
+     <button data-nav-toggle>   (the navigation: an icon rail that this button opens to full width)
      <button data-copy="text"> or <button data-copy-target="#id">    (shows 已复制)
      <button data-confirm="question"> / <form data-confirm="question">  (inline two-step confirmation) */
 (() => {
@@ -30,18 +30,37 @@
   });
   markTheme();
 
-  /* ---------- the navigation of the tree page: a narrow rail, or pinned open ---------- */
+  /* ---------- the navigation: an icon rail that a button opens to full width ----------
+     On the tree page it opens as a drawer over the picture (with a scrim, never pushing the picture), so it is not
+     remembered there; on the other pages it pushes the content aside and the choice is remembered. */
+  const treePage = doc.body.dataset.view === 'tree';
+  const navOpen = () => root.dataset.nav === 'open';
   const markNav = () => {
-    for (const btn of $$('[data-nav-pin]')) btn.setAttribute('aria-pressed', String(root.dataset.nav === 'wide'));
+    for (const btn of $$('[data-nav-toggle]')) {
+      const label = navOpen() ? '收起导航' : '展开导航';
+      btn.setAttribute('aria-expanded', String(navOpen()));
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+  };
+  const setNav = open => {
+    if (open) root.dataset.nav = 'open'; else root.removeAttribute('data-nav');
+    if (!treePage) {
+      try {
+        if (open) localStorage.setItem('rp-nav', 'open'); else localStorage.removeItem('rp-nav');
+      } catch { /* private mode: the choice just lasts for this page */ }
+    }
+    markNav();
   };
   doc.addEventListener('click', event => {
-    if (!event.target.closest?.('[data-nav-pin]')) return;
-    const wide = root.dataset.nav !== 'wide';
-    if (wide) root.dataset.nav = 'wide'; else root.removeAttribute('data-nav');
-    try {
-      if (wide) localStorage.setItem('rp-nav', 'wide'); else localStorage.removeItem('rp-nav');
-    } catch { /* private mode: the choice just lasts for this page */ }
-    markNav();
+    if (event.target.closest?.('[data-nav-toggle]')) setNav(!navOpen());
+    else if (navOpen() && event.target.closest?.('[data-nav-scrim]')) setNav(false);
+  });
+  doc.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !treePage || !navOpen() || event.defaultPrevented) return;
+    event.preventDefault();
+    setNav(false);
+    doc.querySelector('[data-nav-toggle]')?.focus();
   });
   markNav();
 

@@ -56,6 +56,16 @@ fn clean_title(title: &str) -> Result<String> {
     Ok(title)
 }
 
+/// A title every node must have: the cleaned name, and not empty.
+fn required_title(title: &str) -> Result<String> {
+    let title = clean_title(title)?;
+    ensure!(
+        !title.is_empty(),
+        "标题必填（title，16 个字以内的名称）：每个节点都要有标题"
+    );
+    Ok(title)
+}
+
 fn clean_list(list: &[String], max: usize, what: &str) -> Result<Vec<String>> {
     let mut out: Vec<String> = vec![];
     for item in list.iter().map(|s| s.trim()).filter(|s| !s.is_empty()) {
@@ -505,7 +515,7 @@ impl Tree {
     /// Write a node. Naming `adopt` makes it the parent of those nodes, which is how a summary is written.
     pub fn write(&mut self, draft: Draft, actor: &str) -> Result<Node> {
         let content = clean_content(&draft.content)?;
-        let title = clean_title(&draft.title)?;
+        let title = required_title(&draft.title)?;
         let tags = clean_list(&draft.tags, MAX_TAGS, "标签")?;
         let refs = clean_list(&draft.refs, MAX_LINKS, "引用")?;
         let sources = clean_list(&draft.sources, MAX_SOURCES, "来源")?;
@@ -524,10 +534,6 @@ impl Tree {
         for a in &adopt {
             self.must_live(a)?;
         }
-        ensure!(
-            adopt.is_empty() || !title.is_empty(),
-            "汇总必须有标题（`title`，16 个字以内的名称）"
-        );
         let stamp = now();
         let node = Node {
             id: uuid::Uuid::new_v4().simple().to_string(),
@@ -563,8 +569,8 @@ impl Tree {
         if let Some(title) = &patch.title {
             node.title = clean_title(title)?;
             ensure!(
-                !node.title.is_empty() || self.children(id).is_empty(),
-                "汇总必须有标题，不能清空"
+                !node.title.is_empty(),
+                "标题不能清空：每个节点都要有标题（16 个字以内的名称）"
             );
         }
         if let Some(content) = &patch.content {

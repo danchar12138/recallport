@@ -1,5 +1,6 @@
-//! What the AI has left to do on the tree: nodes that sit under nothing yet, and summaries that have fallen behind
-//! the nodes under them. The server never writes content; it only says where the work is, lowest layer first.
+//! What the AI has left to do on the tree: nodes that sit under nothing yet, summaries that have fallen behind
+//! the nodes under them, and nodes without a title. The server never writes content; it only says where the work is,
+//! lowest layer first.
 use super::{Status, Tree};
 use crate::clusters::{cosine, partition};
 use std::collections::{BTreeMap, BTreeSet};
@@ -25,7 +26,7 @@ pub struct Maintenance {
     pub layers: Vec<(u32, usize, usize)>,
     /// Summaries behind their children, with those children.
     pub stale: Vec<(String, Vec<String>)>,
-    /// Summaries that have no title (written before titles existed, or imported).
+    /// Nodes that have no title (written before titles were required, or imported).
     pub untitled: Vec<String>,
     /// The lowest layer with work: (layer, [(summary to extend, nodes that fit under it)], [groups for a new summary]).
     pub gaps: Option<Gaps>,
@@ -66,7 +67,7 @@ impl Tree {
         stale.sort();
         let mut untitled: Vec<String> = live
             .iter()
-            .filter(|id| !self.children(id).is_empty() && self.nodes[**id].title.is_empty())
+            .filter(|id| self.nodes[**id].title.is_empty())
             .map(|id| (*id).to_owned())
             .collect();
         untitled.sort();

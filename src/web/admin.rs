@@ -979,6 +979,7 @@ mod tests {
         site.service
             .write(
                 WriteInput {
+                    title: "记忆".into(),
                     content: "备份每天凌晨三点跑".into(),
                     ..Default::default()
                 },

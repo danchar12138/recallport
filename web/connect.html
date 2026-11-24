@@ -117,7 +117,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
     <ul>
       <li>记忆是<b>一棵树</b>。第 0 层是 AI 从对话里提取的原子记忆，每条是一段完整的经历（发生了什么、为什么、结果）；更高的层是 AI 写的汇总，层数不限。</li>
       <li><b>写汇总</b>：用 <code>write</code>，并在 <code>adopt</code> 里列出它概括的节点；这些节点就挂到新节点下面，新节点比它们高一层。汇总只是索引，细节要用 <code>get</code> 看它下面的节点。</li>
-      <li><b>保养</b>：<code>maintain</code> 自下而上地列出缺汇总的地方，分批给出——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点——还有已经过期的汇总（下面有比它更新的节点）。AI 补写或改写之后，核对过仍然正确的汇总用 <code>update</code> 加 <code>touch</code> 刷新。</li>
+      <li><b>保养</b>：<code>maintain</code> 自下而上地列出缺汇总的地方，分批给出——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点——还有已经过期的汇总（下面有比它更新的节点），以及没有标题的旧节点（<code>untitled</code>，用 <code>update</code> 补上标题）。AI 补写或改写之后，核对过仍然正确的汇总用 <code>update</code> 加 <code>touch</code> 刷新。</li>
       <li><b>不会丢</b>：每次改动都留在节点的历史里（<code>get</code> 加 <code>history</code> 可以看）；<code>delete</code> 只是进回收站，放满一个月前随时能 <code>restore</code>。</li>
     </ul>
   </div>
@@ -159,6 +159,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
       <h3><code>write</code><span>写入新节点</span></h3>
       <p class="adm-when">什么时候用：做出带理由的决定、找到根因、验证有效的修复、失败的尝试、用户的偏好或约束、情况变化之后；也用来写汇总。先 <code>search</code>，已有同样的内容就改它，别重复写。</p>
       <dl class="adm-args">
+        <div><dt><code>title</code><small>字符串 · 必填</small></dt><dd>每个节点（记忆和汇总都一样）都要有标题：一个 16 个字以内的名称，不是一句话，最多 40 个字。树、路径和搜索结果里都用它称呼节点；缺了写不进去。</dd></div>
         <div><dt><code>content</code><small>字符串 · 必填</small></dt><dd>正文。一段完整的经历，用用户的语言写，让没有上下文的人也看得懂。</dd></div>
         <div><dt><code>parent</code><small>节点编号</small></dt><dd>把新节点直接放在这个节点下面。不填就暂时不属于任何汇总。</dd></div>
         <div><dt><code>adopt</code><small>节点编号数组</small></dt><dd>写汇总用：把这些已有节点收到新节点下面，新节点成为它们的父节点。</dd></div>
@@ -169,8 +170,8 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
         <div><dt><code>attachments</code><small>对象数组</small></dt><dd>要归档的文件。每项：<code>path</code>（本机绝对路径）<b>或</b> <code>data_base64</code>（内联内容，约 96 KB 以内，更大的请用 <code>path</code>）；<code>name</code> 文件名；<code>caption</code> 一句说明（说明不会被搜索，重要的信息写进正文）；<code>reference</code> 为 true 时只记住文件的位置、不复制进记忆库（只对 <code>path</code> 有效）。</dd></div>
       </dl>
       <p class="adm-returns"><b>返回</b>写好的节点，内容和 <code>get</code> 一样（含新节点的编号和所在的层）。</p>
-      <div class="adm-code"><pre id="ex-write">{"content": "家庭服务器的备份改成每天凌晨三点跑，因为白天会占满上行带宽。", "tags": ["家庭服务器"], "occurred": "2026-11-22"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-write" aria-label="复制 write 示例">复制</button></div>
-      <div class="adm-code"><pre id="ex-adopt">{"content": "家庭服务器的备份策略：每天凌晨三点，保留七份。", "adopt": ["节点编号 1", "节点编号 2"]}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-adopt" aria-label="复制写汇总的示例">复制</button></div>
+      <div class="adm-code"><pre id="ex-write">{"title": "备份改到凌晨三点", "content": "家庭服务器的备份改成每天凌晨三点跑，因为白天会占满上行带宽。", "tags": ["家庭服务器"], "occurred": "2026-11-22"}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-write" aria-label="复制 write 示例">复制</button></div>
+      <div class="adm-code"><pre id="ex-adopt">{"title": "家庭服务器备份策略", "content": "家庭服务器的备份策略：每天凌晨三点，保留七份。", "adopt": ["节点编号 1", "节点编号 2"]}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-adopt" aria-label="复制写汇总的示例">复制</button></div>
     </article>
 
     <article class="adm-tool card" id="tool-update" data-tool="update">
@@ -179,6 +180,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
       <dl class="adm-args">
         <div><dt><code>id</code><small>节点编号 · 必填</small></dt><dd>要改的节点。</dd></div>
         <div><dt><code>version</code><small>整数</small></dt><dd>你读到的版本号。节点在那之后被别人改过，这次更新会被拒绝，免得盖掉别人的修改；不填则按最新版本。</dd></div>
+        <div><dt><code>title</code><small>字符串</small></dt><dd>新的标题（16 个字以内的名称）。不填表示不改；每个节点都要有标题，所以不能清空。</dd></div>
         <div><dt><code>content</code><small>字符串</small></dt><dd>新的正文。不填表示不改正文。</dd></div>
         <div><dt><code>tags</code> / <code>refs</code> / <code>sources</code><small>数组</small></dt><dd>整个换成新的列表（不是追加）。不填表示不动。</dd></div>
         <div><dt><code>occurred</code><small>日期</small></dt><dd>新的发生日期。</dd></div>
@@ -239,7 +241,7 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
       <dl class="adm-args">
         <div><dt>（没有参数）</dt><dd>传空对象 <code>{}</code>。</dd></div>
       </dl>
-      <p class="adm-returns"><b>返回</b>每一层的节点数，以及已经有多少挂在汇总下面；过期的汇总和下面比它更新的节点；自下而上的下一批缺口——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点。一轮处理完再调用，会给出下一批或更高一层。</p>
+      <p class="adm-returns"><b>返回</b>每一层的节点数，以及已经有多少挂在汇总下面；过期的汇总和下面比它更新的节点；没有标题的旧节点（<code>untitled</code>）；自下而上的下一批缺口——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点。一轮处理完再调用，会给出下一批或更高一层。</p>
       <div class="adm-code"><pre id="ex-maintain">{}</pre><button type="button" class="btn btn-sm" data-copy-target="#ex-maintain" aria-label="复制 maintain 示例">复制</button></div>
     </article>
   </div>

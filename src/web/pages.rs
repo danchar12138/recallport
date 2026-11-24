@@ -45,7 +45,6 @@ pub(super) fn routes() -> Router<Web> {
             "/node/{id}/edit",
             get(edit_node).post(save_node).layer(upload),
         )
-        .route("/node/{id}/touch", post(touch_node))
         .route("/node/{id}/move", post(move_node))
         .route("/node/{id}/delete", post(delete_node))
         .route("/trash", get(trash))
@@ -58,7 +57,6 @@ pub(super) fn routes() -> Router<Web> {
         .route("/api/node/{id}", get(api_node).post(api_update))
         .route("/api/node/{id}/move", post(api_move))
         .route("/api/node/{id}/delete", post(api_delete))
-        .route("/api/node/{id}/touch", post(api_touch))
         .route("/api/search", get(api_search))
 }
 
@@ -277,7 +275,6 @@ fn ok_notice(key: &str, moved: Option<&str>) -> Option<String> {
         "created" => "已新建".to_owned(),
         "saved" => "已保存".to_owned(),
         "same" => "没有改动".to_owned(),
-        "touched" => "已确认：这条仍然正确".to_owned(),
         "moved" => "已移动".to_owned(),
         "restored" => "已从回收站恢复".to_owned(),
         "purged" => "已永久删除".to_owned(),
@@ -720,14 +717,6 @@ async fn load(w: &Web, id: &str) -> Result<NodeView> {
 
 // The changes themselves: the page forms and the JSON routes both go through these.
 
-async fn do_touch(w: &Web, id: &str, version: Option<u32>) -> Result<NodeView> {
-    let id = id.to_owned();
-    w.service
-        .run(move |s| s.touch(&id, version, ACTOR))
-        .await
-        .and_then(|r| r)
-}
-
 async fn do_move(w: &Web, id: &str, to: Option<String>) -> Result<()> {
     let id = id.to_owned();
     w.service
@@ -778,18 +767,6 @@ async fn node_page(
             render_node(&w, &node, None, notice).await
         }
         Err(e) => missing_node(&w, &e),
-    }
-}
-
-async fn touch_node(
-    State(w): State<Web>,
-    Path(id): Path<String>,
-    Form(f): Form<HashMap<String, String>>,
-) -> Response {
-    let version = f.get("version").and_then(|v| v.parse().ok());
-    match do_touch(&w, &id, version).await {
-        Ok(_) => Redirect::to(&format!("/node/{id}?ok=touched")).into_response(),
-        Err(e) => failed_action(&w, &id, &e).await,
     }
 }
 
@@ -1423,17 +1400,6 @@ async fn api_update(
     }
 }
 
-async fn api_touch(
-    State(w): State<Web>,
-    Path(id): Path<String>,
-    Json(change): Json<Change>,
-) -> Response {
-    match do_touch(&w, &id, change.version).await {
-        Ok(node) => Json(detail(&w, &node).await).into_response(),
-        Err(e) => api_error(&e),
-    }
-}
-
 /// `parent` is the summary to put the node under; none (or empty) puts it at the top.
 #[derive(Default, Deserialize)]
 #[serde(default)]
@@ -1631,7 +1597,7 @@ mod tests {
         let (status, made) = site
             .post(
                 "/api/node",
-                json!({"content": "树页里写的一条", "title": "", "tags": ["#甲", "乙", "甲"], "parent": top.id, "occurred": "2025-03"}),
+                json!({"content": "树页里写的一条", "title": "树页里写的", "tags": ["#甲", "乙", "甲"], "parent": top.id, "occurred": "2025-03"}),
             )
             .await;
         assert_eq!(status, StatusCode::OK, "{made}");
@@ -1643,14 +1609,32 @@ mod tests {
         assert_eq!(made["history"][0]["who"], "你");
         // a bad date or a missing parent is refused with the reason
         let (status, body) = site
-            .post("/api/node", json!({"content": "x", "occurred": "昨天"}))
+            .post(
+                "/api/node",
+                json!({"title": "x", "content": "x", "occurred": "昨天"}),
+            )
             .await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert!(body["error"].as_str().unwrap().contains("时间"), "{body}");
         let (status, _) = site
-            .post("/api/node", json!({"content": "x", "parent": "nope"}))
+            .post(
+                "/api/node",
+                json!({"title": "x", "content": "x", "parent": "nope"}),
+            )
             .await;
         assert_eq!(status, StatusCode::NOT_FOUND);
+        // every node needs a title: a missing or blank one is refused with a plain reason
+        for body in [
+            json!({"content": "没有标题的一条"}),
+            json!({"title": "  ", "content": "标题是空白"}),
+        ] {
+            let (status, refused) = site.post("/api/node", body).await;
+            assert_eq!(status, StatusCode::BAD_REQUEST, "{refused}");
+            assert!(
+                refused["error"].as_str().unwrap().contains("标题必填"),
+                "{refused}"
+            );
+        }
 
         // an edit with the version that was read; only what differs is written
         let (status, edited) = site
@@ -1686,25 +1670,27 @@ mod tests {
             .post("/api/node/nope", json!({"version": 1, "content": "x"}))
             .await;
         assert_eq!(status, StatusCode::NOT_FOUND);
-        // a title cannot be taken off a summary
-        let (status, body) = site
-            .post(
-                &format!("/api/node/{}", top.id),
-                json!({"version": 1, "title": ""}),
-            )
-            .await;
-        assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+        // a title cannot be taken off any node, a summary or a memory
+        for node in [top.id.as_str(), id.as_str()] {
+            let version = site.service.get(node).unwrap().version;
+            let (status, body) = site
+                .post(
+                    &format!("/api/node/{node}"),
+                    json!({"version": version, "title": ""}),
+                )
+                .await;
+            assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+            assert!(
+                body["error"].as_str().unwrap().contains("不能清空"),
+                "{body}"
+            );
+        }
 
-        // touch: checked and still right, also with the version rule
-        let (status, touched) = site
-            .post(&format!("/api/node/{id}/touch"), json!({"version": 2}))
-            .await;
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(touched["version"], 3);
+        // the page has no way to mark a node as checked: that is for the AI
         let (status, _) = site
             .post(&format!("/api/node/{id}/touch"), json!({"version": 2}))
             .await;
-        assert_eq!(status, StatusCode::CONFLICT);
+        assert_eq!(status, StatusCode::NOT_FOUND);
 
         // move: under another summary, to the top, never into itself or its own descendants
         let other = site.say("另一个", "另一个结论", None);
@@ -1714,7 +1700,7 @@ mod tests {
         assert_eq!(status, StatusCode::OK, "{moved}");
         assert_eq!(moved["parent"], json!(other.id));
         assert_eq!(moved["path"][0]["id"], json!(other.id));
-        let child = site.say("", "它下面的一条", Some(&other.id));
+        let child = site.say("下面的一条", "它下面的一条", Some(&other.id));
         let (status, cycle) = site
             .post(
                 &format!("/api/node/{}/move", other.id),
@@ -1800,9 +1786,9 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn the_json_routes_keep_the_local_only_rules() {
         let site = Site::open();
-        let node = site.say("", "一条记忆", None);
-        let uri = format!("/api/node/{}/touch", node.id);
-        let body = json!({"version": 1}).to_string();
+        let node = site.say("一条记忆", "这是一条记忆的正文", None);
+        let uri = format!("/api/node/{}", node.id);
+        let body = json!({"version": 1, "content": "改过的正文"}).to_string();
         // another site's page cannot send it, and neither can another host name (DNS rebinding)
         for headers in [
             &[("origin", "http://evil.example")][..],
@@ -1826,7 +1812,9 @@ mod tests {
             .await;
         assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
         assert_eq!(site.service.get(&node.id).unwrap().version, 1);
-        let (status, _) = site.post(&uri, json!({"version": 1})).await;
+        let (status, _) = site
+            .post(&uri, json!({"version": 1, "content": "改过的正文"}))
+            .await;
         assert_eq!(status, StatusCode::OK);
     }
 
@@ -1837,13 +1825,13 @@ mod tests {
         let (_, a) = site
             .post(
                 "/api/node",
-                json!({"content": "甲 记忆", "tags": ["红"], "parent": top.id, "occurred": "2025-01-01"}),
+                json!({"title": "甲", "content": "甲 记忆", "tags": ["红"], "parent": top.id, "occurred": "2025-01-01"}),
             )
             .await;
         let (_, b) = site
             .post(
                 "/api/node",
-                json!({"content": "乙 记忆", "tags": ["蓝"], "parent": top.id, "occurred": "2025-02-01"}),
+                json!({"title": "乙", "content": "乙 记忆", "tags": ["蓝"], "parent": top.id, "occurred": "2025-02-01"}),
             )
             .await;
         let (status, found) = site
