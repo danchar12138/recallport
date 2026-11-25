@@ -1,7 +1,7 @@
 /* The behaviour every page shares, and the one library of interface parts (window.rp) that the page scripts build on.
    Markup contract:
      <button data-theme-set="auto|light|dark">         the theme switch
-     <button data-nav-toggle>                           the navigation: an icon rail that opens to full width (a drawer on a phone)
+     <button data-nav-toggle>                           the navigation: a sidebar that folds into an icon rail (a drawer on a phone)
      <button data-copy="text"> / data-copy-target="#id"  copy; the button says 已复制
      <button|form data-confirm="question" data-confirm-text="detail" data-confirm-ok="label">   a dialog asks first
      <button data-dialog-open="id"> / <button data-dialog-close>   open and close a <dialog class="dialog">
@@ -180,13 +180,12 @@
   });
   markTheme();
 
-  /* ---------- the navigation: an icon rail that a button opens to full width ----------
-     On the tree page it opens as a drawer over the picture, on a phone as a drawer from the left (both with a scrim, never
-     pushing the content), so neither is remembered; on the other wide pages it pushes the content aside and is remembered. */
+  /* ---------- the navigation: a full-width sidebar that a handle on its edge folds into an icon rail ----------
+     On a wide screen it is open by default, on every page alike (the tree included), and pushes the content aside; folding
+     it into the rail is remembered. On a phone it is a drawer from the left with a scrim, closed by default and not remembered. */
   const phone = matchMedia('(max-width: 767px)');
-  const treePage = doc.body.dataset.view === 'tree';
   const navOpen = () => root.dataset.nav === 'open';
-  const drawer = () => treePage || phone.matches;
+  const drawer = () => phone.matches;
   const markNav = () => {
     for (const btn of $$('[data-nav-toggle]')) {
       const label = navOpen() ? '收起导航' : '展开导航';
@@ -199,7 +198,7 @@
     if (open) root.dataset.nav = 'open'; else root.removeAttribute('data-nav');
     if (!drawer()) {
       try {
-        if (open) localStorage.setItem('rp-nav', 'open'); else localStorage.removeItem('rp-nav');
+        if (open) localStorage.removeItem('rp-nav'); else localStorage.setItem('rp-nav', 'rail');
       } catch { /* private mode: the choice just lasts for this page */ }
     }
     markNav();
@@ -225,7 +224,12 @@
       else if (!event.shiftKey && doc.activeElement === last) { event.preventDefault(); first.focus(); }
     }
   });
-  phone.addEventListener('change', () => { if (navOpen() && phone.matches) setNav(false); });
+  phone.addEventListener('change', () => {
+    if (phone.matches) { if (navOpen()) setNav(false); return; }
+    let rail = false;
+    try { rail = localStorage.getItem('rp-nav') === 'rail'; } catch { /* default */ }
+    if (!rail && !navOpen()) setNav(true);
+  });
   markNav();
 
   /* ---------- copy ---------- */
@@ -316,6 +320,7 @@
   }
 
   /* ---------- keys that mean the same on every page: / searches, ? explains, Esc closes what is open ---------- */
+  const treePage = doc.body.dataset.view === 'tree';
   doc.addEventListener('keydown', event => {
     if (event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
     if (event.target.closest?.('input, textarea, select, [contenteditable]') || $('dialog[open]')) return;

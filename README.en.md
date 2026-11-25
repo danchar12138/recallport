@@ -83,7 +83,7 @@ claude mcp add --transport http --scope user recallport http://127.0.0.1:3765/mc
 
 **3. Make the AI use it on its own (recommended)**
 
-The server carries its own usage instructions, but some clients ignore them. "Write usage rules" on the Connect page writes a short block into the global rules file of Codex / Claude Code (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`, wrapped in markers, backed up first, removable when you disconnect). For other clients paste something like this into their rules file (the block the app writes is in Chinese; this is its meaning):
+The server carries its own usage instructions, but some clients ignore them. "One-click connect" on the Connect page also writes this short block into the global rules file of Codex / Claude Code (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`, wrapped in markers, backed up first, removed again when you disconnect), so there is no second step. For other clients paste something like this into their rules file (the block the app writes is in Chinese; this is its meaning):
 
 ```markdown
 ## Long-term memory (RecallPort)
@@ -217,7 +217,7 @@ To report a security problem see [SECURITY.md](SECURITY.md).
 <details>
 <summary>The AI does not call the memory tools on its own</summary>
 
-Whether it does depends on the client and the model; RecallPort does not see whole conversations. Make sure the Connect page shows "usage rules written" (for other clients paste the rules above), which usually helps a lot. "Verify connection" tells you whether the client really connected.
+Whether it does depends on the client and the model; RecallPort does not see whole conversations. One-click connect already writes the usage rules (for other clients paste the rules above), which usually helps a lot. "Verify connection" tells you whether the client really connected.
 </details>
 
 <details>

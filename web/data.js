@@ -306,25 +306,17 @@
       async connect(card, button) {
         const name = card.querySelector('h3').textContent;
         const answer = await api(`/api/clients/${card.dataset.client}/connect`, {body: {replace: button.dataset.replace === '1'}});
-        if (answer.already) return {text: `${name} 已经接入了。`};
-        return {text: `已接入 ${name}${answer.backup ? `（原配置已备份为 ${answer.backup}）` : ''}。请重启 ${name}，它才会读到新配置。`};
+        const saved = [answer.backup, answer.rules_backup].filter(Boolean);
+        const backups = saved.length ? `（原文件已备份：${saved.join('、')}）` : '';
+        if (answer.rules_error) return {text: `已接入 ${name}，但使用规则没写进去：${answer.rules_error}`, tone: 'error'};
+        if (answer.already && !answer.rules_changed) return {text: `${name} 已经接入了，使用规则也是最新的。`};
+        return {text: `已接入 ${name}，使用规则一并写好${backups}。请重启 ${name}，它才会读到。`};
       },
       async disconnect(card) {
         const name = card.querySelector('h3').textContent;
         const answer = await api(`/api/clients/${card.dataset.client}/disconnect`, {body: {}});
-        if (!answer.removed) return {text: `${name} 里本来就没有 recallport 这一项。`};
-        return {text: `已断开 ${name}${answer.backup ? `（原配置已备份为 ${answer.backup}）` : ''}。记忆不受影响，随时可以重新接入。`};
-      },
-      async 'rules-on'(card) {
-        const name = card.querySelector('h3').textContent;
-        const answer = await api(`/api/clients/${card.dataset.client}/rules`, {body: {enabled: true}});
-        if (!answer.changed) return {text: `${name} 的使用规则已经是最新的。`};
-        return {text: `已写入 ${name} 的使用规则${answer.backup ? `（原文件已备份为 ${answer.backup}）` : ''}。请重启 ${name}，它才会读到。`};
-      },
-      async 'rules-off'(card) {
-        const name = card.querySelector('h3').textContent;
-        const answer = await api(`/api/clients/${card.dataset.client}/rules`, {body: {enabled: false}});
-        return {text: answer.changed ? `已从 ${name} 的指令文件里移除使用规则。` : `${name} 的指令文件里本来就没有使用规则。`};
+        if (!answer.removed && !answer.rules_removed) return {text: `${name} 里本来就没有 RecallPort 的内容。`};
+        return {text: `已断开 ${name}，接入配置和使用规则都已移除${answer.backup ? `（原配置已备份为 ${answer.backup}）` : ''}。记忆不受影响，随时可以重新接入。`};
       },
     };
 
@@ -363,8 +355,7 @@
     const manual = $('[data-manual-copy]', root);
     const text = node => node.textContent.replace(/\s+/g, ' ').trim();
     const manualText = () => {
-      const lines = ['# RecallPort 工具手册', '', `MCP 地址：${text($('#adm-mcp-url', root))}`, '', '## 记忆怎么组织与维护'];
-      for (const item of $$('.adm-model li', root)) lines.push(`- ${text(item)}`);
+      const lines = ['# RecallPort 工具手册', '', `MCP 地址：${text($('#adm-mcp-url', root))}`, '', $('#adm-rules-text', root).textContent.trim()];
       for (const tool of $$('[data-tool]', root)) {
         lines.push('', `## ${tool.dataset.tool} · ${text($('h3 span', tool))}`, text($('.adm-when', tool)), '参数：');
         for (const row of $$('.adm-args > div', tool)) {

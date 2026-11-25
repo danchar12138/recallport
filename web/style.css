@@ -155,9 +155,9 @@ small { font-size: var(--fs-xs); }
 }
 
 /* ---------- 3. frame: a navigation rail on wide screens, an app bar and a drawer on narrow ones ---------- */
-/* The navigation is one component everywhere: a 56px rail of icons that its button opens to 240px. On the tree page the
-   open navigation is a drawer over the picture (with a scrim); on every other wide page it pushes the content aside;
-   on a phone it is a drawer from the left. */
+/* The navigation is one component everywhere: a 240px sidebar, open by default, that the handle on its edge folds into a
+   56px rail of icons (and back). It pushes the content aside on every wide page, the tree included; on a phone it is a
+   drawer from the left. */
 html[data-nav="open"] { --nav-w: var(--sidebar); }
 .top { position: fixed; inset: 0 auto 0 0; z-index: 20; width: var(--nav-w); display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-2) var(--s-3); overflow: hidden auto; scrollbar-width: none; background: var(--surface); border-right: 1px solid var(--border); transition: width var(--ease), box-shadow var(--ease); }
 .top::-webkit-scrollbar { display: none; }
@@ -166,7 +166,11 @@ html[data-nav="open"] :is(.nav-label, .brand-name) { opacity: 1; }
 .brand { display: flex; flex: none; align-items: center; gap: 10px; padding: 2px 5px; color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-bold); letter-spacing: -.01em; text-decoration: none; white-space: nowrap; }
 .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--r-md); color: var(--on-accent); background: var(--accent); flex: none; }
 .tabs a, .nav-toggle { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; font: inherit; font-weight: var(--fw-medium); white-space: nowrap; color: var(--text-2); background: none; border: 0; border-radius: var(--r-md); text-align: left; text-decoration: none; cursor: pointer; transition: background-color var(--ease), color var(--ease); }
-.nav-toggle { flex: none; }
+.nav-toggle { display: none; flex: none; }
+.nav-handle { position: fixed; z-index: 21; top: 25px; left: calc(var(--nav-w) - 12px); width: 24px; height: 24px; display: grid; place-items: center; padding: 0; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 50%; box-shadow: var(--shadow-1); cursor: pointer; transition: left var(--ease), color var(--ease), background-color var(--ease), border-color var(--ease); }
+.nav-handle:hover { color: var(--text); background: var(--hover-solid, var(--surface-2)); border-color: var(--border-strong, var(--border)); }
+.nav-handle .icon { width: 14px; height: 14px; transform: rotate(-90deg); transition: transform var(--ease); }
+html[data-nav="open"] .nav-handle .icon { transform: rotate(90deg); }
 .tabs a:hover, .nav-toggle:hover { background: var(--hover); color: var(--text); }
 .tabs a[aria-current] { background: var(--accent-soft); color: var(--accent-text); font-weight: var(--fw-bold); }
 .nav-body { display: flex; flex: 1; flex-direction: column; gap: var(--s-3); min-height: 0; }
@@ -182,11 +186,7 @@ html[data-nav="open"] :is(.nav-label, .brand-name) { opacity: 1; }
 .shell.shell-wide > :is(.banner, .page-head, .card) { max-width: var(--page-w); margin: var(--s-5) auto; }
 .nav-scrim { display: none; }
 @keyframes scrim-in { from { opacity: 0; } }
-@media (min-width: 768px) {
-  body[data-view="tree"] .shell { margin-left: var(--rail); }
-  html[data-nav="open"] body[data-view="tree"] .top { box-shadow: var(--shadow-3); }
-  html[data-nav="open"] body[data-view="tree"] .nav-scrim { display: block; position: fixed; inset: 0; z-index: 19; background: var(--scrim); animation: scrim-in var(--ease); }
-}
+body[data-view="tree"] .shell { transition: none; }
 /* the theme switch: a segmented control (auto / light / dark) */
 .segmented { display: inline-flex; padding: 2px; gap: 1px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
 .segmented button { display: inline-grid; place-items: center; min-width: 28px; height: 26px; padding: 0 10px; font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-2); background: none; border: 0; border-radius: var(--r-sm); cursor: pointer; transition: background-color var(--ease), color var(--ease); }
@@ -202,8 +202,8 @@ html[data-nav="open"] .side-foot .segmented button { flex: 1; }
   html { --nav-w: 0px; }
   .top { position: sticky; inset: 0 0 auto 0; z-index: 30; width: auto; height: 52px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 var(--s-2) 0 var(--s-4); gap: 0; overflow: visible; border-right: 0; border-bottom: 1px solid var(--border); transition: none; }
   .brand { padding-inline: 0; }
-  .nav-toggle { order: 2; margin-left: auto; width: 40px; min-height: 40px; padding: 0; justify-content: center; }
-  .nav-toggle .nav-label { display: none; }
+  .nav-toggle { order: 2; display: flex; margin-left: auto; width: 40px; min-height: 40px; padding: 0; justify-content: center; }
+  .nav-handle { display: none; }
   .nav-label, .brand-name { opacity: 1; }
   .nav-body { position: fixed; z-index: 31; inset: 0 auto 0 0; width: min(300px, 86vw); flex: none; padding: var(--s-4) var(--s-3) var(--s-3); background: var(--surface); border-right: 1px solid var(--border); box-shadow: var(--shadow-3); overflow-y: auto; transform: translateX(-102%); visibility: hidden; transition: transform var(--ease), visibility 0s linear 150ms; }
   html[data-nav="open"] .nav-body { transform: none; visibility: visible; transition-delay: 0s; }
@@ -653,8 +653,6 @@ textarea[data-autosize] { resize: none; max-height: 60vh; overflow-y: auto; }
 .fold-stack { display: grid; gap: var(--s-3); margin-top: var(--s-3); }
 .fold-body { display: grid; gap: var(--s-2); }
 /* the tool manual */
-.adm-model { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); }
-.adm-model ul { display: grid; gap: 6px; padding-left: 20px; list-style: disc; color: var(--text-2); }
 .adm-tool-index { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--s-4) 0 var(--s-1); }
 .adm-tool-index a { display: inline-flex; align-items: center; height: var(--h-sm); padding: 0 11px; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-pill); }
 .adm-tool-index a:hover { border-color: var(--accent); }

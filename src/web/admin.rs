@@ -54,7 +54,6 @@ pub(super) fn routes() -> Router<Web> {
         .route("/api/clients/verify", post(verify))
         .route("/api/clients/{id}/connect", post(connect))
         .route("/api/clients/{id}/disconnect", post(disconnect))
-        .route("/api/clients/{id}/rules", post(set_rules))
 }
 
 fn fail(status: StatusCode, message: impl Into<String>) -> Response {
@@ -389,47 +388,49 @@ async fn connect(
         return fail(StatusCode::NOT_FOUND, "不认识这个客户端");
     };
     let replace = body.is_some_and(|b| b.replace);
-    match clients::connect(client, &format!("{}/mcp", w.base), replace) {
-        Ok(Outcome::Connected { backup }) => {
-            Json(json!({"ok": true, "already": false, "backup": backup})).into_response()
+    let outcome = match clients::connect(client, &format!("{}/mcp", w.base), replace) {
+        Ok(outcome) => outcome,
+        Err(error) => return fail(StatusCode::BAD_REQUEST, failure(&error)),
+    };
+    let (already, backup) = match outcome {
+        Outcome::Connected { backup } => (false, backup),
+        Outcome::Already => (true, None),
+        Outcome::Conflict { existing } => {
+            return (
+                StatusCode::CONFLICT,
+                Json(json!({"error": format!("{} 的配置里已经有一个叫 recallport 的项，指向 {existing}。", client.name()), "conflict": true, "existing": existing})),
+            )
+                .into_response();
         }
-        Ok(Outcome::Already) => Json(json!({"ok": true, "already": true, "backup": null})).into_response(),
-        Ok(Outcome::Conflict { existing }) => (
-            StatusCode::CONFLICT,
-            Json(json!({"error": format!("{} 的配置里已经有一个叫 recallport 的项，指向 {existing}。", client.name()), "conflict": true, "existing": existing})),
-        )
-            .into_response(),
-        Err(error) => fail(StatusCode::BAD_REQUEST, failure(&error)),
-    }
+    };
+    // Connecting also writes the usage rules, so there is no second step to remember. When that part fails the
+    // connection still stands, and the page says what went wrong.
+    let (rules_changed, rules_backup, rules_error) = match clients::write_rules(client) {
+        Ok(done) => (done.changed, done.backup, None),
+        Err(error) => (false, None, Some(failure(&error))),
+    };
+    Json(json!({
+        "ok": true, "already": already, "backup": backup,
+        "rules_changed": rules_changed, "rules_backup": rules_backup, "rules_error": rules_error,
+    }))
+    .into_response()
 }
 
 async fn disconnect(Path(id): Path<String>) -> Response {
     let Some(client) = Client::parse(&id) else {
         return fail(StatusCode::NOT_FOUND, "不认识这个客户端");
     };
-    match clients::disconnect(client) {
-        Ok((removed, backup)) => {
-            Json(json!({"ok": true, "removed": removed, "backup": backup})).into_response()
-        }
-        Err(error) => fail(StatusCode::BAD_REQUEST, failure(&error)),
-    }
-}
-
-async fn set_rules(Path(id): Path<String>, Json(body): Json<Toggle>) -> Response {
-    let Some(client) = Client::parse(&id) else {
-        return fail(StatusCode::NOT_FOUND, "不认识这个客户端");
+    let (removed, backup) = match clients::disconnect(client) {
+        Ok(done) => done,
+        Err(error) => return fail(StatusCode::BAD_REQUEST, failure(&error)),
     };
-    let done = if body.enabled {
-        clients::write_rules(client).map(|done| (done.changed, done.backup))
-    } else {
-        clients::remove_rules(client).map(|removed| (removed, None))
+    // The usage rules go with the connection: nothing of ours is left behind in the client's files.
+    let rules_removed = match clients::remove_rules(client) {
+        Ok(removed) => removed,
+        Err(error) => return fail(StatusCode::BAD_REQUEST, failure(&error)),
     };
-    match done {
-        Ok((changed, backup)) => {
-            Json(json!({"ok": true, "changed": changed, "backup": backup})).into_response()
-        }
-        Err(error) => fail(StatusCode::BAD_REQUEST, failure(&error)),
-    }
+    Json(json!({"ok": true, "removed": removed, "backup": backup, "rules_removed": rules_removed}))
+        .into_response()
 }
 
 // ---------- checking the MCP endpoint ----------

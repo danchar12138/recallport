@@ -110,7 +110,7 @@ SOFTWARE.
 <a class="skip-link" href="#main">跳到主要内容</a>
 <header class="top" id="side-nav">
   <a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#history"/></svg></span><span class="brand-name">RecallPort</span></a>
-  <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="nav-body" title="展开导航" aria-label="展开导航"><svg class="icon icon-lg" aria-hidden="true"><use href="#panel"/></svg><span class="nav-label">收起导航</span></button>
+  <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="nav-body" title="展开导航" aria-label="展开导航"><svg class="icon icon-lg" aria-hidden="true"><use href="#panel"/></svg></button>
   <div class="nav-body" id="nav-body">
     <nav class="tabs" aria-label="主导航">
       {% for tab in tabs %}<a href="{{ tab[0] }}" title="{{ tab[2] }}"{% if tab[1] == here %} aria-current="page"{% endif %}><svg class="icon icon-lg" aria-hidden="true"><use href="#{{ tab[3] }}"/></svg><span class="nav-label">{{ tab[2] }}</span></a>
@@ -122,6 +122,7 @@ SOFTWARE.
     </div>
   </div>
 </header>
+<button type="button" class="nav-handle" data-nav-toggle aria-expanded="false" aria-controls="nav-body" title="收起导航" aria-label="收起导航"><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></button>
 <div class="nav-scrim" data-nav-scrim></div>
 <main id="main" class="shell{% if View == "tree" %} shell-wide{% endif %}">
 {% if Error %}<div class="banner banner-error" role="alert"><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><p>{{ Error }}</p></div>{% endif %}

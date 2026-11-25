@@ -27,7 +27,7 @@
       <p class="sub">{{ c.scope }} · 配置文件 <code>{{ c.path }}</code>{% if not c.installed %} · 没有检测到它已安装，仍然可以接入{% endif %}</p>
       <p class="client-status">
         {% if c.state == "connected" %}
-          {% if c.seen %}最近连过：{{ c.seen.name }} · {{ local_time(c.seen.at) }} · 共 {{ c.seen.calls }} 次调用。{% else %}配置正确，但还没有收到它的连接。重启 {{ c.name }} 后，点“验证连接”确认。{% endif %}
+          {% if c.seen %}最近连过：{{ c.seen.name }} · {{ local_time(c.seen.at) }} · 共 {{ c.seen.calls }} 次调用。{% else %}配置正确，但还没有收到它的连接。重启 {{ c.name }} 后，点“验证连接”确认。{% endif %}{% if not c.rules %}使用规则还没写入，点“补全接入”一并写好。{% endif %}
         {% elif c.state == "conflict" %}
           它的配置里已经有一项叫 <code>recallport</code>，指向 <code>{{ c.existing }}</code>，和当前地址不同。替换后它会指向 <code>{{ Url }}</code>，原文件会先备份。
         {% elif c.state == "error" %}
@@ -38,6 +38,7 @@
       </p>
       <div class="btns">
         {% if c.state == "none" %}<button type="button" class="btn btn-primary" data-client-act="connect">{{ icon("plug") }}一键接入</button>{% endif %}
+        {% if c.state == "connected" and not c.rules %}<button type="button" class="btn btn-primary" data-client-act="connect">{{ icon("plug") }}补全接入</button>{% endif %}
         {% if c.state == "conflict" %}<button type="button" class="btn btn-primary" data-client-act="connect" data-replace="1" data-confirm="替换 {{ c.name }} 里原有的 recallport 配置？" data-confirm-text="它会改为指向当前地址，原文件先备份。" data-confirm-ok="替换">替换为当前地址</button>{% endif %}
         {% if c.state != "error" %}<button type="button" class="btn{% if c.state == "connected" %} btn-primary{% endif %}" data-client-act="verify">验证连接</button>{% endif %}
         {% if c.state == "connected" or c.state == "conflict" %}<button type="button" class="btn btn-danger" data-client-act="disconnect" data-confirm="断开 {{ c.name }}？" data-confirm-text="只会删掉它配置里的 recallport 这一项（原文件先备份），记忆不受影响。" data-confirm-ok="断开">断开</button>{% endif %}
@@ -46,23 +47,16 @@
 
       {% if c.state != "error" %}
       <details class="fold">
-        <summary>将写入的配置</summary>
+        <summary>一键接入会写入什么</summary>
         <div class="fold-body">
-        <p class="help">写进 <code>{{ c.path }}</code>，只有这一项：</p>
+        <p class="help">一键接入做两件事，别的内容一概不动，改之前先备份原文件。<br>① 写进 <code>{{ c.path }}</code>，只有这一项：</p>
         <div class="code"><pre id="preview-{{ c.id }}">{{ c.preview }}</pre><button type="button" class="btn btn-sm" data-copy-target="#preview-{{ c.id }}" aria-label="复制 {{ c.name }} 的配置">{{ icon("copy") }}复制</button></div>
         {% if c.command %}<p class="help">或者自己在命令行里加：</p>
         <div class="code"><pre id="command-{{ c.id }}">{{ c.command }}</pre><button type="button" class="btn btn-sm" data-copy-target="#command-{{ c.id }}" aria-label="复制命令">{{ icon("copy") }}复制</button></div>{% endif %}
+        <p class="help">② 在全局指令文件 <code>{{ c.rules_path }}</code> 里加一段带标记的使用规则（全文在下面），让 AI 该查的时候主动查、该记的时候主动记。断开时会一并移除。</p>
         </div>
       </details>
 
-      <div class="rules">
-        <h4>使用规则 <span class="badge" data-state="{% if c.rules %}connected{% else %}none{% endif %}">{% if c.rules %}已写入{% else %}未写入{% endif %}</span></h4>
-        <p>一小段提示，写进 {{ c.name }} 的全局指令文件 <code>{{ c.rules_path }}</code>，让 AI 在该查的时候主动查、该记的时候主动记。不写也能用：AI 在你要求时仍会调用工具，只是不一定主动。它用标记包住，文件里的其他内容不动，随时可以更新或移除，改动前会备份原文件。</p>
-        <div class="btns">
-          <button type="button" class="btn btn-sm" data-client-act="rules-on">{% if c.rules %}更新为最新规则{% else %}写入使用规则{% endif %}</button>
-          {% if c.rules %}<button type="button" class="btn btn-sm btn-danger" data-client-act="rules-off" data-confirm="从 {{ c.rules_path }} 里移除使用规则？" data-confirm-text="文件里的其他内容不动。" data-confirm-ok="移除">移除规则</button>{% endif %}
-        </div>
-      </div>
       {% endif %}
     </article>
     {% endfor %}
@@ -70,7 +64,7 @@
 
   <div class="fold-stack">
     <details class="fold">
-      <summary>查看使用规则的全文</summary>
+      <summary>使用规则全文（一键接入会一并写入；其他客户端可以复制后自己贴）</summary>
       <div class="code"><pre id="adm-rules-text" class="is-prose">{{ Rules }}</pre><button type="button" class="btn btn-sm" data-copy-target="#adm-rules-text" aria-label="复制使用规则">{{ icon("copy") }}复制</button></div>
     </details>
 
@@ -86,7 +80,7 @@
 </section>
 
 <section class="section" id="manual" aria-labelledby="h-manual">
-  <div class="section-head"><div><h2 id="h-manual">其他客户端</h2><p>任何支持 MCP 的 HTTP 方式（Streamable HTTP）的客户端都能接入，地址同上，不需要认证。配置的字段名因客户端而异（常见的有 <code>type</code> / <code>transport</code>、<code>url</code> / <code>serverUrl</code>），以它自己的文档为准。</p></div></div>
+  <div class="section-head"><div><h2 id="h-manual">其他客户端</h2><p>任何支持 MCP 的 HTTP 方式（Streamable HTTP）的客户端都能接入，地址同上，不需要认证。配置的字段名因客户端而异（常见的有 <code>type</code> / <code>transport</code>、<code>url</code> / <code>serverUrl</code>），以它自己的文档为准。接入后再把上面“使用规则全文”复制，贴进它的全局指令文件，AI 才会主动查和记。</p></div></div>
   <div class="snippets">
     <div class="snippet card">
       <h3>JSON（<code>mcpServers</code> 写法）</h3>
@@ -111,16 +105,6 @@ url = "{{ Url }}"</pre><button type="button" class="btn btn-sm" data-copy-target
   <div class="section-head">
     <div><h2 id="h-tools">工具手册</h2><p>接入后，AI 能用到下面 9 个工具。整份手册可以复制给 AI（比如放进项目说明里）。</p></div>
     <button type="button" class="btn" data-copy="" data-manual-copy>{{ icon("copy") }}复制整份手册</button>
-  </div>
-
-  <div class="adm-model card" id="how">
-    <h3>AI 怎么维护这棵树</h3>
-    <ul>
-      <li>记忆是<b>一棵树</b>。第 0 层是 AI 从对话里提取的原子记忆，每条是一段完整的经历（发生了什么、为什么、结果）；更高的层是 AI 写的汇总，层数不限。</li>
-      <li><b>写汇总</b>：用 <code>write</code>，并在 <code>adopt</code> 里列出它概括的节点；这些节点就挂到新节点下面，新节点比它们高一层。汇总只是索引，细节要用 <code>get</code> 看它下面的节点。</li>
-      <li><b>保养</b>：<code>maintain</code> 自下而上地列出缺汇总的地方，分批给出——<code>new</code> 是需要新写一条汇总的一批节点，<code>extend</code> 是可以补进已有汇总的节点——还有已经过期的汇总（下面有比它更新的节点），以及没有标题的旧节点（<code>untitled</code>，用 <code>update</code> 补上标题）。AI 补写或改写之后，核对过仍然正确的汇总用 <code>update</code> 加 <code>touch</code> 刷新。</li>
-      <li><b>不会丢</b>：每次改动都留在节点的历史里（<code>get</code> 加 <code>history</code> 可以看）；<code>delete</code> 只是进回收站，放满一个月前随时能 <code>restore</code>。</li>
-    </ul>
   </div>
 
   <nav class="adm-tool-index" aria-label="工具目录">

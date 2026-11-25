@@ -6,8 +6,10 @@
    so zooming in opens the tree level by level down to the memories themselves. Whatever room a card has is filled
    with its own words: a title, the whole text at the biggest size that fits, a line of facts. How a card sets its
    words depends on the card's own size and nothing else: what the window crops or a floating panel covers does not
-   change a single line. Children are fetched when a card is about to open. The memories that sit under no summary
-   are gathered in one grey block, "未汇总的记忆". */
+   change a single line. Zooming changes the words continuously (see "type" below): a card is set once on a face of a
+   fixed size and drawn scaled, so size, wrapping and the rows that show change gradually, never in a step. Children
+   are fetched when a card is about to open. The memories that sit under no summary are gathered in one grey block,
+   "未汇总的记忆". */
 (() => {
   'use strict';
   const doc = document;
@@ -32,9 +34,11 @@
   const FANOUT = 6;                      // how many "other" tiles a crowd is split into
   const POWER = 0.7;                     // area grows with size to this power
   const TITLE_PX = [13, 14, 15, 16, 17]; // title size of an open card by layer
-  const BODY_MIN = 12, BODY_MAX = 40, TITLE_MAX = 44;  // the sizes a card's text ranges over (its title grows with it, to 44px at most); a huge card may go up to 72px
-  const FILL_W = 200, FILL_H = 120;      // a card smaller than this keeps the sizes its width gives it
-  const MIN_RATIO = 0.5, MAX_RATIO = 20000;  // the range of the zoom, as multiples of the fitted picture
+  // The zoom ranges from half the fitted picture to the zoom at which the smallest card fills the window (maxRatio),
+  // and never beyond MAX_ZOOM times the fitted picture: a deep tree has cards that would need hundreds of times, where
+  // everything else would be many windows big and the percentage meaningless; 1600% is the most any card is looked at.
+  const MIN_RATIO = 0.5, MAX_ZOOM = 16;
+  const FILL_MARGIN = 14;                // the room left around a card that zoomTo fits to the window
   const VIEW_HISTORY = 20;               // how many earlier views Esc can go back through
   const OL_PAGE = 200;
   const LOOSE = 'loose';                 // the id of the block of memories under no summary
@@ -44,7 +48,7 @@
   const NEUTRAL = HUES.length;
   const NO_START = '，。、；：！？）」』》”’,.;:!?)]}';  // closing marks never start a line
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-  const half = v => Math.round(v * 2) / 2;
+  const ramp = (v, a, b) => clamp((v - a) / (b - a), 0, 1);    // 0 up to a, 1 from b, in between a straight line
 
   /* ---------- small helpers ---------- */
   // The element builder, the icon, the JSON call, the toast and the layer badge are the interface parts every page shares (ui.js).
@@ -223,6 +227,7 @@
     return {group: true, owner, lo, hi, weight, size, count: hi - lo, depth: owner.depth + 1, topic: owner.topic, layer: Math.max(owner.layer - 1, 0), items: null};
   };
   let miniDirty = true;
+  let layoutEpoch = 0;                   // how many times the whole layout started over
   // The loose memories are all alike: a grid of cards of at least the least size, newest first; what does not fit is
   // one "other" tile in the last place.
   const layoutGrid = (c, owner, list, base) => {
@@ -316,6 +321,7 @@
     for (const n of byId.values()) n.items = null;
     root.items = null;
     root.asp = WW / WH;
+    layoutEpoch++;
     miniDirty = true;
   };
   // The cell of an item at scale k with the root's corner at the origin. Every size is affine in k, which lets
@@ -326,6 +332,41 @@
     const [ix, iy, iw, ih] = inner(it.lp, px, py, pw, ph);
     return [ix + it.nx * iw, iy + it.ny * ih, it.nw * iw, it.nh * ih];
   };
+
+  /* ---------- how far the zoom goes ---------- */
+  // The zoom at which a card just fits the free part of the window, as a multiple of the fitted picture: the same
+  // arithmetic as viewFor, which every way of zooming to a card ends in.
+  const fillRatio = it => {
+    const a = cellRect(it, 1), b = cellRect(it, 2);
+    const dw = b[2] - a[2], dh = b[3] - a[3];
+    if (!(dw > 1e-9 && dh > 1e-9)) return 0;
+    return Math.min((free.w - 2 * FILL_MARGIN - (a[2] - dw)) / dw, (free.h - 2 * FILL_MARGIN - (a[3] - dh)) / dh) / kFit;
+  };
+  // The most the picture may be zoomed in: the zoom at which the smallest card of the loaded tree fills the window, but
+  // not more than MAX_ZOOM. Every loaded card is laid out for this (once per change of the tree or the window), so the
+  // limit does not depend on where the picture has been; loading deeper cards raises it, and the view never has to
+  // move because of that.
+  let limitMemo = {key: '', ratio: MAX_ZOOM, smallest: null};
+  const zoomLimit = () => {
+    const key = `${byId.size}|${layoutEpoch}|${fitSerial}`;
+    if (key === limitMemo.key) return limitMemo;
+    let need = 0, smallest = null;
+    const walk = c => {
+      layout(c);
+      for (const it of c.items) {
+        const r = fillRatio(it);
+        if (r > need) { need = r; smallest = it; }
+        if (it.group || (it.children && it.children.length)) walk(it);
+      }
+    };
+    if (root) walk(root);
+    limitMemo = {key, need, smallest, ratio: clamp(need, 1.05, MAX_ZOOM)};
+    return limitMemo;
+  };
+  const maxRatio = () => zoomLimit().ratio;
+  // A zoom is kept between half the fitted picture and the limit; a view that is already beyond the limit (the tree was
+  // rebuilt under it) may zoom out but not further in.
+  const clampK = (k, from) => clamp(k, kFit * MIN_RATIO, Math.max(kFit * maxRatio(), Math.min(k, from)));
 
   /* ---------- children that are not loaded yet ---------- */
   let inflight = 0;
@@ -342,11 +383,31 @@
         n.items = null;
       })
       .catch(() => { n.failed = true; })
-      .finally(() => { n.pending = null; inflight--; renderOutline(); miniDirty = true; request(); })
+      .finally(() => { n.pending = null; inflight--; outlineSoon(); miniDirty = true; request(); })
       .then(() => n);
     return n.pending;
   };
-  const want = n => { if (!n.pending && !n.failed && inflight < 3) loadChildren(n); };
+  // A card about to open asks for its children, but only when it is still about to open a moment later: zooming past
+  // a card sends no request, and the requests that are sent do not hold up the frames.
+  const wanted = new Set();
+  let wantTimer = 0;
+  const want = n => {
+    if (n.pending || n.failed) return;
+    wanted.add(n);
+    if (wantTimer) return;
+    wantTimer = setTimeout(() => {
+      wantTimer = 0;
+      for (const m of wanted) if (m.wantFrame >= frameNo - 2 && inflight < 3) loadChildren(m);
+      wanted.clear();
+      request();                       // a card that had to wait for a free place is asked again by the frame
+    }, 140);
+  };
+  // the outline follows what was loaded, but not on every answer while the picture is being zoomed
+  let outlineTimer = 0;
+  const outlineSoon = () => {
+    if (outlineTimer) return;
+    outlineTimer = setTimeout(() => { outlineTimer = 0; renderOutline(); }, 160);
+  };
   // Make sure every node on a path from the top (ids, top first) is loaded; the last one, or null when it is not there.
   const ensure = async ids => {
     for (let i = 0; i < ids.length; i++) {
@@ -390,17 +451,23 @@
   let kFit = 1;
   let atFit = true;                  // the whole tree is in view, as fitted: a new window size fits it again
   const views = [];                  // the views Esc goes back through, the latest last
+  let free = {w: 0, h: 0};           // the part of the window the picture is fitted into, as of the last fit
+  let fitSerial = 0;
   const calcFit = () => {
     const u = usable(true);
+    free = u;
     kFit = Math.min(u.w / WW, u.h / WH);
+    fitSerial++;
   };
   const clampView = g => {
-    g.k = clamp(g.k, kFit * MIN_RATIO, kFit * MAX_RATIO);
+    g.k = clampK(g.k, view.k);
     g.cx = clamp(g.cx, 0, WW);
     g.cy = clamp(g.cy, 0, WH);
   };
+  let anchor = null;                 // while a zoom eases, the point of the picture that stays under one point of the window
   const go = (g, instant, fitting = false) => {
     tween = null;
+    anchor = null;
     if (!fitting) atFit = false;
     Object.assign(goal, g);
     clampView(goal);
@@ -409,6 +476,7 @@
   };
   // Smooth zoom: the point that stays put on screen is the fixed point of the move, so a big zoom does not swing.
   const fly = (g, fitting = false) => {
+    anchor = null;
     if (!fitting) atFit = false;
     Object.assign(goal, g);
     clampView(goal);
@@ -457,14 +525,14 @@
     const fw = u.w - 2 * margin, fh = u.h - 2 * margin;
     const a = cellRect(it, 1), b = cellRect(it, 2);
     const dw = b[2] - a[2], dh = b[3] - a[3];
-    const k = clamp(Math.min((fw - (a[2] - dw)) / dw, (fh - (a[3] - dh)) / dh), kFit * MIN_RATIO, kFit * MAX_RATIO);
+    const k = clamp(Math.min((fw - (a[2] - dw)) / dw, (fh - (a[3] - dh)) / dh), kFit * MIN_RATIO, kFit * maxRatio());
     const r = cellRect(it, k);
     const ox = u.x + u.w / 2 - (r[0] + r[2] / 2), oy = u.y + u.h / 2 - (r[1] + r[3] / 2);
     return {k, cx: (vw / 2 - ox) / k, cy: (vh / 2 - oy) / k};
   };
   // Zoom smoothly to the scale at which a card just fits the free part of the window.
   const zoomTo = it => {
-    const {k, cx, cy} = viewFor(it, 14);
+    const {k, cx, cy} = viewFor(it, FILL_MARGIN);
     if (!sameView({k, cx, cy}, goal)) pushView();
     fly({cx, cy, k});
   };
@@ -473,19 +541,20 @@
     reveal(n);
     let target = n;
     if (n.parent && !n.parent.virtual && !n.parent.loose && (!n.children || !n.children.length)) {
-      const v = viewFor(n.parent, 14);
+      const v = viewFor(n.parent, FILL_MARGIN);
       const r = cellRect(n, v.k);
       if (r[2] >= 200 && r[3] >= 100) target = n.parent;
     }
     zoomTo(target);
   };
   const zoomBy = (factor, px = vw / 2, py = vh / 2) => {
-    const k = clamp(goal.k * factor, kFit * MIN_RATIO, kFit * MAX_RATIO);
-    const wx = goal.cx + (px - vw / 2) / goal.k;
-    const wy = goal.cy + (py - vh / 2) / goal.k;
+    const k = clampK(goal.k * factor, goal.k);
+    const wx = view.cx + (px - vw / 2) / view.k;
+    const wy = view.cy + (py - vh / 2) / view.k;
     go({cx: wx - (px - vw / 2) / k, cy: wy - (py - vh / 2) / k, k});
+    anchor = {px, py, wx, wy};
   };
-  const stopMotion = () => { tween = null; Object.assign(goal, view); };
+  const stopMotion = () => { tween = null; anchor = null; Object.assign(goal, view); };
   // After a card is selected the panel may cover it: slide the picture just far enough to show it.
   const keepInSight = n => {
     const tile = shownOf(n);
@@ -501,20 +570,21 @@
     if (dx || dy) go({cx: goal.cx - dx / goal.k, cy: goal.cy - dy / goal.k, k: goal.k});
   };
 
-  /* ---------- text ---------- */
+  /* ---------- text: measuring and wrapping ---------- */
   const measure = doc.createElement('canvas').getContext('2d');
-  const tables = new Map();          // weight -> (character -> width at 100px)
+  const tables = new Map();          // weight -> the width of every character at 100px (an array for the first 64k characters, a map above)
   const tableOf = weight => {
     let table = tables.get(weight);
-    if (!table) { table = new Map(); tables.set(weight, table); }
+    if (!table) { table = {low: new Float32Array(65536), high: new Map()}; tables.set(weight, table); }
     return table;
   };
   const charW = (ch, weight, table = tableOf(weight)) => {
-    let w = table.get(ch);
-    if (w === undefined) {
+    const cp = ch.codePointAt(0);
+    let w = cp < 65536 ? table.low[cp] : table.high.get(ch);
+    if (!w) {
       measure.font = `${weight} 100px ${colors.font}`;
-      w = measure.measureText(ch).width;
-      table.set(ch, w);
+      w = measure.measureText(ch).width || 0.0001;
+      if (cp < 65536) table.low[cp] = w; else table.high.set(ch, w);
     }
     return w;
   };
@@ -535,32 +605,59 @@
     return `${out}…`;
   };
   const clip = (text, fs, weight, maxW) => (textW(text, fs, weight) <= maxW ? text : ellipsize(text, fs, weight, maxW).replace(/\s+…$/, '…'));
-  // Wrap text into at most `maxLines` lines, a Chinese character or an English word at a time; the last line ends
-  // in … when text was left over.
   const inWord = ch => /[\w.\-/+#@%]/.test(ch);
+  // A text broken into characters once: where each starts (in the string), how wide it is at 100px in a weight, and
+  // what kind it is (0 ordinary, 1 part of a Latin word, 2 space, 3 line break, 4 a mark that never starts a line).
+  // Wrapping the same text at many sizes then only adds up numbers.
+  const preps = new Map();
+  const prepOf = (text, weight) => {
+    let byText = preps.get(weight);
+    if (!byText) { byText = new Map(); preps.set(weight, byText); }
+    let prep = byText.get(text);
+    if (!prep) {
+      if (byText.size > 3000) byText.clear();
+      const table = tableOf(weight), pos = [], ws = [], kinds = [];
+      let at = 0;
+      for (const ch of text) {
+        pos.push(at); at += ch.length;
+        ws.push(charW(ch, weight, table));
+        kinds.push(ch === '\n' ? 3 : ch === ' ' ? 2 : inWord(ch) ? 1 : NO_START.includes(ch) ? 4 : 0);
+      }
+      pos.push(at);
+      prep = {pos, ws, kinds};
+      byText.set(text, prep);
+    }
+    return prep;
+  };
+  // Wrap text into at most `maxLines` lines, a Chinese character or an English word at a time; the last line ends
+  // in … when text was left over (and the array says so in `cut`).
   const wrapRaw = (text, fs, weight, maxW, maxLines) => {
-    const table = tableOf(weight);
+    const {pos, ws, kinds} = prepOf(text, weight), n = ws.length, unit = fs / 100;
     const lines = [];
-    let line = '', w = 0, brk = -1;
-    for (const ch of text) {
+    const slice = (a, b) => text.slice(pos[a], pos[b]);
+    const widthOf = (a, b) => { let sum = 0; for (let j = a; j < b; j++) sum += ws[j]; return sum * unit; };
+    let from = 0, w = 0, brk = -1, i = 0;      // the line is the characters from `from` to `i`; brk is the last space in it
+    for (; i < n; i++) {
       if (lines.length > maxLines) break;
-      if (ch === '\n') { lines.push(line); line = ''; w = 0; brk = -1; continue; }
-      if (ch === ' ' && !line) continue;
-      const cw = (charW(ch, weight, table) * fs) / 100;
-      if (w + cw > maxW && line && !NO_START.includes(ch)) {
+      const kind = kinds[i];
+      if (kind === 3) { lines.push(slice(from, i)); from = i + 1; w = 0; brk = -1; continue; }
+      if (kind === 2 && from === i) { from = i + 1; continue; }
+      const cw = ws[i] * unit;
+      if (w + cw > maxW && i > from && kind !== 4) {
         // a Latin word that does not fit moves to the next line whole; anything else breaks where it is
-        let from = line.length;
-        if (inWord(ch)) while (from > 0 && inWord(line[from - 1])) from--;
-        if (inWord(ch) && from > 0 && from < line.length) { lines.push(line.slice(0, from).trimEnd()); line = line.slice(from); w = textW(line, fs, weight); }
-        else if (brk > line.length * 0.5) { lines.push(line.slice(0, brk)); line = line.slice(brk + 1); w = textW(line, fs, weight); }
-        else { lines.push(line); line = ''; w = 0; }
+        let word = i;
+        if (kind === 1) while (word > from && kinds[word - 1] === 1) word--;
+        if (kind === 1 && word > from && word < i) { lines.push(slice(from, word).trimEnd()); from = word; w = widthOf(from, i); }
+        else if (brk >= 0 && brk - from > (i - from) * 0.5) { lines.push(slice(from, brk)); from = brk + 1; w = widthOf(from, i); }
+        else { lines.push(slice(from, i)); from = i; w = 0; }
         brk = -1;
       }
-      if (ch === ' ') brk = line.length;
-      line += ch; w += cw;
+      if (kind === 2) brk = i;
+      w += cw;
     }
-    if (line) lines.push(line);
-    if (lines.length > maxLines) {
+    if (from < i) lines.push(slice(from, i));
+    lines.cut = lines.length > maxLines;
+    if (lines.cut) {
       lines.length = maxLines;
       lines[maxLines - 1] = ellipsize(lines[maxLines - 1], fs, weight, maxW);
     }
@@ -573,85 +670,124 @@
     const head = n.title.replace(/…$/, '');
     return head && text.startsWith(head) ? text.slice(head.length).replace(/^[\s，,。.；;：:、—-]+/, '') : text;
   };
-  // What a card says besides its title: the rest of its text; on a small card all on one flow, on a big one with its lines.
-  const wordsOf = (n, source, lines) => {
+  // What a card says besides its title: the rest of its text with its line breaks, the same on one line, and how long
+  // it is in em (the width of a full-width character, which a Chinese character is).
+  const wordsOf = (n, source) => {
     const memo = n.words;
-    if (memo && memo.source === source && memo.lines === lines) return memo.value;
-    const rest = restOf(n, source);
-    const value = lines ? rest : rest.replace(/\s*\n+\s*/g, ' ');
-    n.words = {source, lines, value};
-    return value;
+    if (memo && memo.source === source) return memo;
+    const value = restOf(n, source);
+    n.words = {source, value, flat: value.replace(/\s*\n+\s*/g, ' '), em: textW(value, 100, 400) / 100};
+    return n.words;
   };
-  const titleSize = w => half(clamp(12 + (w - 110) * (8 / 370), 12, 20));
-  const bodySize = w => half(clamp(12 + (w - 150) * (8 / 1050), 12, 20));
 
-  // How a card says its words, worked out from the card's own size (whole, not as much of it as the window shows).
-  // The body gets the biggest size, 12 to 40px (up to 72px on a card whose short side is over 480px), at which all of it fits between the title and the line of facts, and
-  // the title grows with it (to 44px at most); what cannot fit even at 12px is cut short with … (a card smaller than
-  // FILL_W x FILL_H keeps the size its width gives it). Remembered by text and size, so panning measures nothing.
-  let layGen = 0;
-  const placeCard = (n, source, w, hh, sum, roomy) => {
-    const g = Math.min(edge(n), w / 6, hh / 6);
-    const left = g + (sum ? 14 : 11), tw = w - g - 10 - left, top = g + 8;
-    const metaH = w - 2 * g >= 120 && hh - 2 * g >= 74 ? 17 : 0;
-    const limit = hh - g - 8 - metaH;
+  /* ---------- type: how a card says its words ----------
+     The words of a card are set once on a face of a fixed size (REF x REF px, the card's own proportions) and drawn
+     scaled by how much bigger or smaller the card is. Size, wrapping and the rows that show then do not depend on the
+     zoom at all: zooming makes them grow like a picture, with no step, and padding and the strip of facts grow with
+     them. Three things are not a picture, and the card is then set again at its real size by the very same rules (so
+     the two meet where they take over from each other, with no step):
+       - the words would be smaller than BODY_FLOOR: they stay at it and the last rows are cut short with …; a card
+         that cannot even hold a title row gives the title the height of the row and the title fades out with its size;
+       - the words would be bigger than BODY_HARD: they stay at it;
+       - the card is so small that its padding stops shrinking (below scale SP).
+     The size of the body is the biggest at which all of the words fit, but not more than BOOST times the size a
+     typical text (TYPICAL_EM long) has on a card of that size: a card with little to say fills its room up to a point,
+     so that neighbours of the same size read at sizes of the same kind that grow with the zoom together. The title is
+     TITLE_RATIO bigger than the body. */
+  const REF = 240;
+  const SP = 0.65;                       // below this scale (the card's size against REF) padding stops shrinking with the card
+  const BODY_FLOOR = 12, TITLE_RATIO = 1.125, TITLE_FLOOR = BODY_FLOOR * TITLE_RATIO;
+  const BODY_HARD = 72;                  // the biggest body text, whatever the card
+  const BOOST = 1.5, TYPICAL_EM = 110;
+  const ASPECT_STEP = 0.002;             // proportions are told apart this finely when a card is set on the face
+  const CANON_LO = 3;                    // the smallest size tried on the face (a card that needs less is set at its real size)
+  const ROW_HYST = 0.12;                 // a body row that was showing stays until the room for it has shrunk by this much of a row
+  let layGen = 0;                        // counts the times the colours or fonts changed: every card is set again
+
+  // Set a card's words on a face of fw x fh px: body sizes between lo and hi, everything else follows from the face.
+  // `rowsBefore` is how many body rows showed last time (a row holds on a little at the edge: no flicker).
+  const place = (n, text, em, fw, fh, sum, lo, hi, rowsBefore) => {
+    const s = Math.sqrt(fw * fh) / REF, u = Math.max(s, SP);
+    const padL = (sum ? 14 : 11) * u, padR = 10 * u, padT = 8 * u, padB = 8 * u, gap = 3 * u;
+    const band = 17 * u * clamp((s - 0.45) / 0.2, 0, 1);     // the strip of facts at the bottom grows in with the card
+    const tw = fw - padL - padR, limit = fh - padB - band, avail = limit - padT;
     const weight = sum ? 700 : 600;
-    const baseT = titleSize(w), baseB = bodySize(w);
-    if (tw < 28 || hh - 2 * g < Math.round(baseT * 1.32) + 12 || Math.floor((limit - top) / Math.round(baseT * 1.32)) < 1) return null;
-    const text = wordsOf(n, source, roomy);
-    const bmax = half(clamp(Math.min(w, hh) / 12, BODY_MAX, 72)), tmax = TITLE_MAX * bmax / BODY_MAX;   // a card much bigger than a screen's worth lets its words grow with it
-    // everything at one body size: the title's lines, the body's lines, and whether all of the body fits
-    const put = bfs => {
-      const tfs = half(clamp(baseT * (bfs / baseB), BODY_MIN, tmax));
-      const lh = Math.round(tfs * 1.32), lh2 = Math.round(bfs * 1.5);
-      const rows = Math.floor((limit - top) / lh);
-      const titleLines = wrapRaw(n.title, tfs, weight, tw, text ? Math.min(rows, w >= 380 ? 3 : 2) : Math.min(rows, 5));
-      const bodyTop = top + titleLines.length * lh + 3;
-      const room = Math.floor((limit - bodyTop) / lh2);
-      let bodyLines = [], fit = true;
-      if (text && room >= 1) {
-        bodyLines = wrapRaw(text, bfs, 400, tw, room + 1);
-        fit = bodyLines.length <= room;
-        if (!fit) bodyLines = wrapRaw(text, bfs, 400, tw, room);
-      } else if (text) fit = false;
-      return {tfs, lh, titleLines, bfs, lh2, bodyTop, bodyLines, fit, room, hasText: !!text};
-    };
-    const fills = !!text && w >= FILL_W && hh >= FILL_H;
-    let best;
-    if (!fills) best = put(baseB);
-    else {
-      // The biggest size at which it fits is looked for by halving, starting from the size the area asks for (the
-      // text's width at 100px says how much room it needs), so that only a few sizes are tried.
-      const ideal = Math.sqrt((tw * Math.max(1, limit - top - 2 * Math.round(baseT * 1.32)) * 100) / (1.5 * Math.max(1, textW(text, 100, 400))));
-      const guess = half(clamp(ideal * 0.8, BODY_MIN, bmax));
-      let lo, hi;
-      const first = put(guess);
-      if (first.fit) {
-        best = first; lo = guess; hi = bmax + 0.5;
-        const up = half(clamp(ideal * 1.1, guess, bmax));
-        if (up > guess) { const r = put(up); if (r.fit) { best = r; lo = up; } else hi = up; }
-        if (lo >= bmax) hi = lo;
-        else if (hi > bmax) { const r = put(bmax); if (r.fit) { best = r; lo = hi = bmax; } else hi = bmax; }
-      } else {
-        best = put(BODY_MIN); lo = BODY_MIN;      // when not even the smallest size fits, that one is cut short with …
-        hi = best.fit ? guess : lo;
-      }
-      for (;;) {
-        const mid = half((lo + hi) / 2);
-        if (mid <= lo || mid >= hi) break;
-        const tried = put(mid);
-        if (tried.fit) { lo = mid; best = tried; } else hi = mid;
-      }
+    const out = {padL, padT, padB, band, tw, fw, fh, weight, hasText: !!text, alpha: clamp((tw - 12) / 16, 0, 1)};
+    if (!(avail > 1)) return {...out, alpha: 0, tfs: 0, bfs: 0, lh: 1, lh2: 1, titleLines: [], bodyLines: [], bodyTop: 0, room: 0, fit: false};
+    // not even a title row at the smallest size: the title is as big as the row is high and fades out with its size
+    if (avail < 1.32 * TITLE_FLOOR * (lo / BODY_FLOOR)) {
+      const tfs = avail / 1.32;
+      return {...out, alpha: out.alpha * clamp((tfs - 7) / 4, 0, 1), tfs, bfs: tfs / TITLE_RATIO, lh: 1.32 * tfs, lh2: 1.5 * tfs, titleLines: wrapRaw(n.title, tfs, weight, tw, 1), bodyLines: [], bodyTop: padT + 1.32 * tfs, room: 0, fit: false};
     }
-    return {...best, left, tw, top, metaH, weight, g};
+    // the card set at one body size: the title's rows, the body's rows, and whether all of the body fits
+    const put = (bfs, keep = 0) => {
+      const tfs = TITLE_RATIO * bfs, lh = 1.32 * tfs, lh2 = 1.5 * bfs;
+      const rows = Math.floor(avail / lh);
+      const titleLines = wrapRaw(n.title, tfs, weight, tw, Math.max(1, Math.min(rows, text ? (tw / tfs >= 17 ? 3 : 2) : 5)));
+      const bodyTop = padT + titleLines.length * lh + gap;
+      const roomF = (limit - bodyTop) / lh2;
+      const room = Math.floor(roomF + (keep > Math.floor(roomF) ? ROW_HYST : 0));
+      let bodyLines = [], fit = !titleLines.cut || !!text;
+      if (text) {
+        if (room >= 1) { bodyLines = wrapRaw(text, bfs, 400, tw, room); fit = !bodyLines.cut; } else fit = false;
+      }
+      return {...out, tfs, lh, titleLines, bfs, lh2, bodyTop, bodyLines, fit, room};
+    };
+    // The biggest size that fits is looked for from the size the area asks for (how long the words are says how
+    // much room they need): up while it still fits, down until it does, then closed in on by halving the step.
+    const area = tw * avail * 0.78;
+    const cap = clamp(BOOST * Math.sqrt(area / (1.5 * TYPICAL_EM)), lo, hi);
+    const length = text ? em : (textW(n.title, 100, weight) / 100) * 1.1;
+    // The sizes tried lie on a ladder of steps of 5% that starts at what the area asks for, so that a card set at its
+    // real size tries the very sizes the picture of it tried (and the two agree where they take over from each other).
+    let f = Math.min(Math.sqrt(area / (1.5 * Math.max(length, 1))) * 0.95, cap);
+    if (f < lo) f = Math.min(cap, f * Math.pow(1.05, Math.ceil(Math.log(lo / f) / Math.log(1.05) - 1e-9)));
+    f = Math.max(f, lo);
+    let best = put(f, rowsBefore);
+    if (best.fit) {
+      while (f < cap - 1e-6) {
+        const next = Math.min(cap, f * 1.05), tried = put(next);
+        if (tried.fit) { best = tried; f = next; continue; }
+        let a = f, b = next;
+        for (let i = 0; i < 4; i++) { const mid = Math.sqrt(a * b), m = put(mid); if (m.fit) { a = mid; best = m; } else b = mid; }
+        for (const up of [1.03, 1.06]) { const m = put(Math.min(cap, next * up)); if (m.fit && m.bfs > best.bfs) best = m; }
+        break;
+      }
+    } else if (f > lo + 1e-6) {
+      let b = f, found = false;
+      while (b > lo + 1e-6 && !found) {
+        const next = Math.max(lo, b / 1.05), tried = put(next);
+        if (!tried.fit) { b = next; continue; }
+        found = true; best = tried;
+        let a = next, c = b;
+        for (let i = 0; i < 4; i++) { const mid = Math.sqrt(a * c), m = put(mid); if (m.fit) { a = mid; best = m; } else c = mid; }
+      }
+      if (!found) best = put(lo, rowsBefore);       // not even the smallest size holds it all: that one, cut short with …
+    }
+    return best;
   };
-  const layoutCard = (n, source, w, hh, sum, roomy) => {
-    const rw = Math.round(w), rh = Math.round(hh);
-    const memo = n.lay;
-    if (memo && memo.w === rw && memo.h === rh && memo.source === source && memo.title === n.title && memo.sum === sum && memo.gen === layGen) return memo.value;
-    const value = placeCard(n, source, rw, rh, sum, roomy);
-    n.lay = {w: rw, h: rh, source, title: n.title, sum, gen: layGen, value};
-    return value;
+  // A card's words on a face (the card without its gap) of fw x fh px: the picture set on the face while that holds,
+  // else the card set at its real size. Remembered by text and size, so panning and zooming measure next to nothing.
+  const layoutCard = (n, source, fw, fh, sum) => {
+    const words = wordsOf(n, source);
+    const s = Math.sqrt(fw * fh) / REF;
+    if (s >= SP) {
+      const q = Math.round(Math.log(fw / fh) / ASPECT_STEP);
+      let c = n.canon;
+      if (!c || c.q !== q || c.source !== source || c.title !== n.title || c.sum !== sum || c.gen !== layGen) {
+        const a = Math.exp(q * ASPECT_STEP);
+        c = n.canon = {q, source, title: n.title, sum, gen: layGen, k: 1, value: place(n, words.value, words.em, REF * Math.sqrt(a), REF / Math.sqrt(a), sum, CANON_LO, Infinity, 0)};
+      }
+      const size = s * c.value.bfs;
+      if (c.value.fit && size >= BODY_FLOOR && size <= BODY_HARD) { c.k = s; return c; }
+    }
+    let d = n.direct;
+    if (!d || d.w !== fw || d.h !== fh || d.source !== source || d.title !== n.title || d.sum !== sum || d.gen !== layGen) {
+      const before = d && d.frame >= frameNo - 1 ? d.value.room : 0;
+      d = n.direct = {w: fw, h: fh, source, title: n.title, sum, gen: layGen, k: 1, frame: frameNo, value: place(n, words.value, words.em, fw, fh, sum, BODY_FLOOR, BODY_HARD, before)};
+    }
+    d.frame = frameNo;
+    return d;
   };
 
   /* ---------- drawing ---------- */
@@ -696,8 +832,10 @@
     if (rw <= 0 || rh <= 0) return;
     const p = pal[it.topic], li = Math.min(it.layer, 5);
     const r = Math.min(7, rw / 4, rh / 4);
-    if (rw >= 28 && rh >= 28 && !it.group) {          // the card lifts off the board: a thin shadow under it and a light on its top edge
-      ctx.globalAlpha = a;
+    const small = Math.min(rw, rh);
+    const lift = it.group ? 0 : ramp(small, 20, 32);
+    if (lift > 0) {          // the card lifts off the board: a thin shadow under it and a light on its top edge
+      ctx.globalAlpha = a * lift;
       ctx.fillStyle = colors.shadow;
       roundRect(x0, y0 + 2, rw, rh, r);
       ctx.fill();
@@ -707,8 +845,8 @@
     if (it.group) { ctx.globalAlpha = a * 0.7; ctx.fillStyle = p.fill[Math.min(li + 1, 5)]; }
     roundRect(x0, y0, rw, rh, r);
     ctx.fill();
-    if (rw >= 40 && rh >= 40 && !it.group && x >= -40 && y >= -40) {
-      ctx.globalAlpha = a;
+    if (small >= 32 && !it.group && x >= -40 && y >= -40) {
+      ctx.globalAlpha = a * ramp(small, 32, 48);
       ctx.strokeStyle = colors.hi;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -716,8 +854,8 @@
       ctx.lineTo(x0 + rw - r, y0 + 1.5);
       ctx.stroke();
     }
-    if (rw >= 12 && rh >= 12) {
-      ctx.globalAlpha = a;
+    if (small >= 8) {
+      ctx.globalAlpha = a * ramp(small, 8, 14);
       ctx.strokeStyle = p.edge[li];
       ctx.lineWidth = 1;
       if (it.group) ctx.setLineDash([4, 3]);
@@ -725,7 +863,8 @@
       ctx.stroke();
       if (it.group) ctx.setLineDash([]);
     }
-    if (!it.group && !it.loose && it.children !== undefined && (it.children === null || it.children.length) && rw >= 40 && x + g >= -40) {
+    if (!it.group && !it.loose && it.children !== undefined && (it.children === null || it.children.length) && rw >= 32 && x + g >= -40) {
+      ctx.globalAlpha = a * ramp(rw, 32, 48);
       ctx.fillStyle = p.bar;
       ctx.beginPath();
       ctx.roundRect(x0, y0, 4, rh, [r, 0, 0, r]);
@@ -733,57 +872,73 @@
     }
   };
 
-  // A line of facts: layer, count and dates, as much of it as fits.
-  const meta = (n, maxW) => {
+  // A line of facts: layer, count and dates, as much of it as fits at the size `fs`.
+  const meta = (n, maxW, fs) => {
     if (n.loose) return n.to ? (n.from === n.to ? n.from : `${n.from} – ${n.to}`) : '';
     const dates = n.from ? (n.from === n.to || !n.to ? n.from : `${n.from} – ${n.to}`) : '';
     const facts = n.children === null || n.children.length ? [`L${n.layer}`, `${n.size - 1} 条`] : [];
     for (const parts of [[...facts, dates], facts, [dates]]) {
       const text = parts.filter(Boolean).join(' · ');
-      if (text && textW(text, 11, 500) <= maxW) return text;
+      if (text && textW(text, fs, 500) <= maxW) return text;
     }
     return '';
   };
+  // The title and the body of a set card in the card's own units, in one colour.
+  const writeWords = (g, v, ink, alpha) => {
+    g.fillStyle = ink;
+    g.textAlign = 'left';
+    g.globalAlpha = alpha;
+    g.textBaseline = 'middle';
+    g.font = `${v.weight} ${v.tfs}px ${colors.font}`;
+    v.titleLines.forEach((line, i) => g.fillText(line, v.padL, v.padT + v.lh / 2 + i * v.lh));
+    if (!v.bodyLines.length) return;
+    g.globalAlpha = alpha * 0.9;
+    g.font = `400 ${v.bfs}px ${colors.font}`;
+    g.textBaseline = 'top';
+    v.bodyLines.forEach((line, i) => g.fillText(line, v.padL, v.bodyTop + i * v.lh2));
+  };
   // What a card that does not show its children says, from the top down: its title, then its text at the biggest
   // size that fits, then a line of facts. Nothing is left blank that words can fill. Where the lines go is worked
-  // out for the whole card; the window only cuts off what lies outside it.
+  // out for the whole card (see "type"); the window only cuts off what lies outside it.
   const closedBody = (n, x, y, w, hh, ta) => {
     const sum = n.children === null || (n.children && n.children.length > 0);
-    const roomy = !sum && w * hh >= FULL_AREA;
-    const full = roomy && n.snippet.endsWith('…');
+    const full = !sum && w * hh >= FULL_AREA && n.snippet.endsWith('…');
     if (full && n.full === undefined && !n.fetching) needFull.push(n);
     const source = full && n.full !== undefined ? n.full : n.snippet;
-    const L = layoutCard(n, source, w, hh, sum, roomy);
-    if (!L) return;
+    const g = Math.min(edge(n), w / 6, hh / 6);
+    const L = layoutCard(n, source, w - 2 * g, hh - 2 * g, sum);
+    n.lay = L;
+    n.layFrame = frameNo;
+    const v = L.value, k = L.k, a = ta * v.alpha;
+    if (a < 0.02) return;
     stat.cards++;
-    const left = x + L.left, p = pal[n.topic];
-    ctx.globalAlpha = ta;
-    ctx.fillStyle = p.ink;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'left';
-    ctx.font = `${L.weight} ${L.tfs}px ${colors.font}`;
-    L.titleLines.forEach((line, i) => ctx.fillText(line, left, y + L.top + L.lh / 2 + i * L.lh));
-    if (L.bodyLines.length) {
-      ctx.globalAlpha = ta * 0.9;
-      ctx.font = `400 ${L.bfs}px ${colors.font}`;
-      ctx.textBaseline = 'top';
-      L.bodyLines.forEach((line, i) => ctx.fillText(line, left, y + L.bodyTop + i * L.lh2));
+    const p = pal[n.topic];
+    ctx.save();
+    ctx.translate(x + g, y + g);
+    if (k !== 1) ctx.scale(k, k);
+    writeWords(ctx, v, p.ink, a);
+    if (v.bodyLines.length) {
       stat.bodies++;
       if (full && n.full !== undefined) stat.full++;
-    } else if (L.hasText && L.room >= 1) stat.unfilled++;     // there were words and room for a line, yet nothing was drawn
-    if (L.metaH) {
-      ctx.font = `500 11px ${colors.font}`;
-      const line = meta(n, L.tw);
+    } else if (v.hasText && v.room >= 1) stat.unfilled++;     // there were words and room for a row, yet nothing was drawn
+    // the strip of facts: its size is its own (the strip is as high as 17px at the size of a card of REF x REF)
+    const strip = v.band * k, fade = ramp(strip, 9, 14);
+    if (fade > 0) {
+      const fs = clamp(strip * 0.62, 10, 22) / k;
+      const line = meta(n, v.tw, fs);
       if (line) {
-        ctx.globalAlpha = ta * 0.88;
-        ctx.textBaseline = 'top';
-        ctx.fillText(line, left, y + hh - L.g - 8 - 12);
+        ctx.globalAlpha = a * 0.88 * fade;
+        ctx.font = `500 ${fs}px ${colors.font}`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(line, v.padL, v.fh - v.padB - v.band / 2);
       }
     }
+    ctx.restore();
   };
   // An "other" tile names what it holds: its members' titles, as many as fit.
   const groupBody = (it, x, y, w, hh, ta) => {
-    if (w < 64 || hh < 26) return;
+    ta *= ramp(Math.min(w / 64, hh / 26), 0.8, 1.1);
+    if (ta <= 0) return;
     const g = Math.min(edge(it), w / 6, hh / 6);
     const p = pal[it.topic];
     const left = x + g + 10, tw = w - 2 * g - 20;
@@ -793,16 +948,18 @@
     ctx.textBaseline = 'middle';
     ctx.font = `650 12.5px ${colors.font}`;
     ctx.fillText(clip(`其他 ${it.count} 条`, 12.5, 650, tw), left, y + g + 15);
-    const hint = w >= 110 && hh >= 64;
-    const rows = Math.floor((hh - 2 * g - 30 - (hint ? 18 : 0)) / 17);
-    if (rows >= 1 && tw >= 40) {
+    const hint = ramp(Math.min(w / 110, hh / 64), 0.9, 1.1);
+    const rows = (hh - 2 * g - 30 - 18 * hint) / 17;
+    if (rows > 0.2 && tw >= 40) {
       ctx.font = `400 12px ${colors.font}`;
-      ctx.globalAlpha = ta * 0.8;
-      const members = it.owner.sorted.slice(it.lo, Math.min(it.hi, it.lo + rows));
-      members.forEach((m, i) => ctx.fillText(clip(`· ${m.title}`, 12, 400, tw), left, y + g + 33 + i * 17));
+      const members = it.owner.sorted.slice(it.lo, Math.min(it.hi, it.lo + Math.ceil(rows)));
+      members.forEach((m, i) => {
+        ctx.globalAlpha = ta * 0.8 * ramp(rows - i, 0.2, 1);
+        ctx.fillText(clip(`· ${m.title}`, 12, 400, tw), left, y + g + 33 + i * 17);
+      });
     }
-    if (hint) {
-      ctx.globalAlpha = ta * 0.7;
+    if (hint > 0) {
+      ctx.globalAlpha = ta * 0.7 * hint;
       ctx.font = `400 11px ${colors.font}`;
       ctx.fillText('点一下展开', left, y + hh - g - 11);
     }
@@ -834,7 +991,7 @@
     ctx.font = `700 ${fs}px ${colors.font}`;
     ctx.fillText(clip(n.title, fs, 700, right - tagW - 8 - left), left, top + line1 / 2 + 0.5);
     if (n.loose) return;
-    const words = wordsOf(n, n.snippet, false);
+    const words = wordsOf(n, n.snippet).flat;
     if (words) {
       ctx.globalAlpha = ta * 0.82;
       ctx.font = `400 11.5px ${colors.font}`;
@@ -854,18 +1011,27 @@
     layout(c);
     for (const it of c.items) drawItem(it, x + it.nx * w, y + it.ny * hh, it.nw * w, it.nh * hh, fade);
   };
+  // A card opens by cross-fading into its children as zooming in takes it from 100% to 120% of the size they need; zooming
+  // out takes them away again from 112% down to 92%, and between the two the card keeps what it had (no flicker at
+  // the edge of the size). The closed words are gone by the time half of the children are in.
+  const OPEN_IN = [1, 1.2], OPEN_OUT = [0.92, 1.12];
   const drawItem = (it, x, y, w, hh, fade) => {
     if (x > vw || y > vh || x + w < 0 || y + hh < 0 || w < MIN_TILE || hh < MIN_TILE) return;
     it.shown = frameNo; it.sx = x; it.sy = y; it.sw = w; it.sh = hh; it.opened = 0;
-    const a = fade, ta = fade;
+    const a = fade * ramp(Math.min(w, hh), MIN_TILE, MIN_TILE + 3), ta = a;
     const [ow, oh] = openSize(it);
     const canOpen = it.group || ((it.children === null || it.children.length > 0) && !it.failed);
-    const open = canOpen && w >= ow && hh >= oh;
-    const t = open ? (moving ? Math.min((Math.min(w / ow, hh / oh) - 1) / 0.12, 1) : 1) : 0;
-    if (!it.group && it.children === null && w >= ow * 0.55 && hh >= oh * 0.55) want(it);
+    const q = canOpen ? Math.min(w / ow, hh / oh) : 0;
+    if (!it.group && it.children === null && q >= 0.55) { it.wantFrame = frameNo; want(it); }
+    let t = 0;
+    if (q > OPEN_OUT[0]) {
+      const slow = ramp(q, OPEN_IN[0], OPEN_IN[1]), fast = ramp(q, OPEN_OUT[0], OPEN_OUT[1]);
+      t = clamp(it.openFrame >= frameNo - 1 ? it.openT : slow, slow, fast);
+    }
+    it.openT = t; it.openFrame = frameNo;
     if (t > 0) it.opened = frameNo;
     if (!it.group || t < 1) card(it, x, y, w, hh, it.group ? a * (1 - t) : a);
-    const rest = 1 - Math.min(1, t * 2);       // the closed text is gone by the time half the children are in
+    const rest = 1 - Math.min(1, t * 2);
     if (rest > 0) {
       if (it.group) groupBody(it, x, y, w, hh, ta * rest);
       else closedBody(it, x, y, w, hh, ta * rest);
@@ -1026,10 +1192,18 @@
 
   /* ---------- the frame loop: redraws only while something changes ---------- */
   let raf = 0, last = 0, crumbKey = null, statusText = '', statusTimer = 0;
-  let peakMs = 0, sumMs = 0, frames = 0;   // how long frames took while the picture moved (average/peak, in ms)
-  let moving = false;                // the picture is moving: cards cross-fade as they open; at rest they are either open or closed
+  const frameMs = [];                // how long the frames took while the picture moved (ms)
   const request = () => { if (!raf) raf = requestAnimationFrame(frame); };
   const settled = () => !tween && Math.abs(Math.log(goal.k / view.k)) < 0.0005 && Math.abs(goal.cx - view.cx) * view.k < 0.3 && Math.abs(goal.cy - view.cy) * view.k < 0.3;
+  // One frame of the picture and of everything that follows it.
+  const paint = now => {
+    draw(now);
+    drawMini(now);
+    updateSlider();
+    updateCrumbs();
+    updateStatus();
+    fetchFull();
+  };
   const frame = now => {
     raf = 0;
     if (!root || !loaded) return;
@@ -1048,35 +1222,68 @@
     } else if (!settled()) {
       const a = reduced.matches ? 1 : 1 - Math.exp(-dt / 0.085);
       view.k = Math.exp(Math.log(view.k) + (Math.log(goal.k) - Math.log(view.k)) * a);
-      view.cx += (goal.cx - view.cx) * a;
-      view.cy += (goal.cy - view.cy) * a;
-      if (settled()) Object.assign(view, goal);
+      if (anchor) {                  // a zoom keeps its point where it is, however far along the easing is
+        view.cx = clamp(anchor.wx - (anchor.px - vw / 2) / view.k, 0, WW);
+        view.cy = clamp(anchor.wy - (anchor.py - vh / 2) / view.k, 0, WH);
+      } else {
+        view.cx += (goal.cx - view.cx) * a;
+        view.cy += (goal.cy - view.cy) * a;
+      }
+      if (settled()) { Object.assign(view, goal); anchor = null; }
     }
     const began = performance.now();
-    moving = !!tween || !settled();
-    draw(now);
-    drawMini(now);
-    updateSlider();
-    updateCrumbs();
-    updateStatus();
-    fetchFull();
-    if (moving) { peakMs = Math.max(peakMs, performance.now() - began); sumMs += performance.now() - began; frames++; }
+    const moving = !!tween || !settled();
+    paint(now);
+    if (moving) frameMs.push(performance.now() - began);
     const busy = !settled() || inflight > 0;
     // the numbers a test can read: where the tree is, how much was drawn in the last frame and how long drawing took
     canvas.dataset.settled = busy ? '0' : '1';
     if (!busy) {
       Object.assign(canvas.dataset, {cards: stat.cards, bodies: stat.bodies, unfilled: stat.unfilled, full: stat.full});
       canvas.dataset.drawMs = (performance.now() - began).toFixed(2);
-      if (frames) { canvas.dataset.moveMs = `${(sumMs / frames).toFixed(1)}/${peakMs.toFixed(1)}`; peakMs = sumMs = frames = 0; }
+      if (frameMs.length) {          // average / 95th percentile / worst of the frames the last movement took
+        const sorted = frameMs.slice().sort((p, q) => p - q);
+        canvas.dataset.moveMs = [frameMs.reduce((p, q) => p + q, 0) / frameMs.length, sorted[Math.floor(sorted.length * 0.95)], sorted[sorted.length - 1]].map(v => v.toFixed(1)).join('/');
+        frameMs.length = 0;
+      }
       canvas.dataset.tree = [vw / 2 - view.cx * view.k, vh / 2 - view.cy * view.k, WW * view.k, WH * view.k].map(Math.round).join(',');
     }
     if (busy) request();
   };
 
-  // What the tests read: how a card was last set (its lines and sizes) and where it was drawn.
-  const cardInfo = n => ({id: n.id, x: n.sx, y: n.sy, w: n.sw, h: n.sh, lay: n.lay ? n.lay.value : null});
+  // What the tests read: how a card was last set (sizes and rows as they are drawn) and where it was drawn.
+  const layOf = n => {
+    const L = n.layFrame === frameNo ? n.lay : null;
+    if (!L) return null;
+    const v = L.value, k = L.k;
+    return {tfs: v.tfs * k, bfs: v.bfs * k, lh: v.lh * k, lh2: v.lh2 * k, bodyTop: v.bodyTop * k, titleLines: v.titleLines, bodyLines: v.bodyLines, fit: v.fit, room: v.room, hasText: v.hasText, alpha: v.alpha, scale: k};
+  };
+  const modeOf = n => {
+    if (n.opened === frameNo) return 'open';
+    const lay = layOf(n);
+    return !lay || lay.alpha < 0.02 ? 'card' : lay.bodyLines.length ? 'body' : 'title';
+  };
+  const cardInfo = n => ({id: n.id, parent: n.lp ? (n.lp.group ? `g${n.lp.owner.id}-${n.lp.lo}` : n.lp.id) : '', x: n.sx, y: n.sy, w: n.sw, h: n.sh, lay: layOf(n), mode: modeOf(n)});
   canvas.rpCard = id => { const n = byId.get(id); return n && n.shown === frameNo ? cardInfo(n) : null; };
-  canvas.rpCards = () => [...byId.values()].filter(n => n.shown === frameNo && n.opened !== frameNo && n.lay && n.lay.value).map(cardInfo);
+  canvas.rpCards = () => [...byId.values()].filter(n => n.shown === frameNo && n.opened !== frameNo && n.layFrame === frameNo).map(cardInfo);
+  canvas.rpModes = () => [...byId.values()].filter(n => n.shown === frameNo).map(cardInfo);
+  // Zoom to a ratio about a point and draw that one frame at once (a sweep of these is a zoom without the clock).
+  canvas.rpAt = (ratio, ax, ay) => {
+    const k = clamp(kFit * ratio, kFit * MIN_RATIO, kFit * maxRatio());
+    const wx = view.cx + (ax - vw / 2) / view.k, wy = view.cy + (ay - vh / 2) / view.k;
+    view.k = k; view.cx = wx - (ax - vw / 2) / k; view.cy = wy - (ay - vh / 2) / k;
+    clampView(view);
+    stopMotion();
+    atFit = false;
+    const began = performance.now();
+    paint(began);
+    return {ratio: view.k / kFit, ms: performance.now() - began, max: maxRatio()};
+  };
+  canvas.rpMax = maxRatio;
+  canvas.rpSmallest = () => { const {smallest: it, need} = zoomLimit(); return it && {id: it.id || '', group: !!it.group, ratio: need}; };
+  canvas.rpFocusSmallest = () => { const {smallest: it} = zoomLimit(); if (it) zoomTo(it); };
+  canvas.rpSmallestBox = () => { const {smallest: it} = zoomLimit(); return it && it.shown === frameNo ? {w: it.sw, h: it.sh} : null; };
+  canvas.rpDeepest = () => [...byId.values()].reduce((a, b) => (b.depth > a.depth ? b : a)).id;
 
   const updateStatus = () => {
     const mid = pickAt(vw / 2, vh / 2);
@@ -1106,13 +1313,13 @@
     crumbs.scrollLeft = crumbs.scrollWidth;
   };
 
-  /* ---------- the zoom slider: a log scale from the fitted picture to the deepest zoom ---------- */
+  /* ---------- the zoom slider: a log scale from the fitted picture to the zoom limit ---------- */
   const slider = $('tree-slider'), pct = $('tree-pct');
-  const LOG_MAX = Math.log(MAX_RATIO);
-  const ratioText = r => (r < 100 ? `${Math.round(r * 100)}%` : `×${Math.round(r)}`);
+  const logMax = () => Math.log(maxRatio());
+  const ratioText = r => `${Math.round(r * 100)}%`;
   let sliderKey = '';
   const updateSlider = () => {
-    const r = view.k / kFit, t = clamp(Math.log(Math.max(r, 1)) / LOG_MAX, 0, 1);
+    const r = view.k / kFit, t = clamp(Math.log(Math.max(r, 1)) / logMax(), 0, 1);
     const key = `${ratioText(r)}|${t.toFixed(4)}`;
     if (key === sliderKey) return;
     sliderKey = key;
@@ -1125,13 +1332,13 @@
   const zoomRatio = r => {
     stopMotion();
     if (r <= 1.005) { fitAll(); return; }
-    zoomBy(clamp(kFit * r, kFit * MIN_RATIO, kFit * MAX_RATIO) / goal.k);
+    zoomBy(clampK(kFit * r, goal.k) / goal.k);
   };
-  const stepRatio = t => zoomRatio(Math.exp(clamp(Math.log(Math.max(goal.k / kFit, 1)) / LOG_MAX + t, 0, 1) * LOG_MAX));
+  const stepRatio = t => zoomRatio(Math.exp(clamp(Math.log(Math.max(goal.k / kFit, 1)) / logMax() + t, 0, 1) * logMax()));
   let sliding = false;
   const slideTo = event => {
     const rect = slider.getBoundingClientRect();
-    zoomRatio(Math.exp(clamp((event.clientX - rect.left - 8) / (rect.width - 16), 0, 1) * LOG_MAX));
+    zoomRatio(Math.exp(clamp((event.clientX - rect.left - 8) / (rect.width - 16), 0, 1) * logMax()));
   };
   slider.addEventListener('pointerdown', event => { slider.setPointerCapture(event.pointerId); slider.focus(); sliding = true; slideTo(event); event.preventDefault(); });
   slider.addEventListener('pointermove', event => { if (sliding) slideTo(event); });
@@ -1140,7 +1347,7 @@
   slider.addEventListener('keydown', event => {
     const steps = {ArrowRight: 0.03, ArrowUp: 0.03, ArrowLeft: -0.03, ArrowDown: -0.03, PageUp: 0.15, PageDown: -0.15};
     if (event.key === 'Home') zoomRatio(1);
-    else if (event.key === 'End') zoomRatio(MAX_RATIO);
+    else if (event.key === 'End') zoomRatio(maxRatio());
     else if (event.key in steps) stepRatio(steps[event.key]);
     else return;
     event.preventDefault();
@@ -1614,7 +1821,7 @@
       const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
       const factor = d / pinch.d;
       pinch.d = d;
-      const kk = clamp(view.k * factor, kFit * MIN_RATIO, kFit * MAX_RATIO);
+      const kk = clampK(view.k * factor, view.k);
       const wx = view.cx + (mx - vw / 2) / view.k, wy = view.cy + (my - vh / 2) / view.k;
       view.k = kk;
       view.cx = wx - (mx - vw / 2) / kk;
@@ -1679,7 +1886,7 @@
     const p = local(event);
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? vh : 1;
     const speed = event.ctrlKey ? 0.01 : 0.0016;
-    zoomBy(Math.exp(-event.deltaY * unit * speed), p.x, p.y);
+    zoomBy(Math.exp(clamp(-event.deltaY * unit * speed, -0.5, 0.5)), p.x, p.y);       // a big flick is a big step, not a leap
     tip.hidden = true;
   }, {passive: false});
 
@@ -1999,7 +2206,7 @@
     if (atFit) fitAll(false);
     request();
   };
-  const theme = () => { readColors(); tables.clear(); layGen++; miniBase = null; renderOutline(); buildLegend(); request(); };
+  const theme = () => { readColors(); tables.clear(); preps.clear(); layGen++; miniBase = null; renderOutline(); buildLegend(); request(); };
   window.addEventListener('rp-theme', theme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
   reduced.addEventListener('change', request);
